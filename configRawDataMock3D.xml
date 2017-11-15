@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceRawDataMock" id="US-Mock">
+				<param name="frequency" type="int">
+					20
+				</param>
+				<param name="mockMetaDataFilename" type="string">
+					/home/user/syncCode/mockData/2DProbe.mock
+				</param>
+				<param name="mockDataFilename" type="string">
+					/home/user/syncCode/mockData/2DProbe_0.raw
+				</param>
+			</input>
+		</inputs>
+		<nodes>
+			<node type="BeamformingNode" id="BEAM">
+			</node>
+			<node type="IQDemodulatorNode" id="DEMO">
+				<param name="decimation" type="uint32_t">
+					5
+				</param>
+				<param name="referenceFrequency" type="double">
+					7000000
+				</param>
+				<param name="weight" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd0" type="double">
+					6600000
+				</param>
+				<param name="weightAdd0" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd1" type="double">
+					7400000
+				</param>
+				<param name="weightAdd1" type="double">
+					1
+				</param>	
+				<param name="referenceFrequencyAdd2" type="double">
+					6000000
+				</param>
+				<param name="weightAdd2" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd3" type="double">
+					5000000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+			</node>
+			<node type="LogCompressorNode" id="LOGC">
+			</node>
+			<node type="ScanConverterNode" id="SCAN">
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Mock" port="0" />
+			<to id="BEAM" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM" port="0" />
+			<to id="DEMO" port="0" />
+		</connection>
+		<connection>
+			<from id="DEMO" port="0" />
+			<to id="LOGC" port="0" />
+		</connection>
+		<connection>
+			<from id="LOGC" port="0" />
+			<to id="SCAN" port="0" />
+		</connection>
+		<!--<connection>
+			<from id="BEAM" port="0" />
+			<to id="MHD_Beam" port="0" />
+		</connection>-->
+	</connections>
+</supra_config>

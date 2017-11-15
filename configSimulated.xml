@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceSimulated" id="US-Sim">
+				<param name="frequency" type="int">
+					25
+				</param>
+				<param name="numVectors" type="size_t">
+					128
+				</param>
+				<param name="numSamples" type="size_t">
+					512
+				</param>
+				<param name="gain" type="double">
+					0.5
+				</param>
+			</input>
+			<input type="TrackerInterfaceSimulated" id="TR-Sim">
+				<param name="frequency" type="int">
+					100
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="MetaImageOutputDevice" id="MHD">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					mhd_output
+				</param>
+			</output>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL">
+			</output>
+		</outputs>
+		<nodes>
+			<node type="StreamSynchronizer" id="SYNC">
+				<param name="numInputs" type="size_t">
+					2
+				</param>
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Sim" port="0" />
+			<to id="SYNC" port="0" />
+		</connection>
+		<connection>
+			<from id="TR-Sim" port="0" />
+			<to id="SYNC" port="1" />
+		</connection>
+		<connection>
+			<from id="SYNC" port="0" />
+			<to id="MHD" port="0" />
+		</connection>
+		<connection>
+			<from id="SYNC" port="0" />
+			<to id="IGTL" port="0" />
+		</connection>
+	</connections>
+</supra_config>

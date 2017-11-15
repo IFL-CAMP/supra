@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceCephasonicsCC" id="US-Cep">
+				<param name="txVoltage" type="double">
+					10
+				</param>
+				<param name="endDepth" type="double">
+					70
+				</param>
+				<param name="txFocusActive" type="bool">
+					1
+				</param>				
+				<param name="txFocusDepth" type="double">
+					40
+				</param>
+				<param name="fovX" type="double">
+					60
+				</param>
+				<param name="fovY" type="double">
+					60
+				</param>
+				<param name="numScanlinesX" type="uint32_t">
+					32
+				</param>
+				<param name="numScanlinesY" type="uint32_t">
+					16
+				</param>
+				<param name="rxNumScanlinesX" type="uint32_t">
+					32
+				</param>
+				<param name="rxNumScanlinesY" type="uint32_t">
+					16
+				</param>
+				<param name="numSamplesRecon" type="uint32_t">
+					2000
+				</param>
+				<param name="scanType" type="string">
+					biphased
+				</param> 
+				<param name="probeName" type="string">
+					2D
+				</param> 
+				<param name="txWindowType" type="string">
+					Hamming
+				</param>
+				<param name="highPassFilterBypass" type="bool">
+					0
+				</param>
+				<param name="tgc0" type="double">
+					20
+				</param>
+				<param name="tgc1" type="double">
+					21
+				</param>
+				<param name="tgc2" type="double">
+					22
+				</param>
+				<param name="tgc3" type="double">
+					24
+				</param>
+				<param name="tgc4" type="double">
+					28
+				</param>
+				<param name="tgc5" type="double">
+					34
+				</param>
+				<param name="tgc6" type="double">
+					35
+				</param>
+				<param name="tgc7" type="double">
+					38
+				</param>
+				<param name="tgc8" type="double">
+					42
+				</param>
+				<param name="tgc9" type="double">
+					44
+				</param>
+				<param name="txApertureSizeX" type="uint32_t">
+					0
+				</param>
+				<param name="txApertureSizeY" type="uint32_t">
+					0
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
+			<!--<output type="MetaImageOutputDevice" id="MHD_Raw">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					rawData
+				</param>
+			</output>
+			<output type="MetaImageOutputDevice" id="MHD_Beam">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					beamformed
+				</param>
+			</output>
+			<output type="MetaImageOutputDevice" id="MHD_Logc">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					Logcompressed
+				</param>
+			</output>-->
+			<output type="MetaImageOutputDevice" id="MHD_Scan">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					images
+				</param>
+			</output>
+			<output type="MetaImageOutputDevice" id="MHD_ScanMask">
+				<param name="createSequences" type="bool">
+					0
+				</param>
+				<param name="filename" type="string">
+					imageMask
+				</param>
+			</output>
+		</outputs>
+		<nodes>
+			<node type="BeamformingNode" id="BEAM">
+				<param name="windowType" type="string">
+					Hann
+				</param>
+			</node>
+			<node type="IQDemodulatorNode" id="DEMO">
+				<param name="decimation" type="uint32_t">
+					5
+				</param>
+				<param name="referenceFrequency" type="double">
+					7000000
+				</param>
+				<param name="weight" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd0" type="double">
+					6600000
+				</param>
+				<param name="weightAdd0" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd1" type="double">
+					7400000
+				</param>
+				<param name="weightAdd1" type="double">
+					1
+				</param>	
+				<param name="referenceFrequencyAdd2" type="double">
+					6000000
+				</param>
+				<param name="weightAdd2" type="double">
+					1
+				</param>
+				<param name="referenceFrequencyAdd3" type="double">
+					5000000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+			</node>
+			<node type="LogCompressorNode" id="LOGC">
+			</node>
+			<node type="ScanConverterNode" id="SCAN">
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Cep" port="0" />
+			<to id="BEAM" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM" port="0" />
+			<to id="DEMO" port="0" />
+		</connection>
+		<connection>
+			<from id="DEMO" port="0" />
+			<to id="LOGC" port="0" />
+		</connection>
+		<connection>
+			<from id="LOGC" port="0" />
+			<to id="SCAN" port="0" />
+		</connection>
+		<!--<connection>
+			<from id="LOGC" port="0" />
+			<to id="MHD_Logc" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM" port="0" />
+			<to id="MHD_Beam" port="0" />
+		</connection>-->
+		<connection>
+			<from id="SCAN" port="0" />
+			<to id="IGTL" port="0" />
+		</connection>
+		<connection>
+			<from id="SCAN" port="0" />
+			<to id="MHD_Scan" port="0" />
+		</connection>
+		<connection>
+			<from id="SCAN" port="1" />
+			<to id="MHD_ScanMask" port="0" />
+		</connection>
+	</connections>
+</supra_config>

@@ -1,0 +1,6 @@
+if (${CAMP-US2-Lib_NEED_ITK})
+	SET(ITK_ROOT $ENV{ITKROOT})
+	SET(ITK_DIR ${ITK_ROOT})
+	find_package(ITK REQUIRED)
+	include(${ITK_USE_FILE})
+endif()
