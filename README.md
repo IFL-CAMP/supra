@@ -73,11 +73,11 @@ Keep in mind that the C++ host compiler has to be supported by the CUDA version.
 Build OpenIGTLink (*OPTIONAL*, but recommended)
 
 	sudo apt-get install git
-	mkdir $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
+	mkdir -p $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
 	git clone https://github.com/openigtlink/OpenIGTLink.git
 	cd OpenIGTLink
 	git checkout release-2.1
-	mkdir build && cd build
+	mkdir -p build && cd build
 	cmake -D BUILD_TESTING=OFF ..
 	make -j5
 	cd $HOME/git
@@ -85,10 +85,10 @@ Build OpenIGTLink (*OPTIONAL*, but recommended)
 SUPRA
 
 	sudo apt-get install git
-	mkdir $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
+	mkdir -p $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
 	git clone https://github.com/IFL-CAMP/supra.git
 	cd supra
-	mkdir build && cd build
+	mkdir -p build && cd build
 	cmake-gui ..
 	
 1. Configure
