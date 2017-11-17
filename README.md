@@ -35,6 +35,25 @@ License
 LGPL v3
 see [LICENSE](LICENSE)
 
+Publication
+----------------
+If you use SUPRA for your research, please cite our work
+https://arxiv.org/abs/1711.06127
+
+G&ouml;bl, R. and Navab, N. and Hennersperger, C., SUPRA: Open Source Software Defined Ultrasound Processing for Real-Time Applications, eprint arXiv:1711.06127, Nov 2017
+
+	@ARTICLE{2017goeblArxiv,
+	   author = {{G{\"o}bl}, R. and {Navab}, N. and {Hennersperger}, C.},
+		title = "{{SUPRA}: Open Source {S}oftware Defined {U}ltrasound {P}rocessing for {R}eal-Time {A}pplications}",
+	  journal = {ArXiv e-prints},
+	archivePrefix = "arXiv",
+	   eprint = {1711.06127},
+	 primaryClass = "cs.CV",
+	 keywords = {Computer Science - Computer Vision and Pattern Recognition, Computer Science - Distributed, Parallel, and Cluster Computing},
+		 year = 2017,
+		month = nov
+	}
+
 Building
 ----------------
 ### Requirements
@@ -95,7 +114,7 @@ SUPRA
 2. For systems with multiple gcc versions, make sure to select one supported by the installed CUDA version
 3. You might need to specify the CUDA toolkit directory (usually "`/usr/local/cuda`")
 4. Specify OpenIGTLink build directory for OpenIGTLink_DIR
-5. Configure & Generate, then close cmake and buil
+5. Configure & Generate, then close cmake and build
 6. Build SUPRA
 	
 	make -j5
