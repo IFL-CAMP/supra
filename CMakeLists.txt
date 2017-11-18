@@ -73,5 +73,5 @@ IF(SUPRA_DOWNLOAD_SAMPLEDATA)
 		execute_process(COMMAND cmake -E touch mockData_extracted
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/data/" )
 	ENDIF()
-	file(COPY configDemo.xml DESTINATION "${PROJECT_BINARY_DIR}/data/")
+	file(COPY config/configDemo.xml DESTINATION "${PROJECT_BINARY_DIR}/data/")
 ENDIF(SUPRA_DOWNLOAD_SAMPLEDATA)
