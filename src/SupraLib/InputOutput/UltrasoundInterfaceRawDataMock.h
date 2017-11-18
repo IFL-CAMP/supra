@@ -58,15 +58,21 @@ namespace supra
 		static constexpr size_t m_maxSequenceSizeMb = 512;
 
 		void readConfiguration();
+		void readNextFrame();
 
 		std::string m_mockMetadataFilename;
-		std::string m_mockDataFilename;
+		std::vector<std::string> m_mockDataFilenames;
 		bool m_singleImage;
 		int m_frequency;
 		std::shared_ptr<USRawData<int16_t> > m_protoRawData;
 		std::shared_ptr<Container<int16_t> > m_pMockData;
-		size_t m_sequenceLength;
+
+		std::vector<std::ifstream> m_mockDataStreams;
+		std::vector<std::vector<char> > m_mockDataStramReadBuffers;
+
+		std::vector<size_t> m_sequenceLengths;
 		size_t m_sequenceIndex;
+		size_t m_frameIndex;
 		size_t m_numel;
 		std::atomic_bool m_frozen;
 

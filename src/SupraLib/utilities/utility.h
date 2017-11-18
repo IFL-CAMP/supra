@@ -54,6 +54,18 @@ namespace supra
 		o.close();
 	}
 
+	template <typename T>
+	void readChunks(std::ifstream& f, T* destination, size_t numElements, size_t chunkSize)
+	{
+		size_t numElementsChunk = chunkSize / sizeof(T);
+		for (size_t elementsRead = 0; elementsRead < numElements; 
+				elementsRead += numElementsChunk, destination += numElementsChunk)
+		{
+			size_t numToRead = min(chunkSize, (numElements - elementsRead) * sizeof(T));
+			f.read(reinterpret_cast<char*>(destination), numToRead);
+		}
+	}
+
 	/// returns the square of x
 	template <typename T>
 	constexpr T sq(T x)
@@ -175,6 +187,18 @@ namespace supra
 		else {
 			return std::string(strStart, strEnd);
 		}
+	}
+
+	inline std::vector<std::string> split(const std::string &str, char delimiter)
+	{
+		std::vector<std::string> tokens;
+		std::stringstream s(str);
+		std::string token;
+		while (std::getline(s, token, delimiter))
+		{
+			tokens.push_back(token);
+		}
+		return tokens;
 	}
 
 	/// Returns current time in seconds. The resolution depends on the operating system.
