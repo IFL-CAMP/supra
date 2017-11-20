@@ -158,6 +158,8 @@ Finally, it can be built against
 Acknowledgement
 ----------------
 
+SUPRA logo by Raphael Kretz.
+
 ![EU flag](http://campar.in.tum.de/files/goeblr/EUflag.png "EU flag")
 
-This project has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No. 688279
+This project has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No. 688279.
