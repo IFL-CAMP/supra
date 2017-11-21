@@ -116,8 +116,6 @@ namespace supra
 			double timestamp = getCurrentTime();
 
 			m_callFrequency.measure();
-			auto dataGpu = m_pMockData->getCopy(LocationGpu);
-						
 			shared_ptr<USRawData<int16_t> > pRawData = std::make_shared<USRawData<int16_t> >(
 				m_protoRawData->getNumScanlines(),
 				m_protoRawData->getNumElements(),
@@ -125,7 +123,7 @@ namespace supra
 				m_protoRawData->getNumReceivedChannels(),
 				m_protoRawData->getNumSamples(),
 				m_protoRawData->getSamplingFrequency(),
-				dataGpu,
+				m_pMockData,
 				m_protoRawData->getRxBeamformer(),
 				m_protoRawData->getImageProperties(),
 				getCurrentTime(),
@@ -157,10 +155,10 @@ namespace supra
 
 	void UltrasoundInterfaceRawDataMock::readNextFrame()
 	{
-		m_pMockData = make_shared<Container<int16_t> >(LocationHost, m_numel);
+		auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, m_numel);
 
-		m_mockDataStreams[m_sequenceIndex].read(reinterpret_cast<char*>(m_pMockData->get()), m_numel * sizeof(int16_t));
-		
+		m_mockDataStreams[m_sequenceIndex].read(reinterpret_cast<char*>(mockDataHost->get()), m_numel * sizeof(int16_t));
+		m_pMockData = mockDataHost->getCopy(LocationGpu);
 		// advance to the next image and sequence where required
 		m_frameIndex = (m_frameIndex + 1) % m_sequenceLengths[m_sequenceIndex];
 		if (m_frameIndex == 0)

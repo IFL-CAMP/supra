@@ -57,7 +57,11 @@ namespace supra
 #endif
 				break;
 			case LocationHost:
+#ifdef HAVE_CUDA
+				cudaSafeCall(cudaMallocHost((void**)&m_buffer, m_numel * sizeof(T)));
+#else
 				m_buffer = new T[m_numel];
+#endif
 				break;
 			default:
 				throw std::runtime_error("invalid argument: Container: Unknown location given");
@@ -115,7 +119,11 @@ namespace supra
 #endif
 				break;
 			case LocationHost:
+#ifdef HAVE_CUDA
+				cudaFreeHost(m_buffer);
+#else
 				delete[] m_buffer;
+#endif
 				break;
 			default:
 				break;
