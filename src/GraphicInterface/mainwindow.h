@@ -41,6 +41,11 @@ namespace supra
 		/// Loads the given configuration file,
 		/// i.e. creates the graph as specified in the config
 		void loadConfigFile(const QString & filename);
+
+		/// Tries to catch as many key presses within the main window as possible.
+		/// This serves as a trigger to reset the freeze timer, as input suggests 
+		/// active use.
+		void keyPressEvent(QKeyEvent* keyEvent);
 	private:
 		Ui::MainWindow *ui;
 
@@ -53,6 +58,8 @@ namespace supra
 		bool m_previewLinearInterpolation;
 		previewBuilderQT* m_preview;
 		parametersWidget* m_pParametersWidget;
+
+		QPoint m_previousCursorPosition;
 
 	public slots:
 		/// Slot that asks the user for the path to a configuration file

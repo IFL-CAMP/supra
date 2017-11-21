@@ -42,7 +42,8 @@ namespace supra
 		m_sequenceStarted(false),
 		m_started(false),
 		m_pParametersWidget(nullptr),
-		m_preview(nullptr)
+		m_preview(nullptr),
+		m_previousCursorPosition(0, 0)
 	{
 		ui->setupUi(this);
 		m_pSequenceShortcut = new QShortcut(QKeySequence("F5"), this);
@@ -149,6 +150,12 @@ namespace supra
 		ui->pushButtonLoad->setDisabled(true);
 		ui->actionLoadConfig->setDisabled(true);
 		ui->pushButtonStart->setEnabled(true);
+	}
+
+	void MainWindow::keyPressEvent(QKeyEvent * keyEvent)
+	{
+		resetFreezeTimer();
+		QMainWindow::keyPressEvent(keyEvent);
 	}
 
 	void MainWindow::showParametersFromList()
@@ -343,6 +350,15 @@ namespace supra
 
 	void MainWindow::updateFreezeTimer()
 	{
+		// check the current mouse position
+		QPoint currentCursorPosition = QCursor::pos();
+		if (currentCursorPosition != m_previousCursorPosition)
+		{
+			// The mouse has been moved, we assume that we can reset the freeze timer
+			p_manager->resetFreezeTimeout();
+			m_previousCursorPosition = currentCursorPosition;
+		}
+
 		if (p_manager->inputsFrozen())
 		{ 
 			ui->pushButtonFreeze->setText(QString("Unfreeze"));
