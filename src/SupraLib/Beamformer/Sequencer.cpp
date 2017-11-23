@@ -115,8 +115,8 @@ namespace supra
 		m_beamformers[bfUID].clear();
 		m_imageProperties[bfUID].clear();
 
-		double angleIncrementX = (m_steeringProperties[bfUID].endAngle.x-m_steeringProperties[bfUID].startAngle.x) / m_steeringProperties[bfUID].numAngles.x;
-		double angleIncrementY = (m_steeringProperties[bfUID].endAngle.y-m_steeringProperties[bfUID].startAngle.y) / m_steeringProperties[bfUID].numAngles.y;
+		double angleIncrementX = (m_steeringProperties[bfUID].endAngle.x-m_steeringProperties[bfUID].startAngle.x) / (m_steeringProperties[bfUID].numAngles.x-1);
+		double angleIncrementY = (m_steeringProperties[bfUID].endAngle.y-m_steeringProperties[bfUID].startAngle.y) / (m_steeringProperties[bfUID].numAngles.y-1);
 
 		double angleY = m_steeringProperties[bfUID].startAngle.y;
 		for (size_t iY = 0; iY < m_steeringProperties[bfUID].numAngles.y; iY++)
