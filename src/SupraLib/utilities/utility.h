@@ -61,7 +61,7 @@ namespace supra
 		for (size_t elementsRead = 0; elementsRead < numElements; 
 				elementsRead += numElementsChunk, destination += numElementsChunk)
 		{
-			size_t numToRead = min(chunkSize, (numElements - elementsRead) * sizeof(T));
+			size_t numToRead = std::min(chunkSize, (numElements - elementsRead) * sizeof(T));
 			f.read(reinterpret_cast<char*>(destination), numToRead);
 		}
 	}

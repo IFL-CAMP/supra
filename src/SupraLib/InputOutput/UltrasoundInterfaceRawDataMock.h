@@ -67,7 +67,7 @@ namespace supra
 		std::shared_ptr<USRawData<int16_t> > m_protoRawData;
 		std::shared_ptr<Container<int16_t> > m_pMockData;
 
-		std::vector<std::ifstream> m_mockDataStreams;
+		std::vector<std::shared_ptr<std::ifstream>> m_mockDataStreams;
 		std::vector<std::vector<char> > m_mockDataStramReadBuffers;
 
 		std::vector<size_t> m_sequenceLengths;

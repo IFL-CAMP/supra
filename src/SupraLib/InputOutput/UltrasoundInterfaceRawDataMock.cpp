@@ -61,10 +61,11 @@ namespace supra
 		{
 			// In order to maximize reading performance, the ifstream needs a large read buffer
 			m_mockDataStramReadBuffers[k].resize(128 * 1024 * 1024, '\0');
-			m_mockDataStreams[k].open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
-			m_mockDataStreams[k].rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());	
-			size_t filesizeBytes = m_mockDataStreams[k].tellg();
-			m_mockDataStreams[k].seekg(0);
+			m_mockDataStreams[k] = std::shared_ptr<std::ifstream>(new std::ifstream);
+			m_mockDataStreams[k]->open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
+			m_mockDataStreams[k]->rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());	
+			size_t filesizeBytes = m_mockDataStreams[k]->tellg();
+			m_mockDataStreams[k]->seekg(0);
 
 			m_sequenceLengths[k] = filesizeBytes / (m_numel * sizeof(int16_t));
 		}
@@ -157,13 +158,13 @@ namespace supra
 	{
 		auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, m_numel);
 
-		m_mockDataStreams[m_sequenceIndex].read(reinterpret_cast<char*>(mockDataHost->get()), m_numel * sizeof(int16_t));
+		m_mockDataStreams[m_sequenceIndex]->read(reinterpret_cast<char*>(mockDataHost->get()), m_numel * sizeof(int16_t));
 		m_pMockData = mockDataHost->getCopy(LocationGpu);
 		// advance to the next image and sequence where required
 		m_frameIndex = (m_frameIndex + 1) % m_sequenceLengths[m_sequenceIndex];
 		if (m_frameIndex == 0)
 		{
-			m_mockDataStreams[m_sequenceIndex].seekg(0);
+			m_mockDataStreams[m_sequenceIndex]->seekg(0);
 			m_sequenceIndex = (m_sequenceIndex + 1) % m_sequenceLengths.size();
 		}
 	}
