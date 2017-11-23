@@ -449,7 +449,9 @@ namespace supra
 							vec2s{64,1},
 							USTransducer::Linear,
 							vector<double>(64 - 1, probePitch),
-							vector<std::pair<double, double> >{{8.9e-05 * 1000.0, 3720.0 * 1000.0}, {7.6e-05 * 1000.0, 2660 * 1000.0}}));
+							vector<double>(0),
+							vector<std::pair<double, double> >{{8.9e-05 * 1000.0, 3720.0 * 1000.0}, {7.6e-05 * 1000.0, 2660 * 1000.0}})
+						);
 
 			maxAperture = {64,1};
 
