@@ -148,7 +148,7 @@ namespace supra
 		, m_pSequencer(nullptr)
 		, m_pProbe(nullptr)
 		, m_cUSEngine(nullptr)
-		, m_numMuxedChannels(1152)
+		, m_numMuxedChannels(0)
 		, m_probeMapping(0)
 		, m_systemRxClock(40)
 		, m_mockDataWritten(false)
@@ -1142,6 +1142,7 @@ namespace supra
 	void UsIntCephasonicsCc::setupScan()
 	{
 		//create new transducer
+		updateTransducer();
 		setupCsProbe();
 
 		bool swModeEn = true;                      //need to set this to true when making fully-custom beams
