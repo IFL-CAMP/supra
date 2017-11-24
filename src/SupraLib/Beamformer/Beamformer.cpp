@@ -879,7 +879,7 @@ namespace supra
 				for (size_t activeElementIdxY = txAperture.begin.y; activeElementIdxY <= txAperture.end.y; activeElementIdxY++)
 				{
 					size_t localElementIdxX = activeElementIdxX - txAperture.begin.x;
-					size_t localElementIdxY = activeElementIdxY - txAperture.begin.y;
+					size_t localElementIdxY = activeElementIdxY - txAperture.begin.y; // relative index (0 to 1) of element pos
 					vec2 relativeIndex = vec2{ static_cast<double>(localElementIdxX), static_cast<double>(localElementIdxY) }
 					/ static_cast<vec2>(supra::max(txAperture.end - txAperture.begin, { 1, 1 }));
 					if (txAperture.end.x == txAperture.begin.x)
@@ -891,14 +891,18 @@ namespace supra
 						relativeIndex.y = 0.5;
 					}
 
+					// physical location of element center
 					vec elementCenter = elementCenterpoints->at(activeElementIdxX + activeElementIdxY*elementLayout.x);
 
 					vec focusPointFromFocusCenter =
 						((relativeIndex.x - 0.5)*m_txFocusWidth)*scanlinePerpDirX +
-						((relativeIndex.y - 0.5)*m_txFocusWidth)*scanlinePerpDirY;
-					vec elementToFocus = scanlineStart3 + m_txFocusDepth*scanlineDir + focusPointFromFocusCenter - elementCenter;
+						((relativeIndex.y - 0.5)*m_txFocusWidth)*scanlinePerpDirY; 
+						
+					// calculate vector pointing from element center to focus point
+					vec elementToFocus = scanlineStart3 + m_txFocusDepth*scanlineDir + focusPointFromFocusCenter - elementCenter; 
+					
+					// calculate transit time from element to focus and get element delay to account for max transit time
 					double transitTime = m_pTransducer->computeTransitTime(vec2s{ activeElementIdxX, activeElementIdxY }, elementToFocus, m_speedOfSoundMMperS, m_correctMatchingLayers);
-
 					double delay = maxTransitTime - transitTime;
 					params.delays[localElementIdxX][localElementIdxY] = delay;
 					maxDelay = max(maxDelay, delay);
@@ -935,8 +939,9 @@ namespace supra
 		}
 		params.maxDelay = maxDelay;
 
-		//compute the weights
-		// for that first compute the maximum distance of tx elements to the scanline, it serves as normalization for the window position
+		// Next compute the weights for each element within aperture (apodization)
+		// for that first compute the maximum distance of tx elements to the scanline, 
+		// this serves as normalization for the window position
 		vec2 maxElementScanlineDist = { 0, 0 };
 		for (auto element : cornerElements)
 		{
@@ -991,8 +996,9 @@ namespace supra
 
 		}
 
+		// TODO: check this coordinate swap, is not a RHS
 		params.position = vec{ scanlineStart.x, 0, scanlineStart.y };
-		params.direction = vec{ scanlineDir.x, scanlineDir.z, scanlineDir.y };
+		params.direction = vec{ scanlineDir.x, scanlineDir.z, scanlineDir.y }; 
 
 		return params;
 	}

@@ -105,7 +105,7 @@ namespace supra
 		//void initBeams();
 		void createSequence();
 		const FrameDef* createFrame(const std::vector<ScanlineTxParameters3D>* txBeamParams, const std::shared_ptr<USImageProperties> imageProps, const BeamEnsembleTxParameters& txParamsCs);
-		const BeamEnsembleDef* createBeamEnsembleFromScanlineTxParameter(const BeamEnsembleTxParameters& txEnsembleParams, const vec2s numScanlines, const ScanlineTxParameters3D& txParameters, ::std::ofstream* fMap, ::std::ofstream* fDelays);
+		const BeamEnsembleDef* createBeamEnsembleFromScanlineTxParameter(const BeamEnsembleTxParameters& txEnsembleParams, const vec2s numScanlines, const ScanlineTxParameters3D& txParameters);
 		void createFrame();
 		std::vector<uint8> createWeightedWaveform(const BeamEnsembleTxParameters& txParams, size_t numTotalEntries, float weight, uint8_t csTxOversample);
 		void updateTransducer();

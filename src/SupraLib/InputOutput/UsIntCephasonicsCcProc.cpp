@@ -53,7 +53,7 @@ namespace supra
 			numChannels = 64;
 			//each with 12 bit in not unscrambled mode
 			size_t numBeams = data->numBeams;
-
+			size_t beamID = data->seqNo;
 			size_t frameID = data->sframeID; // unique ID for FrameDef within Sequence
 
 

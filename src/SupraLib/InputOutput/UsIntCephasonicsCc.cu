@@ -1273,6 +1273,7 @@ namespace supra
 				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq,angleSeq);
 				std::shared_ptr<USImageProperties> props = m_pSequencer->getUSImgProperties(numSeq,angleSeq);
 	
+				// push rx parameters to US properties
 				props->setScanlineInfo(bf->getRxParameters());
 
 				// Get the Tx scanline parameters to program the Hardware with them
@@ -1302,16 +1303,12 @@ namespace supra
 		// scanlines
 		vec2s numScanlines = imageProps->getScanlineLayout();
 
-		ofstream fMap("txMap.dlm");
-		ofstream fDelays("delays.dlm");
 		vector<const BeamEnsembleDef*> beamEnsembles;
 		for(auto txParams: *txBeamParams)
 		{
 			// create the beam ensemble for this txBeam
-			beamEnsembles.push_back(createBeamEnsembleFromScanlineTxParameter(txEnsembleParams, numScanlines, txParams, &fMap, &fDelays));
+			beamEnsembles.push_back(createBeamEnsembleFromScanlineTxParameter(txEnsembleParams, numScanlines, txParams));
 		}
-		fMap.close();
-		fDelays.close();
 
 
 		// Create the SubFrameDef
@@ -1377,9 +1374,7 @@ namespace supra
 	const BeamEnsembleDef* UsIntCephasonicsCc::createBeamEnsembleFromScanlineTxParameter(
 		const BeamEnsembleTxParameters& txEnsembleParameters, 
 		const vec2s numScanlines, 
-		const ScanlineTxParameters3D& txParameters, 
-		ofstream* fMap,
-		ofstream* fDelays)
+		const ScanlineTxParameters3D& txParameters)
 	{
 		PlatformCapabilities pC = USPlatformMgr::getPlatformCapabilities(*m_cPlatformHandle);
 
