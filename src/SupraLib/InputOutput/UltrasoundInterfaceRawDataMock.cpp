@@ -35,6 +35,7 @@ namespace supra
 		m_callFrequency.setName("RawMock");
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<bool>("singleImage", { true, false }, false, "Single image");
+		m_valueRangeDictionary.set<bool>("streamSequenceOnce", { true, false }, false, "Emit sequences once");
 		m_valueRangeDictionary.set<int>("frequency", 1, 100, 5, "Frequency");
 		m_valueRangeDictionary.set<string>("mockMetaDataFilename", "", "Mock meta data filename");
 		m_valueRangeDictionary.set<string>("mockDataFilename", "", "Mock data filename");
@@ -104,6 +105,10 @@ namespace supra
 		{
 			m_singleImage = m_configurationDictionary.get<bool>("singleImage");
 		}
+		if (configKey == "sequenceOnce")
+		{
+			m_streamSequenceOnce = m_configurationDictionary.get<bool>("streamSequenceOnce");
+		}
 	}
 
 	void UltrasoundInterfaceRawDataMock::configurationChanged()
@@ -145,6 +150,7 @@ namespace supra
 		lock_guard<mutex> lock(m_objectMutex);
 		//read conf values
 		m_singleImage = m_configurationDictionary.get<bool>("singleImage");
+		m_streamSequenceOnce = m_configurationDictionary.get<bool>("streamSequenceOnce");
 		m_frequency = m_configurationDictionary.get<int>("frequency");
 		m_mockMetadataFilename = m_configurationDictionary.get<string>("mockMetaDataFilename");
 		m_mockDataFilenames = split(m_configurationDictionary.get<string>("mockDataFilename"), ',');
@@ -166,6 +172,10 @@ namespace supra
 		{
 			m_mockDataStreams[m_sequenceIndex]->seekg(0);
 			m_sequenceIndex = (m_sequenceIndex + 1) % m_sequenceLengths.size();
+			if (m_sequenceIndex == 0 && m_streamSequenceOnce)
+			{
+				setRunning(false);
+			}
 		}
 	}
 
