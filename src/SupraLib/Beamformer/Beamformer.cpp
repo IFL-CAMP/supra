@@ -787,7 +787,10 @@ namespace supra
 		vec2s elementLayout = m_pTransducer->getElementLayout();
 		vec scanlineStart3 = vec{ scanlineStart.x, scanlineStart.y, 0 };
 
-		//store the four elements in the corners and their relative indices (for focus calculation)
+		//store the three elements in the corners and their relative indices (for focus calculation)
+		// <0>: relativeIndex (0 to 1, double)
+		// <1>: elementIndex (0 to physical number of elements)
+		// <2>: elementPos (mm physical) 
 		vector<tuple<vec2, vec2s, vec> > cornerElements;
 		bool is3D = false;
 		if (txAperture.begin.x == txAperture.end.x && txAperture.begin.y == txAperture.end.y)
@@ -818,7 +821,8 @@ namespace supra
 		params.lastActiveElementIndex = activeAperture.end;
 		params.txAperture = txAperture;
 
-		//enter this decision into ScanlineTxParameters
+		// next, set the correct elements according to defined aperture (general and transmit) in the scanline parameters 
+		// fill the elementMap ScanlineTxParameters
 		params.elementMap.resize(elementLayout.x, vector<bool>(elementLayout.y, false)); //set all to false
 		for (size_t activeElementIdxX = activeAperture.begin.x; activeElementIdxX <= activeAperture.end.x; activeElementIdxX++)
 		{
@@ -827,7 +831,7 @@ namespace supra
 				params.elementMap[activeElementIdxX][activeElementIdxY] = true;
 			}
 		}
-		//enter this decision into ScanlineTxParameters
+		// fill the transmit elementMap ScanlineTxParameters
 		params.txElementMap.resize(elementLayout.x, vector<bool>(elementLayout.y, false)); //set all to false
 		for (size_t activeElementIdxX = txAperture.begin.x; activeElementIdxX <= txAperture.end.x; activeElementIdxX++)
 		{
@@ -837,15 +841,19 @@ namespace supra
 			}
 		}
 
-		//compute the delays
+		// calculate the scanline local coordinate system such that scanlines are pointing in z-direction
+		// R = [scanlinePerpDirX', scanlinePerpDirY', scanlineDir]
+		// where the X and Y are the parts of [1,0,0] and [0,1,0] perpendicular to scanlineDir
+		// and X being lateral, Y being elevational
 		vec scanlineDir = normalize(vec{ tan(steeringAngle.x), tan(steeringAngle.y), 1 });
-		// calculate the scanline local coordinate system, such that R = [scanlinePerpDirX', scanlinePerpDirY', scanlineDir]
-		// where the X and Y are the parts of [1,0,0] and [0, 1, 0] perpendicular to scanlineDir
 		vec scanlinePerpDirX = normalize(vec{ 1,0,0 } -scanlineDir*dot(vec{ 1,0,0 }, scanlineDir));
 		vec scanlinePerpDirY = normalize(vec{ 0,1,0 } -scanlineDir*dot(vec{ 0,1,0 }, scanlineDir));
+		// sanity check that constructed transform R is valid and righthanded
 		assert(abs(dot(scanlineDir, scanlinePerpDirX)) < 1e-7);
 		assert(abs(dot(scanlineDir, scanlinePerpDirY)) < 1e-7);
 		assert(abs(dot(scanlinePerpDirX, scanlinePerpDirY)) < 1e-7);
+
+		//compute the delays
 		params.delays.resize(txAperture.end.x - txAperture.begin.x + 1, vector<double>(txAperture.end.y - txAperture.begin.y + 1, 0));
 		double maxDelay = 0.0;
 		if (m_txFocusActive)
