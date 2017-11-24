@@ -52,9 +52,9 @@ namespace supra
 
 	Beamformer::Beamformer(const std::shared_ptr<Beamformer> bf)
 		: m_txParameters(bf->m_txParameters)
-		, m_rxParameters(bf->m_rxParameters)
-		, m_pRxBeamformer(bf->m_pRxBeamformer)
 		, m_pTransducer(bf->m_pTransducer)
+		, m_pRxBeamformer(nullptr)
+		, m_rxParameters(nullptr)
 		, m_type(bf->m_type)
 		, m_numScanlines(bf->m_numScanlines)
 		, m_rxScanlineSubdivision(bf->m_rxScanlineSubdivision)
@@ -72,9 +72,7 @@ namespace supra
 		, m_txSteeringAngle(bf->m_txSteeringAngle)
 		, m_numSamplesRecon(bf->m_numSamplesRecon)
 		, m_ready(false)	
-
 	{
-
 	}
 
 	Beamformer::~Beamformer()
