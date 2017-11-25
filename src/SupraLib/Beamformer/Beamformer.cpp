@@ -29,40 +29,46 @@ namespace supra
 	using namespace logging;
 
 	Beamformer::Beamformer()
-		: m_type(Beamformer::Linear)
+		: m_pRxBeamformer(nullptr)
+		, m_pTransducer(nullptr)
+		, m_type(Beamformer::Linear)
 		, m_correctMatchingLayers(true)
 		, m_numScanlines{ 0, 0 }
 		, m_rxScanlineSubdivision{ 1, 1 }
 		, m_numRxScanlines{ 0, 0 }
+		, m_maxApertureSize{ 0, 0 }
+		, m_txMaxApertureSize{ 0, 0 }
 		, m_txWindow(WindowRectangular)
 		, m_depth(0.0)
+		, m_fov{ 0.0, 0.0 }
 		, m_txFocusActive(false)
 		, m_txFocusDepth(0.0)
 		, m_txFocusWidth(0.0)
 		, m_rxFocusDepth(0.0)
 		, m_speedOfSound(1540.0)
 		, m_speedOfSoundMMperS(m_speedOfSound * 1000.0)
-		, m_fov{ 0.0, 0.0 }
-		, m_pTransducer(nullptr)
-		, m_pRxBeamformer(nullptr)
 		, m_txSteeringAngle{0,0}
+		, m_numSamplesRecon(0)
 		, m_ready(false)
 	{
 	}
 
 	Beamformer::Beamformer(const std::shared_ptr<Beamformer> bf)
 		: m_txParameters(bf->m_txParameters)
+		, m_rxParameters(nullptr) // re-computed online
+		, m_pRxBeamformer(nullptr) // re-computed online
 		, m_pTransducer(bf->m_pTransducer)
-		, m_pRxBeamformer(nullptr)
-		, m_rxParameters(nullptr)
 		, m_type(bf->m_type)
+		, m_correctMatchingLayers(bf->m_correctMatchingLayers)
 		, m_numScanlines(bf->m_numScanlines)
 		, m_rxScanlineSubdivision(bf->m_rxScanlineSubdivision)
 		, m_numRxScanlines(bf->m_numRxScanlines)
 		, m_maxApertureSize(bf->m_maxApertureSize)
 		, m_txMaxApertureSize(bf->m_txMaxApertureSize)
-		, m_fov(bf->m_fov)
+		, m_txWindow(bf->m_txWindow)
+		, m_txWindowParameter(bf->m_txWindowParameter)
 		, m_depth(bf->m_depth)
+		, m_fov(bf->m_fov)
 		, m_txFocusActive(bf->m_txFocusActive)
 		, m_txFocusDepth(bf->m_txFocusDepth)
 		, m_txFocusWidth(bf->m_txFocusWidth)
@@ -304,7 +310,6 @@ namespace supra
 		return m_depth;
 	}
 
-
 	vec2s Beamformer::getNumScanlines() const
 	{
 		return m_numScanlines;
@@ -523,6 +528,7 @@ namespace supra
 			else {
 				logging::log_error("Beamformer: Imaging type not implemented yet");
 				throw std::invalid_argument("Imaging type not implemented yet");
+				m_ready = false;
 			}
 
 			/*for (size_t scanlineIdxY = 0; scanlineIdxY < m_numScanlines.y; scanlineIdxY++)
@@ -744,15 +750,21 @@ namespace supra
 		 	}
 
 			logging::log_info("Beamformer: computing TX parameters finished");
+			m_ready = true;
 		}
 		else
 		{
 			logging::log_always("Beamformer: Imaging parameters are not fully defined, yet.");
+			m_ready = false;
 		}
 	}
 
 	const std::vector<ScanlineTxParameters3D>* Beamformer::getTxParameters()
 	{
+		if (false == m_ready)
+		{
+			computeTxParameters();
+		}
 		return &m_txParameters;
 	}
 

@@ -142,7 +142,6 @@ namespace supra
 		// Imaging parameters
 		ScanType m_type;
 		bool m_correctMatchingLayers;
-		size_t m_numScanlinesTotal;
 
 		vec2s m_numScanlines;
 		vec2s m_rxScanlineSubdivision;
