@@ -72,6 +72,7 @@ namespace supra
 		void stopOutputsSequence();
 		void startInputs();
 		void stopAndWaitInputs();
+		void waitInputs();
 
 		void freezeInputs();
 		void unfreezeInputs();

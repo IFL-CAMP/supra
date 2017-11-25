@@ -143,6 +143,7 @@ namespace supra
 
 			/// Sets which log-levels are shown on the console log output.
 			/// Accepts a mask built from values of \see SeverityMask
+			/// default: Severity::warning | Severity::error | Severity::always
 			static void setLogLevel(SeverityMask severity)
 			{
 				sm_logLevel = severity | logging::Severity::always;

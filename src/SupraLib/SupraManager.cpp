@@ -426,6 +426,30 @@ namespace supra
 
 	void SupraManager::stopAndWaitInputs()
 	{
+		for (auto inputDevicePair : m_inputDevices)
+		{
+			if (inputDevicePair.second->getRunning())
+			{
+				string nodeID = inputDevicePair.first;
+				logging::log_log("Stopping input '", nodeID, "'");
+				inputDevicePair.second->setRunning(false);
+			}
+		}
+		waitInputs();
+	}
+
+	void SupraManager::waitInputs()
+	{
+		for (auto inputDevicePair : m_inputDevices)
+		{
+			if (inputDevicePair.second->getRunning())
+			{
+				string nodeID = inputDevicePair.first;
+				logging::log_log("Waiting for input '", nodeID, "' to finish.");
+				inputDevicePair.second->waitForFinish();
+			}
+		}
+
 		m_freezeThreadContinue = false;
 		if (m_freezeThread)
 		{
@@ -434,17 +458,6 @@ namespace supra
 				m_freezeThread->join();
 			}
 			m_freezeThread = nullptr;
-		}
-
-		for (auto inputDevicePair : m_inputDevices)
-		{
-			if (inputDevicePair.second->getRunning())
-			{
-				string nodeID = inputDevicePair.first;
-				logging::log_log("Stopping input '", nodeID, "'");
-				inputDevicePair.second->setRunning(false);
-				inputDevicePair.second->waitForFinish();
-			}
 		}
 	}
 
