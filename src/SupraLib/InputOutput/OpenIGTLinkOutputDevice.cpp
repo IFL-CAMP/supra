@@ -165,7 +165,7 @@ namespace supra
 			auto imageContainer = imageData->getData();
 			if (!imageContainer->isHost())
 			{
-				imageContainer = imageContainer->getCopy(LocationHost);
+				imageContainer = make_shared<Container<T> >(LocationHost, *imageContainer);
 			}
 
 			size_t numElements = imageSize.x * imageSize.y * imageSize.z;

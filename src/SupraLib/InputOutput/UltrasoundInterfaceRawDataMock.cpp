@@ -12,14 +12,15 @@
 //
 // ================================================================================================
 
-#include <memory>
-
 #include "USImage.h"
 #include "Beamformer/USRawData.h"
 #include "UltrasoundInterfaceRawDataMock.h"
 #include "utilities/utility.h"
 
 #include "Beamformer/RxBeamformerCuda.h"
+#include "ContainerFactory.h"
+
+#include <memory>
 
 using namespace std;
 
@@ -162,10 +163,10 @@ namespace supra
 
 	void UltrasoundInterfaceRawDataMock::readNextFrame()
 	{
-		auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, m_numel);
+		auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, ContainerFactory::getNextStream(), m_numel);
 
 		m_mockDataStreams[m_sequenceIndex]->read(reinterpret_cast<char*>(mockDataHost->get()), m_numel * sizeof(int16_t));
-		m_pMockData = mockDataHost->getCopy(LocationGpu);
+		m_pMockData = make_shared<Container<int16_t> >(LocationGpu, *mockDataHost);
 		// advance to the next image and sequence where required
 		m_frameIndex = (m_frameIndex + 1) % m_sequenceLengths[m_sequenceIndex];
 		if (m_frameIndex == 0)

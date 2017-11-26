@@ -35,13 +35,20 @@ namespace supra
 	class Container
 	{
 	public:
-		Container(ContainerLocation location, size_t numel)
+#ifdef HAVE_CUDA
+		typedef cudaStream_t ContainerStreamType;
+#else
+		typedef int ContainerStreamType;
+#endif
+
+		Container(ContainerLocation location, ContainerStreamType associatedStream, size_t numel)
 		{
 #ifndef HAVE_CUDA
 			location = LocationHost;
 #endif
 			m_numel = numel;
 			m_location = location;
+			m_associatedStream = associatedStream;
 
 			m_buffer = nullptr;
 			switch (m_location)
@@ -74,14 +81,13 @@ namespace supra
 				throw std::runtime_error(s.str());
 			}
 		};
-		Container(ContainerLocation location, const std::vector<T> & data)
-			:Container(location, data.size())
+		Container(ContainerLocation location, ContainerStreamType associatedStream, const std::vector<T> & data)
+			:Container(location, associatedStream, data.size())
 		{
 #ifdef HAVE_CUDA
 			if(location == LocationGpu)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyHostToDevice, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
 			}
 			else if(location == LocationBoth)
 			{
@@ -95,14 +101,39 @@ namespace supra
 			std::copy(data.begin(), data.end(), this->get());
 #endif
 		};
-		Container(ContainerLocation location, const T* dataBegin, const T* dataEnd)
-			:Container(location, dataEnd - dataBegin)
+		Container(ContainerLocation location, ContainerStreamType associatedStream, const T* dataBegin, const T* dataEnd)
+			:Container(location, associatedStream, dataEnd - dataBegin)
 		{
 #ifdef HAVE_CUDA
 			cudaSafeCall(cudaMemcpy(this->get(), dataBegin, this->size() * sizeof(T), cudaMemcpyDefault));
 #else
 			std::copy(data.begin(), data.end(), this->get());
 #endif
+		};
+		Container(ContainerLocation location, const Container<T>& source)
+			: Container(location, source.getStream(), source.size())
+		{
+			if (source.m_location == LocationHost && location == LocationHost)
+			{
+				std::copy(source.get(), source.get() + source.size(), this->get());
+			}
+			else if (source.m_location == LocationHost && location == LocationGpu)
+			{
+				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyHostToDevice, source.getStream()));
+			}
+			else if (source.m_location == LocationGpu && location == LocationHost)
+			{
+				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDeviceToHost, source.getStream()));
+				cudaSafeCall(cudaStreamSynchronize(source.getStream()));
+			}
+			else if (source.m_location == LocationGpu && location == LocationGpu)
+			{
+				cudaSafeCall(cudaMemcpy(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault));
+			}
+			else
+			{
+				cudaSafeCall(cudaMemcpy(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault));
+			}
 		};
 		~Container()
 		{
@@ -133,69 +164,6 @@ namespace supra
 		const T* get() const { return m_buffer; };
 		T* get() { return m_buffer; };
 
-		std::shared_ptr<Container<T> > getCopy(ContainerLocation newLocation) const
-		{
-#ifdef HAVE_CUDA
-			auto ret = std::make_shared<Container<T> >(newLocation, this->size());
-			if(m_location == LocationHost && newLocation == LocationHost)
-			{
-				std::copy(this->get(), this->get() + this->size(), ret->get());
-			}
-			else if(m_location == LocationHost && newLocation == LocationGpu)
-			{
-				cudaSafeCall(cudaMemcpyAsync(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyHostToDevice, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
-			}
-			else if(m_location == LocationGpu && newLocation == LocationHost)
-			{
-				cudaSafeCall(cudaMemcpyAsync(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDeviceToHost, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
-			}
-			else if(m_location == LocationGpu && newLocation == LocationGpu)
-			{
-				cudaSafeCall(cudaMemcpy(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
-			}
-			else {
-				cudaSafeCall(cudaMemcpy(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
-			}
-			return ret;
-#else
-			return nullptr;
-#endif
-		}
-
-		std::unique_ptr<Container<T> > getCopyUnique(ContainerLocation newLocation) const
-		{
-#ifdef HAVE_CUDA
-			auto ret = std::unique_ptr<Container<T> >(new Container<T>(newLocation, this->size()));
-			if(m_location == LocationHost && newLocation == LocationHost)
-			{
-				std::copy(this->get(), this->get() + this->size(), ret->get());
-			}
-			else if(m_location == LocationHost && newLocation == LocationGpu)
-			{
-				cudaSafeCall(cudaMemcpyAsync(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyHostToDevice, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
-			}
-			else if(m_location == LocationGpu && newLocation == LocationHost)
-			{
-				cudaSafeCall(cudaMemcpyAsync(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDeviceToHost, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));				
-			}
-			else if(m_location == LocationGpu && newLocation == LocationGpu)
-			{
-				cudaSafeCall(cudaMemcpy(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
-			}
-			else 
-			{
-				cudaSafeCall(cudaMemcpy(ret->get(), this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
-			}
-			return ret;
-#else
-			return nullptr;
-#endif
-		}
-
 		T* getCopyHostRaw() const
 		{
 #ifdef HAVE_CUDA
@@ -207,8 +175,8 @@ namespace supra
 			}
 			else if(m_location == LocationGpu)
 			{
-				cudaSafeCall(cudaMemcpyAsync(ret, this->get(), this->size() * sizeof(T), cudaMemcpyDeviceToHost, cudaStreamPerThread));
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));				
+				cudaSafeCall(cudaMemcpyAsync(ret, this->get(), this->size() * sizeof(T), cudaMemcpyDeviceToHost, getStream()));
+				cudaSafeCall(cudaStreamSynchronize(getStream()));				
 			}
 			else 
 			{
@@ -235,10 +203,21 @@ namespace supra
 		bool isGPU() const { return m_location == ContainerLocation::LocationGpu; };
 		bool isBoth() const { return m_location == ContainerLocation::LocationBoth; };
 		ContainerLocation getLocation() const { return m_location; };
+		ContainerStreamType getStream() const
+		{
+			return m_associatedStream;
+		}
+
+		/*void associateStream(ContainerStreamType stream)
+		{
+			m_associatedStream = stream;
+		}*/
 	private:
 		// The number of elements this container can store
 		size_t m_numel;
 		ContainerLocation m_location;
+
+		ContainerStreamType m_associatedStream;
 
 		T* m_buffer;
 	};

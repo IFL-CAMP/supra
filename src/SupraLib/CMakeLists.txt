@@ -100,7 +100,8 @@ ENDIF(SUPRA_PROFILING)
 
 ############################################
 #lib base source files
-SET(SUPRA_Lib_SOURCE 
+SET(SUPRA_Lib_SOURCE
+	ContainerFactory.cpp
 	SupraManager.cpp
 	RecordObject.cpp
 	SyncRecordObject.cpp
@@ -122,6 +123,7 @@ SET(SUPRA_Lib_SOURCE
 SET(SUPRA_Lib_HEADERS
 	vec.h
 	Container.h
+	ContainerFactory.h
 	SupraManager.h
 	RecordObject.h
 	SyncRecordObject.h

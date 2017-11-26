@@ -42,13 +42,13 @@ namespace supra
 		size_t numElements = pTransducer->getNumElements();
 
 		// create and fill new buffers
-		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, numDepths));
+		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numDepths));
 
 		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(
-			new Container<ScanlineRxParameters3D>(LocationHost, m_numRxScanlines));
+			new Container<ScanlineRxParameters3D>(LocationHost, cudaStreamDefault, m_numRxScanlines));
 
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, numElements));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, numElements));
+		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numElements));
+		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numElements));
 
 		for (size_t zIdx = 0; zIdx < numDepths; zIdx++)
 		{
@@ -71,13 +71,12 @@ namespace supra
 			m_pRxElementYs->get()[x_elemIdx] = static_cast<LocationType>(centers->at(x_elemIdx).y);
 		}
 
-		m_pRxDepths = m_pRxDepths->getCopyUnique(LocationGpu);
-		m_pRxScanlines = m_pRxScanlines->getCopyUnique(LocationGpu);
-		m_pRxElementXs = m_pRxElementXs->getCopyUnique(LocationGpu);
-		m_pRxElementYs = m_pRxElementYs->getCopyUnique(LocationGpu);
+		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxDepths));
+		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, *m_pRxScanlines));
+		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
+		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
 
 		m_is3D = (pTransducer->getElementLayout().x > 1 && pTransducer->getElementLayout().y > 1);
-		logging::log_error("And the constructor created a 3D beamformer! ", m_is3D ? " YES!!! " : " no? O.o");
 	}
 
 	RxBeamformerCuda::RxBeamformerCuda(
@@ -100,13 +99,12 @@ namespace supra
 		m_rxNumDepths = rxNumDepths;
 
 		// create and fill new buffers
-		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, rxDepths));
+		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxDepths));
 
-		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(
-			new Container<ScanlineRxParameters3D>(LocationGpu, rxScanlines));
+		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, cudaStreamDefault, rxScanlines));
 
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, rxElementXs));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, rxElementYs));
+		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxElementXs));
+		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxElementYs));
 	}
 
 	RxBeamformerCuda::~RxBeamformerCuda()
@@ -128,7 +126,7 @@ namespace supra
 				factor = (m_lastSeenDt / dt);
 				factorTime = factor;
 			}
-			m_pRxScanlines = m_pRxScanlines->getCopyUnique(LocationHost);
+			m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
 			for (size_t i = 0; i < m_numRxScanlines; i++)
 			{
 				ScanlineRxParameters3D p = m_pRxScanlines->get()[i];
@@ -140,25 +138,25 @@ namespace supra
 				p.maxElementDistance = p.maxElementDistance*factor;
 				m_pRxScanlines->get()[i] = p;
 			}
-			m_pRxScanlines = m_pRxScanlines->getCopyUnique(LocationGpu);
+			m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, *m_pRxScanlines));
 
-			m_pRxDepths = m_pRxDepths->getCopyUnique(LocationHost);
+			m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxDepths));
 			for (size_t i = 0; i < m_rxNumDepths; i++)
 			{
 				m_pRxDepths->get()[i] = static_cast<LocationType>(m_pRxDepths->get()[i] * factor);
 			}
-			m_pRxDepths = m_pRxDepths->getCopyUnique(LocationGpu);
+			m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxDepths));
 
-			m_pRxElementXs = m_pRxElementXs->getCopyUnique(LocationHost);
-			m_pRxElementYs = m_pRxElementYs->getCopyUnique(LocationHost);
+			m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementXs));
+			m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementYs));
 			for (size_t i = 0; i < numTransducerElements; i++)
 			{
 				m_pRxElementXs->get()[i] = static_cast<LocationType>(m_pRxElementXs->get()[i] * factor);
 				m_pRxElementYs->get()[i] = static_cast<LocationType>(m_pRxElementYs->get()[i] * factor);
 			}
-			m_pRxElementXs = m_pRxElementXs->getCopyUnique(LocationGpu);
-			m_pRxElementYs = m_pRxElementYs->getCopyUnique(LocationGpu);
-
+			m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
+			m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
+			
 			m_lastSeenDt = dt;
 		}
 	}
@@ -546,6 +544,7 @@ namespace supra
 		LocationType dt,
 		LocationType F,
 		const WindowFunctionGpu windowFunction,
+		cudaStream_t stream,
 		ResultType* s)
 	{
 		dim3 blockSize(1, 256);
@@ -554,7 +553,7 @@ namespace supra
 			static_cast<unsigned int>((numZs + blockSize.y - 1) / blockSize.y));
 		if (testSignal)
 		{
-			rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, true> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+			rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, true> << <gridSize, blockSize, 0, stream>> > (
 				(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
 				(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
 				(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
@@ -566,14 +565,14 @@ namespace supra
 			{
 				if (interpolateBetweenTransmits)
 				{
-					rxBeamformingDTSPACE3DKernel<true, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+					rxBeamformingDTSPACE3DKernel<true, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
 						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
 						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
 						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
 						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
 				}
 				else {
-					rxBeamformingDTSPACE3DKernel<true, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+					rxBeamformingDTSPACE3DKernel<true, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
 						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
 						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
 						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
@@ -583,14 +582,14 @@ namespace supra
 			else {
 				if (interpolateBetweenTransmits)
 				{
-					rxBeamformingDTSPACE3DKernel<false, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+					rxBeamformingDTSPACE3DKernel<false, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
 						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
 						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
 						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
 						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
 				}
 				else {
-					rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+					rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
 						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
 						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
 						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
@@ -599,7 +598,6 @@ namespace supra
 			}
 		}
 		cudaSafeCall(cudaPeekAtLastError());
-		cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 	}
 
 	template <typename RFType, typename ResultType, typename LocationType>
@@ -620,6 +618,7 @@ namespace supra
 		LocationType dt,
 		LocationType F,
 		const WindowFunctionGpu windowFunction,
+		cudaStream_t stream,
 		ResultType* s)
 	{
 		dim3 blockSize(1, 256);
@@ -630,13 +629,13 @@ namespace supra
 		{
 			if (interpolateBetweenTransmits)
 			{
-				rxBeamformingDTSPACEKernel<true, true> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+				rxBeamformingDTSPACEKernel<true, true> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 			else {
-				rxBeamformingDTSPACEKernel<true, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+				rxBeamformingDTSPACEKernel<true, false> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
@@ -645,20 +644,19 @@ namespace supra
 		else {
 			if (interpolateBetweenTransmits)
 			{
-				rxBeamformingDTSPACEKernel<false, true> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+				rxBeamformingDTSPACEKernel<false, true> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 			else {
-				rxBeamformingDTSPACEKernel<false, false> << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+				rxBeamformingDTSPACEKernel<false, false> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 		}
 		cudaSafeCall(cudaPeekAtLastError());
-		cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 	}
 
 	template <>
@@ -670,25 +668,15 @@ namespace supra
 		bool interpolateBetweenTransmits,
 		bool testSignal) const
 	{
-		size_t numelOut = m_numRxScanlines*m_rxNumDepths;
-		shared_ptr<Container<int16_t> > pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, numelOut);
-
-		//copy the in-/output-data!
-		size_t numelIn = rawData->getNumReceivedChannels()*rawData->getNumSamples()*rawData->getNumScanlines();
-		const int16_t * gRawData;
-		int16_t * gRawDataAlloc = nullptr;
-		bool haveRawDataAlloc;
-		if (rawData->getData()->isGPU() || rawData->getData()->isBoth())
+		//Ensure the raw-data are on the gpu
+		auto gRawData = rawData->getData();
+		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
 		{
-			gRawData = rawData->getData()->get();
-			haveRawDataAlloc = false;
+			gRawData = make_shared<Container<int16_t> >(LocationGpu, *gRawData);
 		}
-		else {
-			cudaSafeCall(cudaMalloc((void**)&gRawDataAlloc, sizeof(int16_t)* numelIn));
-			cudaSafeCall(cudaMemcpyAsync(gRawDataAlloc, rawData->getData()->get(), sizeof(int16_t)*numelIn, cudaMemcpyHostToDevice, cudaStreamPerThread));
-			haveRawDataAlloc = true;
-			gRawData = gRawDataAlloc;
-		}
+
+		size_t numelOut = m_numRxScanlines*m_rxNumDepths;
+		shared_ptr<Container<int16_t> > pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
 
 		double dt = 1.0 / rawData->getSamplingFrequency();
 
@@ -708,7 +696,7 @@ namespace supra
 				rawData->getElementLayout(),
 				rawData->getNumReceivedChannels(),
 				rawData->getNumSamples(),
-				gRawData,
+				gRawData->get(),
 				rawData->getNumScanlines(), // numTxScanlines
 				m_numRxScanlines,			// numRxScanlines
 				m_pRxScanlines->get(),
@@ -719,6 +707,7 @@ namespace supra
 				static_cast<LocationType>(dt),
 				static_cast<LocationType>(fNumber),
 				*(m_windowFunction->getGpu()),
+				gRawData->getStream(),
 				pData->get()
 				);
 		}
@@ -729,7 +718,7 @@ namespace supra
 				rawData->getNumElements(),
 				rawData->getNumReceivedChannels(),
 				rawData->getNumSamples(),
-				gRawData,
+				gRawData->get(),
 				rawData->getNumScanlines(), // numTxScanlines
 				m_numRxScanlines,			// numRxScanlines
 				m_pRxScanlines->get(),
@@ -739,12 +728,9 @@ namespace supra
 				static_cast<LocationType>(dt),
 				static_cast<LocationType>(fNumber),
 				*(m_windowFunction->getGpu()),
+				gRawData->getStream(),
 				pData->get()
 				);
-		}
-		if (haveRawDataAlloc)
-		{
-			cudaSafeCall(cudaFree(gRawDataAlloc));
 		}
 
 		if (rawData->getImageProperties() != m_lastSeenImageProperties)
@@ -788,10 +774,10 @@ namespace supra
 			<< m_rxNumDepths << " "
 			<< m_speedOfSoundMMperS << std::endl;
 
-		auto rxScanlines = m_pRxScanlines->getCopyUnique(LocationHost);
-		auto rxDepths = m_pRxDepths->getCopyUnique(LocationHost);
-		auto rxElementXs = m_pRxElementXs->getCopyUnique(LocationHost);
-		auto rxElementYs = m_pRxElementYs->getCopyUnique(LocationHost);
+		auto rxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
+		auto rxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxDepths));
+		auto rxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementXs));
+		auto rxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementYs));
 
 		for (size_t idx = 0; idx < m_numRxScanlines; idx++)
 		{
