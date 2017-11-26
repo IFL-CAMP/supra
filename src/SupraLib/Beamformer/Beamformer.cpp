@@ -149,9 +149,19 @@ namespace supra
 			m_ready = false;
 		}
 		m_rxScanlineSubdivision = rxScanlineSubdivision;
-		m_numRxScanlines = {
-			m_numScanlines.x + (m_rxScanlineSubdivision.x - 1)*(m_numScanlines.x - 1),
-			m_numScanlines.y + (m_rxScanlineSubdivision.y - 1)*(m_numScanlines.y - 1) };
+
+		if (m_type == ScanType::Planewave)
+		{
+			m_numRxScanlines = {
+				m_numScanlines.x + (m_rxScanlineSubdivision.x - 1)*(m_numScanlines.x),
+				m_numScanlines.y + (m_rxScanlineSubdivision.y - 1)*(m_numScanlines.y) };
+		}
+		else
+		{
+			m_numRxScanlines = {
+				m_numScanlines.x + (m_rxScanlineSubdivision.x - 1)*(m_numScanlines.x - 1),
+				m_numScanlines.y + (m_rxScanlineSubdivision.y - 1)*(m_numScanlines.y - 1) };
+		}
 	}
 
 

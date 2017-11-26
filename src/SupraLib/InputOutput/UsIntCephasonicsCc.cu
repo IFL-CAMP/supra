@@ -1280,18 +1280,18 @@ namespace supra
 				// Get the Tx scanline parameters to program the Hardware with them
 				const std::vector<ScanlineTxParameters3D>* beamTxParams = bf->getTxParameters();
 
-				const cs::FrameDef* fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
+				std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
 											
 				// store framedef and add it to Cephasonics interface
-				m_pFrameMap[m_pFrameDefs.size()] = std::pair<size_t,size_t>(numSeq,angleSeq);
-				m_pFrameDefs.push_back(fdef);				
+				m_pFrameMap[fdef.first] = std::pair<size_t,size_t>(numSeq,angleSeq);
+				m_pFrameDefs.push_back(fdef.second);				
 			}
 		}
 	}
 
 	// a frame is defined as set of BeamEnsembles. Multiple frames can be put together into a sequence
 	// SUPRA Frames have a 1:1 correspondene to a beamformer, i.e. a Beamformer is generating necessary info for a frame
-	const cs::FrameDef* UsIntCephasonicsCc::createFrame(
+	std::pair<size_t, const cs::FrameDef*> UsIntCephasonicsCc::createFrame(
 		const std::vector<ScanlineTxParameters3D>* txBeamParams, 
 		const std::shared_ptr<USImageProperties> imageProps, 
 		const BeamEnsembleTxParameters& txEnsembleParams)
@@ -1308,7 +1308,8 @@ namespace supra
 		for(auto txParams: *txBeamParams)
 		{
 			// create the beam ensemble for this txBeam
-			beamEnsembles.push_back(createBeamEnsembleFromScanlineTxParameter(txEnsembleParams, numScanlines, txParams));
+			const BeamEnsembleDef* ensembleDef = createBeamEnsembleFromScanlineTxParameter(txEnsembleParams, numScanlines, txParams);
+			beamEnsembles.push_back(ensembleDef);
 		}
 
 
@@ -1331,6 +1332,7 @@ namespace supra
 				focalDepth, txFstop, rxFstop, rxWindow, angle, centerAngle,
 				beamEnsembles);
 		m_pSubframeDefs.push_back(sf);
+		size_t subframeID = sf->getID();
 
 		//chose power rail depending on selected voltage
 		// TODO extract voltage rail as parameter setting from config
@@ -1369,7 +1371,8 @@ namespace supra
 		//We cannot check the voltage right now, as the frameDef is not completely determined
 		applyVoltageSetting(fdef, txEnsembleParams.txVoltage, true);
 
-		return fdef;
+		
+		return std::pair<size_t, const cs::FrameDef*>(subframeID,fdef);
 	}
 
 	const BeamEnsembleDef* UsIntCephasonicsCc::createBeamEnsembleFromScanlineTxParameter(
@@ -1458,6 +1461,8 @@ namespace supra
 				txWaves,
 				txDelays);
 
+		//size_t txFiringID = txBeam->getID();
+
 		//NOTE: RX Delay and Weight are not used in CHCAP mode
 		uint16_t vector_entries = (numScanlines.x*numScanlines.y > pC.MAX_RX_BEAMS_SWMODE/2) ? 8 : 16;
 		vector<vector<double> > rxDelayVector(m_numMuxedChannels, vector<double>(vector_entries,0));
@@ -1467,6 +1472,8 @@ namespace supra
 				*m_cPlatformHandle,
 				rxDelayVector,
 				rxWeightVector);
+
+		//size_t rxBeamID = rxBeam->getID();
 
 		const FiringDef* firing = &FiringDef::createFiringDef(*m_cPlatformHandle, *txBeam,
 						vector<const BeamDef*>(1, rxBeam), txMap);
@@ -1478,6 +1485,8 @@ namespace supra
 				//override by option is handled by SetPRF command below
 				1,//has to be set to one for 2D-scans
 				*firing);
+		
+		//size_t beamEnsembleID = beamEnsemble->getID();
 		return beamEnsemble;
 	}
 

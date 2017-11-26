@@ -54,14 +54,9 @@ namespace supra
 			//each with 12 bit in not unscrambled mode
 			size_t numBeams = data->numBeams;
 			size_t beamID = data->seqNo;
-			size_t frameID = data->sframeID; // unique ID for FrameDef within Sequence
+			size_t frameID = data->sframeID; // unique ID for FrameDef within Sequence 21, 10, 32, 54, 65, 43, 
 
-
-			//build filename
-	//		std::stringstream filename;
-	//		filename << "/mnt/data/ascii_test/scandata_" << setw(4) << setfill('0') << data->seqNo << "_"<< data->platformIdx << ".txt";
-	//		writeAscii(filename.str(), reinterpret_cast<int16*>(data->data), numChannels*numSamples*numBeams);
-
+			// forward data to processor
 			m_pInputNode->putData(data->platformIdx, frameID, numChannels, numSamples, numBeams, data->data);
 
 			data->markRelease();
