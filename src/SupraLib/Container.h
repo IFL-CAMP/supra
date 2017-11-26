@@ -88,6 +88,7 @@ namespace supra
 			if(location == LocationGpu)
 			{
 				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
+				cudaSafeCall(cudaStreamSynchronize(associatedStream));
 			}
 			else if(location == LocationBoth)
 			{
@@ -120,6 +121,7 @@ namespace supra
 			else if (source.m_location == LocationHost && location == LocationGpu)
 			{
 				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyHostToDevice, source.getStream()));
+				cudaSafeCall(cudaStreamSynchronize(source.getStream()));
 			}
 			else if (source.m_location == LocationGpu && location == LocationHost)
 			{
