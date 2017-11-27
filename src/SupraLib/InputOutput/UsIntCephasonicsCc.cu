@@ -153,6 +153,10 @@ namespace supra
 		, m_systemRxClock(40)
 		, m_mockDataWritten(false)
 		, m_numBeamSequences(0) // TODO replace hardcoded sequence number (move to config/gui)
+		, m_numReceivedFrames(0)
+		, m_numDroppedFrames(0)
+		, m_lastFrameNumber(1)
+		, m_sequenceNumFrames(0)
 	{
 		m_callFrequency.setName("CepUS");
 
@@ -1283,7 +1287,12 @@ namespace supra
 											
 				// store framedef and add it to Cephasonics interface
 				m_pFrameMap[fdef.first] = std::pair<size_t,size_t>(numSeq,angleSeq);
-				m_pFrameDefs.push_back(fdef.second);				
+				m_pFrameMapLin[fdef.first] = m_sequenceNumFrames;
+				m_pFrameDefs.push_back(fdef.second);
+
+				// add entry to receive map, which will be used to identify complete sequences and/or dropped frames
+				m_sequenceFramesReceived.push_back(false);	
+				m_sequenceNumFrames++;	
 			}
 		}
 	}
@@ -1516,9 +1525,42 @@ namespace supra
 	}
 
 
-	void UsIntCephasonicsCc::putData(uint16_t platformIndex, size_t frameIndex, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* dataScrambled)
+	void UsIntCephasonicsCc::putData(uint16_t platformIndex, size_t frameIndex, size_t frameNumber, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* dataScrambled)
 	{
 		double timestamp = getCurrentTime();
+
+		// if frameNumber changes, check whether all subframe data (data from each beamformer) has arrived, yet
+		if (m_lastFrameNumber != frameNumber)
+		{
+			bool allSequenceFramesReceived = true;
+			for (auto sequFrameReceived : m_sequenceFramesReceived)
+			{
+				if (!sequFrameReceived)
+				{
+					allSequenceFramesReceived = false;
+					m_numDroppedFrames++;
+				}
+				else
+				{
+					m_numReceivedFrames++;
+				}
+			}
+
+			m_numDroppedFrames++;
+			m_lastFrameNumber = frameNumber;
+			m_sequenceFramesReceived.assign(m_sequenceNumFrames, false);
+
+
+			if (!allSequenceFramesReceived)
+			{
+				log_error("UsIntCephasonicsCc: frame dropped. Total number of dropped frames: " + std::to_string(m_numDroppedFrames));
+			}
+		}
+		
+		// mark sequence frame triggered
+		m_sequenceFramesReceived[m_pFrameMapLin[frameIndex]] = true;	
+
+		//return;
 
 		static vector<bool> platformsReceived;
 		static size_t sNumBeams = 0;
@@ -1659,6 +1701,9 @@ namespace supra
 				addData<0>(rawData);
 			}
 		}
+
+		// double timeDiff = getCurrentTime() - timestamp;
+		// printf("time: %lf\n", timeDiff);
 	}
 
 	bool UsIntCephasonicsCc::ready()

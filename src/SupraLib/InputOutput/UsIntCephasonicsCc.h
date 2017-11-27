@@ -122,6 +122,12 @@ namespace supra
 
 		bool m_ready;
 
+		size_t m_numReceivedFrames;
+		size_t m_numDroppedFrames;
+		size_t m_lastFrameNumber; // last unique frame number
+		std::vector<bool> m_sequenceFramesReceived; // map of received frames within the overall scan protocol (per sequence)
+		size_t m_sequenceNumFrames; // number of defined frames within scan (total number of beamformers)
+
 		//cephasonics specific
 		cs::PlatformHandle* m_cPlatformHandle;
 		std::unique_ptr<cs::USEngine> m_cUSEngine;
@@ -139,6 +145,7 @@ namespace supra
 
 		// many Frame/SubFrames possible
 		std::map<size_t, std::pair<size_t,size_t>> m_pFrameMap; // mapping of linearized frameIDs in cusdk to seq and angle number
+		std::map<size_t, size_t> m_pFrameMapLin; // mapping of linearized frameIDs in cusdk to linearized frameUIDs
 		std::vector<const cs::FrameDef*> m_pFrameDefs;
 		std::vector<const cs::SubFrameDef*> m_pSubframeDefs;
 		std::vector<BeamEnsembleTxParameters> m_beamEnsembleTxParameters; // CS specific transmit parameters
@@ -197,7 +204,11 @@ namespace supra
 		friend UsIntCephasonicsCcProc;
 
 		void layoutChanged(cs::ImageLayout& layout);
-		void putData(uint16_t platformIndex, size_t frameIndex, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* data);
+
+		/// This method represent the data input handle from respectice Cephasonics-specific processor.
+		/// Receives informations about the platform (for multiplatform setups), unique frame IDs, incrementing frame numbers
+		/// number of received channels, samples and beams, as well as the raw data as scrambled 12-bit values
+		void putData(uint16_t platformIndex, size_t frameIndex, size_t frameNumber, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* data);
 	};
 }
 

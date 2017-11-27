@@ -53,15 +53,19 @@ namespace supra
 			numChannels = 64;
 			//each with 12 bit in not unscrambled mode
 			size_t numBeams = data->numBeams;
-			size_t beamID = data->seqNo;
-			size_t frameID = data->sframeID; // unique ID for FrameDef within Sequence 21, 10, 32, 54, 65, 43, 
+
+			// unique ID for SubFrameDef within Sequence
+			size_t frameID = data->sframeID; 
+
+			// frame count to tbe used for drop frames
+			size_t frameNo = data->seqNo;
 
 			// forward data to processor
-			m_pInputNode->putData(data->platformIdx, frameID, numChannels, numSamples, numBeams, data->data);
+			m_pInputNode->putData(data->platformIdx, frameID, frameNo, numChannels, numSamples, numBeams, data->data);
 
 			data->markRelease();
 
-			//printf("seq: %d  pltform: %d\n", data->seqNo, data->platformIdx);
+			//printf("seq: %d sframe: %d pltform: %d\n", frameNo, frameID, static_cast<int>(data->platformIdx));
 		}
 		return CS_SUCCESS;
 	}
