@@ -79,7 +79,7 @@ namespace supra
 			}
 			else
 			{
-				auto copy = make_shared<Container<int16_t> >(LocationHost, *thisImageData);
+				auto copy = make_shared<Container<int16_t> >(LocationGpu, *thisImageData);
 				copiedImages.push_back(copy);
 				imagePointersContainer.get()[imageIndex] = copy->get();
 			}
