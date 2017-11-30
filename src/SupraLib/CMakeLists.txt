@@ -119,6 +119,7 @@ SET(SUPRA_Lib_SOURCE
 	utilities/SingleThreadTimer.cpp
 	utilities/tinyxml2/tinyxml2.cpp
 	FrequencyLimiterNode.cpp
+	StreamSyncNode.cpp
 	AutoQuitNode.cpp)
 SET(SUPRA_Lib_HEADERS
 	vec.h
@@ -147,6 +148,7 @@ SET(SUPRA_Lib_HEADERS
 	utilities/FirFilterFactory.h
 	utilities/tinyxml2/tinyxml2.h
 	FrequencyLimiterNode.h
+	StreamSyncNode.h
 	AutoQuitNode.h)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
