@@ -1,0 +1,95 @@
+image: nvidia/cuda:9.0-devel
+
+stages:
+  - build
+  
+################# Building
+
+#build_windows:
+#  stage: build
+#  tags:
+#    - windows
+#  script:
+#    - IF NOT EXIST "build_msvs" mkdir "build_msvs"
+#    - cd build_msvs
+#    - cmake ..
+#    - cmake --build .
+#  cache:
+#    key: build_cache
+#    paths:
+#      - build_msvs/
+#  artifacts:
+#    paths:
+#    - build_msvs/
+    
+#build_linux_clang:
+#  stage: build
+#  tags:
+#    - linux
+#    - clang
+#  script:
+#    - apt-get update
+#    - apt-get install -y build-essential cmake clang
+#    - mkdir -p build_clang
+#    - cd build_clang
+#    - cmake .. -DCMAKE_CXX_COMPILER=clang++
+#    - make
+#  cache:
+#    key: build_cache_clang
+#    paths:
+#      - build_clang/
+#  artifacts:
+#    paths:
+#    - build_clang/
+
+build_linux_gcc:
+  stage: build
+  tags:
+    - linux
+    - g++
+  script:
+    - mkdir -p build_gcc
+    - cd build_gcc
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF
+    - make
+  cache:
+    key: build_cache_gcc
+    paths:
+      - build_gcc/
+  artifacts:
+    paths:
+    - build_gcc/
+     
+################# Testing
+     
+#test_signum_gcc:
+#    stage : test
+#    dependencies:
+#      - build_linux_gcc
+#    tags:
+#      - linux
+#      - gcc
+#    script:
+#      - cd build_gcc
+#      - make test
+     
+#test_signum_clang:
+#    stage : test
+#    dependencies:
+#      - build_linux_clang
+#    tags:
+#      - linux
+#      - clang
+#    script:
+#      - cd build_clang
+#      - make test
+      
+#test_signum_msvs:
+#    stage : test
+#    dependencies:
+#      - build_windows
+#    tags:
+#      - windows
+#    script:
+#      - cd build_msvs
+#      - ctest all
