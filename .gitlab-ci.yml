@@ -9,6 +9,8 @@ build_linux_gcc:
     - linux
     - g++
   script:
+    - apt-get update
+    - apt-get install -y build-essential cmake
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF
