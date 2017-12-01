@@ -1,4 +1,5 @@
-image: nvidia/cuda:9.0-devel
+#image: nvidia/cuda:9.0-devel
+image: ubuntu-cpp
 
 stages:
   - build
