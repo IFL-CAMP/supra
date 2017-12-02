@@ -120,11 +120,13 @@ namespace supra
 		~Container()
 		{
 			auto ret = cudaStreamQuery(m_associatedStream);
-			if (ret != cudaSuccess && ret != cudaErrorNotReady)
+			if (ret != cudaSuccess && ret != cudaErrorNotReady && ret != cudaErrorCudartUnloading)
 			{
 				cudaSafeCall(ret);
 			}
-			else {
+			// If the driver is currently unloading, we cannot free the memory in any way. Exit will clean up.
+			else if(ret != cudaErrorCudartUnloading)
+			{
 				if (ret == cudaSuccess)
 				{
 					ContainerFactoryContainerInterface::returnMemory(reinterpret_cast<uint8_t*>(m_buffer), m_numel * sizeof(T), m_location);

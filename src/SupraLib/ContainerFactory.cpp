@@ -63,7 +63,7 @@ namespace supra
 			if (location == LocationGpu || location == LocationBoth)
 			{
 				cudaSafeCall(cudaMemGetInfo(&memoryFree, &memoryTotal));
-				memoryFree = static_cast<size_t>(std::max(static_cast<double>(memoryTotal) *0.01, 0.0));
+				memoryFree = static_cast<size_t>(std::max(static_cast<double>(memoryFree) - (static_cast<double>(memoryTotal) *0.02), 0.0));
 			}
 			else
 			{
