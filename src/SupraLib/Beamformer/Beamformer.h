@@ -60,27 +60,58 @@ namespace supra
 
 		Beamformer(const std::shared_ptr<Beamformer> bf);
 
+
 		void setTransducer(const USTransducer* transducer);
 
 		void setScanType(const std::string scanType);
-		void setSpeedOfSound(const double speedOfSound);		// in meters per second
+
+		/// Set speed of sound as assumed for beamforming [m/s]
+		void setSpeedOfSound(const double speedOfSound);
+
+		/// Set penetration depth [mm]
 		void setDepth(const double depth);
+
+		/// Set number of transmit scanlines in x/y 
 		void setNumScanlines(const vec2s numScanlines);
+
+		/// Set subdivisiion from transmit to receive scanlines x/y 
 		void setRxScanlineSubdivision(const vec2s scanlineSubdivision);
-		void setNumRxScanlines(const vec2s numRxScanlines);
-		void setMaxActiveElements(const vec2s maxActiveElements);
-		void setMaxTxElements(const vec2s maxTxElements);
+
+		/// Set window type for transmit aperture (apodization)
+		// Can be Hann, Hamming, Rectangular Gauss
 		void setTxWindowType(const std::string windowType);
+
+		/// Set associated window parameters for selected window type
 		void setWindowParameter(const WindowFunction::ElementType windowParameter);
-		void setFov(const vec2 fov);
-		void setMaxApertureSize (const vec2s aptertureSize);
-		void setTxMaxApertureSize (const vec2s txApertureSize);
-		void setTxFocusActive(const bool txFocusActive);
-		void setTxFocusDepth(const double txFocusDepth);
-		void setTxFocusWidth(const double txFocusWidth);
-        void setTxCorrectMatchingLayers(const bool txCorrectMatchingLayers);
+
+		/// Set field of view for scanline opening [degrees x/y] 
+		void setFov(const vec2 fov); 
+
+		// set center steering angle for scanline opening [degrees x/y]
 		void setTxSteeringAngle(const vec2 txSteeringAngle);
+
+		/// Specify the maximum aperture to be used for beamforming [channels x/y] 
+		void setMaxApertureSize (const vec2s aptertureSize);
+
+		/// Specify the maximum transmit aperture to be used for beamforming [channels x/y] 
+		void setTxMaxApertureSize (const vec2s txApertureSize);
+
+		/// Activate transmit focusing
+		void setTxFocusActive(const bool txFocusActive);
+
+		/// Set transmit focus depth [mm] 
+		void setTxFocusDepth(const double txFocusDepth);
+
+		/// Set transmit focus width [mm]
+		void setTxFocusWidth(const double txFocusWidth);
+
+		/// Activate correction for speed of sound in matching layers
+        void setTxCorrectMatchingLayers(const bool txCorrectMatchingLayers);
+
+		/// Set receive focusing depth [mm]
 		void setRxFocusDepth(const double rxFocusDepth);
+
+		/// Set number or discrete receive focus steps to be calculated
 		void setNumDepths(const size_t numDepths);
 
 
