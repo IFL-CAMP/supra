@@ -40,14 +40,14 @@ namespace supra
 		, m_txMaxApertureSize{ 0, 0 }
 		, m_txWindow(WindowRectangular)
 		, m_depth(0.0)
-		, m_fov{ 0.0, 0.0 }
+		, m_txSteeringAngle{0,0}
+		, m_txSectorAngle{ 0.0, 0.0 }
 		, m_txFocusActive(false)
 		, m_txFocusDepth(0.0)
 		, m_txFocusWidth(0.0)
 		, m_rxFocusDepth(0.0)
 		, m_speedOfSound(1540.0)
 		, m_speedOfSoundMMperS(m_speedOfSound * 1000.0)
-		, m_txSteeringAngle{0,0}
 		, m_numSamplesRecon(0)
 		, m_ready(false)
 	{
@@ -68,14 +68,14 @@ namespace supra
 		, m_txWindow(bf->m_txWindow)
 		, m_txWindowParameter(bf->m_txWindowParameter)
 		, m_depth(bf->m_depth)
-		, m_fov(bf->m_fov)
+		, m_txSteeringAngle(bf->m_txSteeringAngle)
+		, m_txSectorAngle(bf->m_txSectorAngle)
 		, m_txFocusActive(bf->m_txFocusActive)
 		, m_txFocusDepth(bf->m_txFocusDepth)
 		, m_txFocusWidth(bf->m_txFocusWidth)
 		, m_rxFocusDepth(bf->m_rxFocusDepth)
 		, m_speedOfSound(bf->m_speedOfSound)
 		, m_speedOfSoundMMperS(bf->m_speedOfSoundMMperS)
-		, m_txSteeringAngle(bf->m_txSteeringAngle)
 		, m_numSamplesRecon(bf->m_numSamplesRecon)
 		, m_ready(false)	
 	{
@@ -164,16 +164,6 @@ namespace supra
 		}
 	}
 
-
-	void Beamformer::setFov(const vec2 fov)
-	{
-		auto fovRad = fov / 180.0 * M_PI;
-		if (fovRad != m_fov)
-		{
-			m_ready = false;
-		}
-		m_fov = fovRad;
-	}
 
 	void Beamformer::setMaxApertureSize (const vec2s apertureSize)
 	{
@@ -270,11 +260,22 @@ namespace supra
 
 	void Beamformer::setTxSteeringAngle(const vec2 txSteeringAngle)
 	{
-		if (txSteeringAngle != m_txSteeringAngle)
+		auto steerRad = txSteeringAngle * M_PI / 180.0;	
+		if (steerRad != m_txSteeringAngle)
 		{
 			m_ready = false;
 		}
-		m_txSteeringAngle = txSteeringAngle;
+		m_txSteeringAngle = steerRad;
+	}
+
+	void Beamformer::setTxSectorAngle(const vec2 sector)
+	{
+		auto sectorRad = sector * M_PI / 180.0;
+		if (sectorRad != m_txSectorAngle)
+		{
+			m_ready = false;
+		}
+		m_txSectorAngle = sectorRad;
 	}
 
 	void Beamformer::setRxFocusDepth(const double rxFocusDepth)
@@ -335,11 +336,6 @@ namespace supra
 		return m_numRxScanlines;
 	}
 
-	vec2 Beamformer::getFov() const
-	{
-		return m_fov / M_PI * 180.0;
-	}
-
 	vec2s Beamformer::getApertureSize () const
 	{
 		return m_maxApertureSize;
@@ -372,7 +368,12 @@ namespace supra
 
 	vec2 Beamformer::getTxSteeringAngle() const
 	{
-		return m_txSteeringAngle;
+		return m_txSteeringAngle / M_PI * 180.0;
+	}
+
+	vec2 Beamformer::getTxSectorAngle() const
+	{
+		return m_txSectorAngle / M_PI * 180.0;
 	}
 
 	double Beamformer::getRxFocusDepth() const
@@ -416,9 +417,8 @@ namespace supra
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 
-
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
-
+				// use steering angle only, as sector angle opening is not applicable in linear scans
+				double angleRad = m_txSteeringAngle.x;
 				
 				//evenly space the scanlines between the first and last element
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
@@ -443,7 +443,9 @@ namespace supra
 				assert(m_pTransducer->getNumElements() == m_maxApertureSize.x);
 
 				size_t numScanlines = m_numScanlines.x;
-				double fov = m_fov.x;
+
+				// use sector angles and steering angles to derive scanlines
+				auto sectorAngle = m_txSectorAngle.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 
@@ -466,7 +468,7 @@ namespace supra
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 				{
 					// the angle of the scanline
-					double scanlineAngle = -fov / 2 + scanlineIdx / (numScanlines - 1) * fov;
+					double scanlineAngle = -sectorAngle / 2 + scanlineIdx / (numScanlines - 1) * sectorAngle;
 					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2{ scanlineStartX, 0 }, vec2{ scanlineAngle, 0 });
 				}
 			}
@@ -502,7 +504,7 @@ namespace supra
 							elementCenterpoints->at(activeAperture.end.y   *elementLayout.x).y) / 2;
 
 						// the angle of the scanline
-						vec2 scanlineAngle = (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_fov;
+						vec2 scanlineAngle = (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_txSectorAngle;
 						m_txParameters[scanlinesDone] = getTxScanline3D(activeAperture, txAperture, scanlineStart, scanlineAngle);
 						scanlinesDone++;
 					}
@@ -521,7 +523,7 @@ namespace supra
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
+				double angleRad = m_txSteeringAngle.x;
 				
 				// the position of the scanline on the x axis is by default at center for planwave imaging
 				double scanlinePosition = firstElement.x +
@@ -734,7 +736,8 @@ namespace supra
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
+				
+				double angleRad = m_txSteeringAngle.x;
 				
 				//evenly space the receive scanlines between the first and last element
 				for (size_t rxScanlineIdx = 0; rxScanlineIdx < numScanlines; rxScanlineIdx++)

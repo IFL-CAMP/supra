@@ -558,7 +558,7 @@ namespace supra
 				vec2s numScanlines = bf->getNumScanlines();
 				size_t numDepths = bf->getNumDepths();
 				vec2s rxScanlines = bf->getNumRxScanlines();
-				vec2 fov = bf->getFov();
+				vec2 sectorAngle = bf->getTxSectorAngle();
 				vec2s apertureSize = bf->getApertureSize();
 				vec2s txApertureSize = bf->getTxApertureSize();
 
@@ -598,8 +598,8 @@ namespace supra
 				newProps->setSpecificParameter("UsIntCepCc.numScanlines.y", numScanlines.y);
 				newProps->setSpecificParameter("UsIntCepCc.rxScanlines.x", rxScanlines.x);
 				newProps->setSpecificParameter("UsIntCepCc.rxScanlines.y", rxScanlines.y);
-				newProps->setSpecificParameter("UsIntCepCc.fov.x", fov.x);
-				newProps->setSpecificParameter("UsIntCepCc.fov.y", fov.y);
+				newProps->setSpecificParameter("UsIntCepCc.txSectorAngle.x", sectorAngle.x);
+				newProps->setSpecificParameter("UsIntCepCc.txSectorAngle.y", sectorAngle.y);
 				newProps->setSpecificParameter("UsIntCepCc.apertureSize.x", apertureSize.x);
 				newProps->setSpecificParameter("UsIntCepCc.apertureSize.y", apertureSize.y);
 				newProps->setSpecificParameter("UsIntCepCc.txApertureSize.x", txApertureSize.x);
@@ -660,7 +660,7 @@ namespace supra
 	
 		m_cUSEngine = unique_ptr<USEngine>(new USEngine(*m_cPlatformHandle));
 		m_cUSEngine->stop();
-		m_cUSEngine->setBlocking(true);
+		m_cUSEngine->setBlocking(false);
 
 		//Step 2 ----------------- "Create Scan Definition"
 		setupScan();
@@ -825,10 +825,10 @@ namespace supra
 				rxScanlinesSubdivision.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionY");
 				bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
 
-				vec2 fov;
-				fov.x = m_configurationDictionary.get<double>(seqIdApp+"fovX");
-				fov.y = m_configurationDictionary.get<double>(seqIdApp+"fovY");
-				bf->setFov(fov);
+				vec2 sectorAngle;
+				sectorAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleX");
+				sectorAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleY");
+				bf->setTxSectorAngle(sectorAngle);
 
 				vec2s apertureSize;
 				apertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeX");
@@ -980,12 +980,12 @@ namespace supra
 						bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
 					}
 
-					if(configKey == seqIdApp+"fovX" || configKey == seqIdApp+"fovY")
+					if(configKey == seqIdApp+"txSectorAngleX" || configKey == seqIdApp+"txSectorAngleY")
 					{
-						vec2 fov;
-						fov.x = m_configurationDictionary.get<double>(seqIdApp+"fovX");
-						fov.y = m_configurationDictionary.get<double>(seqIdApp+"fovY");
-						bf->setFov( fov );
+						vec2 sectorAngle;
+						sectorAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleX");
+						sectorAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleY");
+						bf->setTxSectorAngle( sectorAngle );
 					}
 					if(configKey == seqIdApp+"apertureSizeX" || configKey == seqIdApp+"apertureSizeY")
 					{
