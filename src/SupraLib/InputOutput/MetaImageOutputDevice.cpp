@@ -365,7 +365,7 @@ namespace supra
 					pData = imageData->getData();
 				}
 				else {
-					pDataCopy = imageData->getData()->getCopy(ContainerLocation::LocationHost);
+					pDataCopy = make_shared<Container<ElementType> >(LocationHost, *(imageData->getData()));
 					pData = pDataCopy;
 				}
 
@@ -385,14 +385,14 @@ namespace supra
 			size_t numSamples = rawData->getNumSamples();
 			size_t numScanlines = rawData->getNumScanlines();
 
-			shared_ptr<Container<int16_t> > pDataCopy;
-			shared_ptr<const Container<int16_t> > pData;
+			shared_ptr<Container<ElementType> > pDataCopy;
+			shared_ptr<const Container<ElementType> > pData;
 			if (rawData->getData()->isHost())
 			{
 				pData = rawData->getData();
 			}
 			else {
-				pDataCopy = rawData->getData()->getCopy(ContainerLocation::LocationHost);
+				pDataCopy = make_shared<Container<int16_t> >(LocationHost, *(rawData->getData()));
 				pData = pDataCopy;
 			}
 			double resolution = rawData->getImageProperties()->getSampleDistance();

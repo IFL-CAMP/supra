@@ -55,6 +55,7 @@
 #include "utilities/utility.h"
 #include "utilities/CallFrequency.h"
 #include "utilities/Logging.h"
+#include "ContainerFactory.h"
 
 namespace supra
 {
@@ -832,7 +833,7 @@ namespace supra
 
 			if (m_layout == "linear")
 			{
-				shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, numSamples * numVectors);
+				shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), numSamples * numVectors);
 				std::memset(pData->get(), 0, sizeof(uint8_t)*numSamples*numVectors);
 				for (size_t vect = 0; vect < numVectors; vect++)
 				{
@@ -863,7 +864,7 @@ namespace supra
 					numChans = 32;
 				}
 				size_t numRows = numVectors / numChans;
-				shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, numChans * numRows);
+				shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), numChans * numRows);
 				std::memset(pData->get(), 0, sizeof(uint8_t)*numChans*numRows);
 				for (size_t row = 0; row < numRows; row++)
 				{

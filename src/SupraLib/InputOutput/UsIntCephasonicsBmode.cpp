@@ -31,6 +31,7 @@
 #include "utilities/utility.h"
 #include "utilities/CallFrequency.h"
 #include "utilities/Logging.h"
+#include "ContainerFactory.h"
 
 using namespace std;
 using namespace cs;
@@ -191,7 +192,7 @@ namespace supra
 			size_t numVectors = frameBuffer->getNx();
 			size_t numSamples = frameBuffer->getNy();
 
-			shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, numVectors*numSamples);
+			shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), numVectors*numSamples);
 			std::memcpy(pData->get(), frameBuffer->getBuf(), numVectors*numSamples);
 
 			pImage = make_shared<USImage<uint8_t> >(

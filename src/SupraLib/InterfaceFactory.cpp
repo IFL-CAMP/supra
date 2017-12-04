@@ -29,6 +29,7 @@
 #include "Beamformer/LogCompressorNode.h"
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
+#include "StreamSyncNode.h"
 #include "StreamSynchronizer.h"
 #include "FrequencyLimiterNode.h"
 #include "AutoQuitNode.h"
@@ -147,6 +148,10 @@ namespace supra
 		if (nodeType == "AutoQuitNode")
 		{
 			retVal = make_shared<AutoQuitNode>(*pG, nodeID);
+		}
+		if (nodeType == "StreamSyncNode")
+		{
+			retVal = make_shared<StreamSyncNode>(*pG, nodeID);
 		}
 #ifdef HAVE_BEAMFORMER
 		if (nodeType == "BeamformingNode")

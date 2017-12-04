@@ -15,12 +15,14 @@
 
 #include "UltrasoundInterfaceUltrasonix.h"
 
-#include <string>
-#include <iostream>
-#include <vector>
 #include <Utilities/utility.h>
 #include <utilities/Logging.h>
 #include <utilities/CallFrequency.h>
+#include <ContainerFactory.h>
+
+#include <string>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 using namespace supra::logging;
@@ -29,8 +31,6 @@ using namespace supra::logging;
 
 namespace supra
 {
-
-
 	UltrasoundInterfaceUltrasonix* g_pUSLib = 0;
 
 	UltrasoundInterfaceUltrasonix::UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID)
@@ -259,7 +259,7 @@ namespace supra
 
 				// copy the data into a buffer managed by us (i.e. a shared pointer)
 				// and create the image
-				auto spData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, m_bmodeNumSamples*m_bmodeNumVectors);
+				auto spData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_bmodeNumSamples*m_bmodeNumVectors);
 				memcpyTransposed(spData->get(), (uint8_t*)(packet->pData), m_bmodeNumVectors, m_bmodeNumSamples);
 				shared_ptr<USImage<uint8_t> > pImage = make_shared < USImage<uint8_t> >(
 					vec2s{ m_bmodeNumVectors, m_bmodeNumSamples }, spData, m_pImageProperties, packet->dTimestamp, packet->dTimestamp + m_hostToUSOffsetInSec);
@@ -279,7 +279,7 @@ namespace supra
 
 				// copy the data into a buffer managed by us (i.e. a shared pointer)
 				// and create the image
-				auto spData = make_shared<Container<int16_t> >(ContainerLocation::LocationHost, m_rfNumSamples*m_rfNumVectors);
+				auto spData = make_shared<Container<int16_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_rfNumSamples*m_rfNumVectors);
 				memcpyTransposed(spData->get(), (int16_t*)(packet->pData), m_rfNumVectors, m_rfNumSamples);
 				shared_ptr<USImage<int16_t> > pImage = make_shared < USImage<int16_t> >(
 					vec2s{ m_rfNumVectors, m_rfNumSamples }, spData, m_pImageProperties, packet->dTimestamp, packet->dTimestamp + m_hostToUSOffsetInSec);

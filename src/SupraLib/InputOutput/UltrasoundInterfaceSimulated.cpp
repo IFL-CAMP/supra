@@ -12,11 +12,12 @@
 //
 // ================================================================================================
 
-#include <memory>
-
 #include "USImage.h"
 #include "UltrasoundInterfaceSimulated.h"
 #include "utilities/utility.h"
+#include "ContainerFactory.h"
+
+#include <memory>
 
 using namespace std;
 
@@ -79,7 +80,7 @@ namespace supra
 
 				int modValue = rand() % std::min((int)(255 * m_gain), 255);
 
-				auto pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, m_bmodeNumVectors*m_bmodeNumSamples);
+				auto pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_bmodeNumVectors*m_bmodeNumSamples);
 				for (size_t k = 0; k < m_bmodeNumSamples; ++k)
 				{
 					uint8_t* dummyData = (pData->get()) + (k*m_bmodeNumVectors);
