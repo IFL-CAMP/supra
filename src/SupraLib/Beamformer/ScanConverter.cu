@@ -410,9 +410,9 @@ namespace supra
 		shared_ptr<const Container<InputType> > pScanlineData = inImage->getData();
 		if (pScanlineData->isHost())
 		{
-			pScanlineData = pScanlineData->getCopy(LocationGpu);
+			pScanlineData = make_shared<Container<InputType> >(LocationGpu, *pScanlineData);
 		}
-		auto pConv = make_shared<Container<OutputType> >(LocationGpu, m_imageSize.x*m_imageSize.y*m_imageSize.z);
+		auto pConv = make_shared<Container<OutputType> >(LocationGpu, pScanlineData->getStream(), m_imageSize.x*m_imageSize.y*m_imageSize.z);
 
 		if (m_is2D)
 		{
@@ -420,7 +420,7 @@ namespace supra
 			dim3 gridSize(
 				static_cast<unsigned int>((m_imageSize.x + blockSize.x - 1) / blockSize.x),
 				static_cast<unsigned int>((m_imageSize.y + blockSize.y - 1) / blockSize.y));
-			scanConvert2D << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+			scanConvert2D << <gridSize, blockSize, 0, pScanlineData->getStream()>> > (
 				numScanlines,
 				numSamples,
 				(uint32_t)m_imageSize.x,
@@ -432,7 +432,6 @@ namespace supra
 				pScanlineData->get(),
 				pConv->get());
 			cudaSafeCall(cudaPeekAtLastError());
-			cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 		}
 		else
 		{
@@ -442,7 +441,7 @@ namespace supra
 				static_cast<unsigned int>((m_imageSize.x + blockSize.x - 1) / blockSize.x),
 				static_cast<unsigned int>((m_imageSize.y + blockSize.y - 1) / blockSize.y),
 				static_cast<unsigned int>((m_imageSize.z + blockSize.z - 1) / blockSize.z));
-			scanConvert3D << <gridSize, blockSize, 0, cudaStreamPerThread>> > (
+			scanConvert3D << <gridSize, blockSize, 0, pScanlineData->getStream()>> > (
 				(uint32_t)scanlineLayout.x,
 				(uint32_t)scanlineLayout.y,
 				numSamples,
@@ -457,7 +456,6 @@ namespace supra
 				pScanlineData->get(),
 				pConv->get());
 			cudaSafeCall(cudaPeekAtLastError());
-			cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 		}
 		return pConv;
 	}
@@ -608,24 +606,23 @@ namespace supra
 			m_weightX = make_shared<Container<WeightType> >(ContainerLocation::LocationHost, numelBuffers);
 			m_weightY = make_shared<Container<WeightType> >(ContainerLocation::LocationHost, numelBuffers);
 			m_weightZ = make_shared<Container<WeightType> >(ContainerLocation::LocationHost, numelBuffers);*/
-			m_mask = make_shared<Container<uint8_t> >(ContainerLocation::LocationGpu, numelBuffers);
-			m_sampleIdx = make_shared<Container<IndexType> >(ContainerLocation::LocationGpu, numelBuffers);
-			m_weightX = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, numelBuffers);
-			m_weightY = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, numelBuffers);
-			m_weightZ = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, numelBuffers);
+			m_mask = make_shared<Container<uint8_t> >(ContainerLocation::LocationGpu, cudaStreamPerThread, numelBuffers);
+			m_sampleIdx = make_shared<Container<IndexType> >(ContainerLocation::LocationGpu, cudaStreamPerThread, numelBuffers);
+			m_weightX = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, cudaStreamPerThread, numelBuffers);
+			m_weightY = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, cudaStreamPerThread, numelBuffers);
+			m_weightZ = make_shared<Container<WeightType> >(ContainerLocation::LocationGpu, cudaStreamPerThread, numelBuffers);
 
 			//create image mask
 			cudaSafeCall(cudaMemsetAsync(m_mask->get(), 0, m_mask->size() * sizeof(uint8_t), cudaStreamPerThread));
-			cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));			
 			
 			if (m_is2D)
 			{
 				//2D is computed on the cpu at the moment -> copy
-				m_mask = m_mask->getCopy(LocationHost);
-				m_sampleIdx = m_sampleIdx->getCopy(LocationHost);
-				m_weightX = m_weightX->getCopy(LocationHost);
-				m_weightY = m_weightY->getCopy(LocationHost);
-				m_weightZ = m_weightZ->getCopy(LocationHost);
+				m_mask = make_shared<Container<uint8_t> >(LocationHost, *m_mask);
+				m_sampleIdx = make_shared<Container<IndexType> >(LocationHost, *m_sampleIdx);
+				m_weightX = make_shared<Container<WeightType> >(LocationHost, *m_weightX);
+				m_weightY = make_shared<Container<WeightType> >(LocationHost, *m_weightY);
+				m_weightZ = make_shared<Container<WeightType> >(LocationHost, *m_weightZ);
 
 				vec2 bb2DMin{ m_bbMin.x, m_bbMin.y };
 				assert(layout.x > 1);
@@ -694,11 +691,11 @@ namespace supra
 				}
 
 				//2D is computed on the cpu at the moment -> copy
-				m_mask = m_mask->getCopy(LocationGpu);
-				m_sampleIdx = m_sampleIdx->getCopy(LocationGpu);
-				m_weightX = m_weightX->getCopy(LocationGpu);
-				m_weightY = m_weightY->getCopy(LocationGpu);
-				m_weightZ = m_weightZ->getCopy(LocationGpu);
+				m_mask = make_shared<Container<uint8_t> >(LocationGpu, *m_mask);
+				m_sampleIdx = make_shared<Container<IndexType> >(LocationGpu, *m_sampleIdx);
+				m_weightX = make_shared<Container<WeightType> >(LocationGpu, *m_weightX);
+				m_weightY = make_shared<Container<WeightType> >(LocationGpu, *m_weightY);
+				m_weightZ = make_shared<Container<WeightType> >(LocationGpu, *m_weightZ);
 			}
 			else {
 				// 3D case
@@ -777,8 +774,8 @@ namespace supra
 				}*/
 					}
 				}
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 			}
+			cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 
 			//m_mask = m_mask->getCopy(LocationGpu);
 			//m_sampleIdx = m_sampleIdx->getCopy(LocationGpu);

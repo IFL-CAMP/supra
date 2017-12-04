@@ -43,7 +43,7 @@ namespace supra
 
 		//Create the storage for the window functions
 		m_dataGpu = unique_ptr<Container<ElementType> >(
-			new Container<ElementType>(LocationGpu, m_data));
+			new Container<ElementType>(LocationGpu, cudaStreamPerThread, m_data));
 
 		m_gpuFunction = WindowFunctionGpu(m_numEntriesPerFunction, m_dataGpu->get());
 	}

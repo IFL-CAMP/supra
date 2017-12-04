@@ -61,6 +61,7 @@
 #include "utilities/utility.h"
 #include "utilities/CallFrequency.h"
 #include "utilities/Logging.h"
+#include "ContainerFactory.h"
 
 namespace supra
 {
@@ -1577,7 +1578,7 @@ namespace supra
 			sNumBeams = numBeams;
 			sNumChannels = numChannels;
 			sArraySize = m_rxNumPlatformsToCopy*m_numChannelsPerPlatform * numSamples * sNumBeams;
-			pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, sArraySize);
+			pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, ContainerFactory::getNextStream(), sArraySize);
 
 			platformsReceived.assign(m_numPlatforms, false);
 		}
@@ -1588,15 +1589,15 @@ namespace supra
 		if(m_rxPlatformsToCopy[platformIndex])
 		{
 			{
-				auto deviceScrambled = unique_ptr<Container<uint8_t> >(new Container<uint8_t>(LocationGpu, numBytesChannels*numSamples*numBeams));
-				cudaSafeCall(cudaMemcpyAsync(deviceScrambled->get(), dataScrambled, numBytesChannels*numSamples*numBeams*sizeof(uint8_t), cudaMemcpyHostToDevice, cudaStreamPerThread));
+				auto deviceScrambled = unique_ptr<Container<uint8_t> >(new Container<uint8_t>(LocationGpu, pData->getStream(), numBytesChannels*numSamples*numBeams));
+				cudaSafeCall(cudaMemcpyAsync(deviceScrambled->get(), dataScrambled, numBytesChannels*numSamples*numBeams*sizeof(uint8_t), cudaMemcpyHostToDevice, pData->getStream()));
 
 				size_t platformOffset = m_rxPlatformCopyOffset[platformIndex];
 				dim3 blockSize(16, 8);
 				dim3 gridSize(
 						static_cast<unsigned int>((numSamples + blockSize.x - 1) / blockSize.x),
 						static_cast<unsigned int>((numBeams + blockSize.y - 1) / blockSize.y));
-				copyUnscramble<<<gridSize, blockSize, 0, cudaStreamPerThread>>>(
+				copyUnscramble<<<gridSize, blockSize, 0, pData->getStream()>>>(
 						numBeams,
 						numSamples,
 						numChannels,
@@ -1606,7 +1607,6 @@ namespace supra
 						deviceScrambled->get(),
 						pData->get());
 				cudaSafeCall(cudaPeekAtLastError());
-				cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 			}
 			//copy all raw data
 			/*for(size_t beam = 0; beam < numBeams; beam++)
@@ -1695,7 +1695,7 @@ namespace supra
 					m_mockDataWritten = true;
 				}
 
-				pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, sArraySize);
+				pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, ContainerFactory::getNextStream(), sArraySize);
 				platformsReceived.assign(m_numPlatforms, false);
 
 				addData<0>(rawData);

@@ -100,7 +100,8 @@ ENDIF(SUPRA_PROFILING)
 
 ############################################
 #lib base source files
-SET(SUPRA_Lib_SOURCE 
+SET(SUPRA_Lib_SOURCE
+	ContainerFactory.cpp
 	SupraManager.cpp
 	RecordObject.cpp
 	SyncRecordObject.cpp
@@ -118,10 +119,12 @@ SET(SUPRA_Lib_SOURCE
 	utilities/SingleThreadTimer.cpp
 	utilities/tinyxml2/tinyxml2.cpp
 	FrequencyLimiterNode.cpp
+	StreamSyncNode.cpp
 	AutoQuitNode.cpp)
 SET(SUPRA_Lib_HEADERS
 	vec.h
 	Container.h
+	ContainerFactory.h
 	SupraManager.h
 	RecordObject.h
 	SyncRecordObject.h
@@ -145,6 +148,7 @@ SET(SUPRA_Lib_HEADERS
 	utilities/FirFilterFactory.h
 	utilities/tinyxml2/tinyxml2.h
 	FrequencyLimiterNode.h
+	StreamSyncNode.h
 	AutoQuitNode.h)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
@@ -209,7 +213,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
-		${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
+		${CUDA_LIBRARIES})
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
