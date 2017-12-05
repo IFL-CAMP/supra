@@ -3,6 +3,10 @@
 // If not explicitly stated: Copyright (C) 2016, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
+// 	and
+//      Christoph Hennerpserger
+// 		Email c.hennersperger@tum.de
+//
 //      Chair for Computer Aided Medical Procedures
 //      Technische Universität München
 //      Boltzmannstr. 3, 85748 Garching b. München, Germany

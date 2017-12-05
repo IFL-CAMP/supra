@@ -1,7 +1,10 @@
 // ================================================================================================
 // 
 // If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
+//      Christoph Hennersperger
+//		Email c.hennersperger@tum.de
+// 		and
+// 		Rüdiger Göbl
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
 //      Technische Universität München
