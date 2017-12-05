@@ -6,10 +6,8 @@ build_ubuntu_1604_cuda9_nohw:
   tags:
     - linux
     - g++
-  image: nvidia/cuda:9.0-devel
+  image: supra-builder:ros-kinetic-cuda-9.0-ubuntu-16.04
   script:
-    - apt-get update
-    - apt-get install -y build-essential cmake qt5-default libtbb-dev curl wget
     - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
@@ -22,7 +20,7 @@ build_ubuntu_1604_cuda9_nohw:
     - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
-    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
     - make
   cache:
     key: build_cache_gcc
@@ -37,10 +35,8 @@ build_ubuntu_1604_cuda8_nohw:
   tags:
     - linux
     - g++
-  image: nvidia/cuda:8.0-devel
+  image: supra-builder:cuda-8.0-ubuntu-16.04
   script:
-    - apt-get update
-    - apt-get install -y build-essential cmake qt5-default libtbb-dev curl wget
     - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
@@ -68,10 +64,8 @@ build_ubuntu_1704_cuda_nohw:
   tags:
     - linux
     - g++
-  image: nvidia/cuda:9.0-devel-ubuntu17.04
+  image: supra-builder:ros-lunar-cuda-9.0-ubuntu-17.04
   script:
-    - apt-get update
-    - apt-get install -y build-essential cmake qt5-default libtbb-dev curl wget
     - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
@@ -84,7 +78,36 @@ build_ubuntu_1704_cuda_nohw:
     - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
-    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
+    - make
+  cache:
+    key: build_cache_gcc
+    paths:
+      - build_gcc/
+  artifacts:
+    paths:
+    - build_gcc/
+
+build_ubuntu_1404_cuda_cephasonics:
+  stage: build
+  tags:
+    - linux
+    - g++
+  image: supra-builder:ros-indigo-cuda-8.0-ubuntu-14.04-cephasonics
+  script:
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - mv openigtlink* OpenIGTLink
+    - cd OpenIGTLink
+    - mkdir -p build
+    - cd build
+    - cmake .. -DBUILD_TESTING=OFF
+    - make
+    - make install
+    - cd ../..
+    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
+    - mkdir -p build_gcc
+    - cd build_gcc
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
     - make
   cache:
     key: build_cache_gcc
