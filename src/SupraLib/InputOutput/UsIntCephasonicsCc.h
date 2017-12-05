@@ -144,8 +144,7 @@ namespace supra
 		const cs::Probe*          m_pProbe;
 
 		// many Frame/SubFrames possible
-		std::map<size_t, std::pair<size_t,size_t>> m_pFrameMap; // mapping of linearized frameIDs in cusdk to seq and angle number
-		std::map<size_t, size_t> m_pFrameMapLin; // mapping of linearized frameIDs in cusdk to linearized frameUIDs
+		std::map<size_t, size_t> m_pFrameMap; // mapping of linearized frameIDs in cusdk to seq and angle number
 		std::vector<const cs::FrameDef*> m_pFrameDefs;
 		std::vector<const cs::SubFrameDef*> m_pSubframeDefs;
 		std::vector<BeamEnsembleTxParameters> m_beamEnsembleTxParameters; // CS specific transmit parameters

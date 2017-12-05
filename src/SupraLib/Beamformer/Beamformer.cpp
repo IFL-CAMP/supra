@@ -133,7 +133,7 @@ namespace supra
 		m_depth = depth;
 	}
 
-	void Beamformer::setNumScanlines(const vec2s numScanlines)
+	void Beamformer::setNumTxScanlines(const vec2s numScanlines)
 	{
 		if (numScanlines != m_numScanlines)
 		{
@@ -412,13 +412,21 @@ namespace supra
 
 			if (m_type == Linear)
 			{
+				if (m_pTransducer->getType() != USTransducer::Linear)
+				{
+					// only linear supported for now
+					logging::log_error("Beamformer: Linear imaging only supported for linear arrays.");
+					throw std::invalid_argument("Imaging type not implemented yet");
+				}
+
+				// use steering angle to derive scanline (sector angle n/a in linear scanning)
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
 				size_t numScanlines = m_numScanlines.x;
+
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
-
-				// use steering angle only, as sector angle opening is not applicable in linear scans
-				double angleRad = m_txSteeringAngle.x;
 				
 				//evenly space the scanlines between the first and last element
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
@@ -433,7 +441,7 @@ namespace supra
 					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ angleRad, 0 });
+					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ steerAngle, 0 });
 				}
 		
 			}
@@ -442,10 +450,11 @@ namespace supra
 				//TODO right now full aperture
 				assert(m_pTransducer->getNumElements() == m_maxApertureSize.x);
 
-				size_t numScanlines = m_numScanlines.x;
-
-				// use sector angles and steering angles to derive scanlines
+				// use sector angles and steering angles to derive scanline
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
 				auto sectorAngle = m_txSectorAngle.x;
+				size_t numScanlines = m_numScanlines.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 
@@ -468,7 +477,7 @@ namespace supra
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 				{
 					// the angle of the scanline
-					double scanlineAngle = -sectorAngle / 2 + scanlineIdx / (numScanlines - 1) * sectorAngle;
+					double scanlineAngle = steerAngle - (sectorAngle / 2) + (scanlineIdx / (numScanlines - 1) * sectorAngle);
 					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2{ scanlineStartX, 0 }, vec2{ scanlineAngle, 0 });
 				}
 			}
@@ -519,11 +528,16 @@ namespace supra
 					throw std::invalid_argument("Imaging type not implemented yet");
 				}
 
+				// use sector angles and steering angles to derive scanline
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
+				auto sectorAngle = m_txSectorAngle.x;
+				size_t numPlanewaves = m_numScanlines.x;
+
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 
-				double angleRad = m_txSteeringAngle.x;
 				
 				// the position of the scanline on the x axis is by default at center for planwave imaging
 				double scanlinePosition = firstElement.x +
@@ -535,7 +549,13 @@ namespace supra
 				rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 				rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-				m_txParameters[0] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ angleRad, 0 });
+
+				for (size_t planewaveIdx=0; planewaveIdx<numPlanewaves; planewaveIdx++)
+				{
+					// angle of current plane wave emission
+					auto planewaveAngle = steerAngle - (sectorAngle/2) + planewaveIdx * sectorAngle / (numPlanewaves-1);
+					m_txParameters[planewaveIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ planewaveAngle, 0 });
+				}
 			}
 			else {
 				logging::log_error("Beamformer: Imaging type not implemented yet");
@@ -543,24 +563,6 @@ namespace supra
 				m_ready = false;
 			}
 
-			/*for (size_t scanlineIdxY = 0; scanlineIdxY < m_numScanlines.y; scanlineIdxY++)
-			{
-				for (size_t scanlineIdxX = 0; scanlineIdxX < m_numScanlines.x; scanlineIdxX++)
-				{
-					size_t scanlineIdx = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
-					log_always("computeTxParameters: idx (", scanlineIdxX, ", ", scanlineIdxY, "), pos: (",
-						m_txParameters[scanlineIdx].position.x, ", ",
-						m_txParameters[scanlineIdx].position.y, ", ",
-						m_txParameters[scanlineIdx].position.z, "), dir (",
-						m_txParameters[scanlineIdx].direction.x, ", ",
-						m_txParameters[scanlineIdx].direction.y, ", ",
-						m_txParameters[scanlineIdx].direction.z, " firstActive (",
-						m_txParameters[scanlineIdx].firstActiveElementIndex.x, ", ",
-						m_txParameters[scanlineIdx].firstActiveElementIndex.y, ") lastactive (",
-						m_txParameters[scanlineIdx].lastActiveElementIndex.x, ", ",
-						m_txParameters[scanlineIdx].lastActiveElementIndex.y, ")");
-				}
-			}*/
 
 			//Compute the RX scanlines based on the TX scanlines, but include subdivision
 			//Subdivide the tx scanlines

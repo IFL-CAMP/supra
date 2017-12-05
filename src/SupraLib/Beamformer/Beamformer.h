@@ -72,7 +72,7 @@ namespace supra
 		void setDepth(const double depth);
 
 		/// Set number of transmit scanlines in x/y 
-		void setNumScanlines(const vec2s numScanlines);
+		void setNumTxScanlines(const vec2s numScanlines);
 
 		/// Set subdivisiion from transmit to receive scanlines x/y 
 		void setRxScanlineSubdivision(const vec2s scanlineSubdivision);
@@ -164,6 +164,9 @@ namespace supra
 			vec2 interp);
 		static rect2s computeAperture(vec2s layout, vec2s apertureSize, vec2 relativePosition);
 
+		/// compute steering angles for given tx sector angle and beam steering
+		void computeSteeringAngles(vec2s numAngles);
+
 		std::vector<ScanlineTxParameters3D> m_txParameters;
 		std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > m_rxParameters;
 		std::shared_ptr<const RxBeamformerCuda> m_pRxBeamformer;
@@ -189,8 +192,10 @@ namespace supra
 		double m_rxFocusDepth;
 		double m_speedOfSound;
 		double m_speedOfSoundMMperS; 	// updated internally
+
 		vec2 m_txSectorAngle;			// opening angle of sector (rad)
 		vec2 m_txSteeringAngle;			// steering angle for sector (rad)
+		std::vector<vec2> m_txFiringAngles; // all firing angles (updated internally)
 		
 		//double m_fNumber;
 		uint32_t m_numSamplesRecon;
