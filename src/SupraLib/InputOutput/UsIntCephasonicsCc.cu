@@ -820,8 +820,8 @@ namespace supra
 			bf->setTxSectorAngle(sectorAngle);
 
 			vec2 steeringAngle;
-			steeringAngle.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txSteeringAngleX");
-			steeringAngle.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txSteeringAngleY");
+			steeringAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleX");
+			steeringAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleY");
 			bf->setTxSteeringAngle(steeringAngle);
 
 			vec2s apertureSize;
