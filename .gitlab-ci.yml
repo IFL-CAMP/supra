@@ -1,7 +1,7 @@
 stages:
   - build
 
-build_ubuntu_1604_cuda9_nohw:
+build_ubuntu_1604_cuda9_ros:
   stage: build
   tags:
     - linux
@@ -20,7 +20,7 @@ build_ubuntu_1604_cuda9_nohw:
     - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
-    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON
     - make
   cache:
     key: build_cache_gcc
@@ -59,7 +59,7 @@ build_ubuntu_1604_cuda8_nohw:
     paths:
     - build_gcc/
     
-build_ubuntu_1704_cuda_nohw:
+build_ubuntu_1704_cuda_ros:
   stage: build
   tags:
     - linux
@@ -78,7 +78,7 @@ build_ubuntu_1704_cuda_nohw:
     - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
-    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON
     - make
   cache:
     key: build_cache_gcc
@@ -107,7 +107,7 @@ build_ubuntu_1404_cuda_cephasonics:
     - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
-    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=ON
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON
     - make
   cache:
     key: build_cache_gcc
