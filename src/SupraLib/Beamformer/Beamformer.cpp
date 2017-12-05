@@ -513,7 +513,7 @@ namespace supra
 							elementCenterpoints->at(activeAperture.end.y   *elementLayout.x).y) / 2;
 
 						// the angle of the scanline
-						vec2 scanlineAngle = (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_txSectorAngle;
+						vec2 scanlineAngle = m_txSteeringAngle + (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_txSectorAngle;
 						m_txParameters[scanlinesDone] = getTxScanline3D(activeAperture, txAperture, scanlineStart, scanlineAngle);
 						scanlinesDone++;
 					}
