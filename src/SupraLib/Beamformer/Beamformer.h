@@ -14,7 +14,7 @@
 
 #include "USTransducer.h"
 #include "USImage.h"
-#include "RxBeamformerCuda.h"
+#include "RxBeamformerParameters.h"
 #include "WindowFunction.h"
 
 #include <memory>
@@ -115,7 +115,7 @@ namespace supra
 		std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > getRxParameters();
 
 		// prepare and perform the receive beamforming
-		std::shared_ptr<const RxBeamformerCuda> getCurrentRxBeamformer();
+		std::shared_ptr<const RxBeamformerParameters> getCurrentRxBeamformerParameters();
 
 	private:
 		typedef float LocationType;
@@ -135,7 +135,7 @@ namespace supra
 
 		std::vector<ScanlineTxParameters3D> m_txParameters;
 		std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > m_rxParameters;
-		std::shared_ptr<const RxBeamformerCuda> m_pRxBeamformer;
+		std::shared_ptr<const RxBeamformerParameters> m_pRxBeamformerParameters;
 
 		const USTransducer* m_pTransducer;
 

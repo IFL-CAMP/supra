@@ -25,6 +25,8 @@ namespace supra
 		: AbstractNode(nodeID)
 		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
 		, m_lastSeenImageProperties(nullptr)
+		, m_beamformer(nullptr)
+		, m_lastSeenBeamformerParameters(nullptr)
 	{
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
@@ -84,7 +86,19 @@ namespace supra
 			if (pRawData)
 			{
 				m_callFrequency.measure();
-				pImageRF = pRawData->getRxBeamformer()->performRxBeamforming<int16_t, int16_t>(
+				
+				// We need to create a new beamformer if we either did not create one yet, or if the beamformer parameters changed
+				bool needNewBeamformer = !m_beamformer;
+				if (!m_lastSeenBeamformerParameters || m_lastSeenBeamformerParameters != pRawData->getRxBeamformerParameters())
+				{
+					m_lastSeenBeamformerParameters = pRawData->getRxBeamformerParameters();
+					needNewBeamformer = true;
+				}
+				if (needNewBeamformer)
+				{
+					m_beamformer = std::make_shared<RxBeamformerCuda>(*m_lastSeenBeamformerParameters);
+				}
+				pImageRF = m_beamformer->performRxBeamforming<int16_t, int16_t>(
 					pRawData, m_fNumber, m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_testSignal);
 				m_callFrequency.measureEnd();
 

@@ -17,7 +17,7 @@
 #include "UltrasoundInterfaceRawDataMock.h"
 #include "utilities/utility.h"
 
-#include "Beamformer/RxBeamformerCuda.h"
+#include "Beamformer/RxBeamformerParameters.h"
 #include "ContainerFactory.h"
 
 #include <memory>
@@ -51,7 +51,7 @@ namespace supra
 			setUpTimer(m_frequency);
 		}
 
-		m_protoRawData = RxBeamformerCuda::readMetaDataForMock<int16_t>(m_mockMetadataFilename);
+		m_protoRawData = RxBeamformerParameters::readMetaDataForMock<int16_t>(m_mockMetadataFilename);
 
 		m_numel = m_protoRawData->getNumReceivedChannels()*m_protoRawData->getNumSamples()*m_protoRawData->getNumScanlines();
 
@@ -131,7 +131,7 @@ namespace supra
 				m_protoRawData->getNumSamples(),
 				m_protoRawData->getSamplingFrequency(),
 				m_pMockData,
-				m_protoRawData->getRxBeamformer(),
+				m_protoRawData->getRxBeamformerParameters(),
 				m_protoRawData->getImageProperties(),
 				getCurrentTime(),
 				getCurrentTime());

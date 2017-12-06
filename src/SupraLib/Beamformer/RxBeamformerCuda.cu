@@ -30,81 +30,28 @@ using std::const_pointer_cast;
 
 namespace supra
 {
-	RxBeamformerCuda::RxBeamformerCuda(std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > rxParameters, size_t numDepths, double depth, double speedOfSoundMMperS, const USTransducer* pTransducer)
-		: m_speedOfSoundMMperS(speedOfSoundMMperS)
-		, m_rxNumDepths(numDepths)
-		, m_windowFunction(nullptr)
-	{
-		m_lastSeenDt = 0;
-		vec2s numRxScanlines = { rxParameters->size(), (*rxParameters)[0].size() };
-		m_numRxScanlines = numRxScanlines.x*numRxScanlines.y;
-		m_rxScanlineLayout = numRxScanlines;
-		size_t numElements = pTransducer->getNumElements();
-
-		// create and fill new buffers
-		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numDepths));
-
-		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(
-			new Container<ScanlineRxParameters3D>(LocationHost, cudaStreamDefault, m_numRxScanlines));
-
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numElements));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, cudaStreamDefault, numElements));
-
-		for (size_t zIdx = 0; zIdx < numDepths; zIdx++)
-		{
-			m_pRxDepths->get()[zIdx] = static_cast<LocationType>(zIdx*depth / (numDepths - 1));
-		}
-		size_t scanlineIdx = 0;
-		for (size_t yIdx = 0; yIdx < numRxScanlines.y; yIdx++)
-		{
-			for (size_t xIdx = 0; xIdx < numRxScanlines.x; xIdx++)
-			{
-				m_pRxScanlines->get()[scanlineIdx] = (*rxParameters)[xIdx][yIdx];
-				scanlineIdx++;
-			}
-		}
-
-		auto centers = pTransducer->getElementCenterPoints();
-		for (size_t x_elemIdx = 0; x_elemIdx < numElements; x_elemIdx++)
-		{
-			m_pRxElementXs->get()[x_elemIdx] = static_cast<LocationType>(centers->at(x_elemIdx).x);
-			m_pRxElementYs->get()[x_elemIdx] = static_cast<LocationType>(centers->at(x_elemIdx).y);
-		}
-
-		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxDepths));
-		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, *m_pRxScanlines));
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
-
-		m_is3D = (pTransducer->getElementLayout().x > 1 && pTransducer->getElementLayout().y > 1);
-	}
-
-	RxBeamformerCuda::RxBeamformerCuda(
-		size_t numRxScanlines,
-		vec2s rxScanlineLayout,
-		double speedOfSoundMMperS,
-		const std::vector<LocationType> & rxDepths,
-		const std::vector<ScanlineRxParameters3D> & rxScanlines,
-		const std::vector<LocationType> & rxElementXs,
-		const std::vector<LocationType> & rxElementYs,
-		size_t rxNumDepths)
+	RxBeamformerCuda::RxBeamformerCuda(const RxBeamformerParameters & parameters)
 		: m_windowFunction(nullptr)
 	{
 		m_lastSeenDt = 0;
-		m_numRxScanlines = numRxScanlines;
-		m_rxScanlineLayout = rxScanlineLayout;
+		m_numRxScanlines = parameters.getNumRxScanlines();
+		m_rxScanlineLayout = parameters.getRxScanlineLayout();
 
-		m_is3D = (rxScanlineLayout.x > 1 && rxScanlineLayout.y > 1);
-		m_speedOfSoundMMperS = speedOfSoundMMperS;
-		m_rxNumDepths = rxNumDepths;
+		m_is3D = (m_rxScanlineLayout.x > 1 && m_rxScanlineLayout.y > 1);
+		m_speedOfSoundMMperS = parameters.getSpeedOfSoundMMperS();
+		m_rxNumDepths = parameters.getRxNumDepths();
 
 		// create and fill new buffers
-		m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxDepths));
+		m_pRxDepths = unique_ptr<Container<LocationType> >(
+			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxDepths()));
 
-		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, cudaStreamDefault, rxScanlines));
+		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(
+			new Container<ScanlineRxParameters3D>(LocationGpu, cudaStreamDefault, parameters.getRxScanlines()));
 
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxElementXs));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, cudaStreamDefault, rxElementYs));
+		m_pRxElementXs = unique_ptr<Container<LocationType> >(
+			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxElementXs()));
+		m_pRxElementYs = unique_ptr<Container<LocationType> >(
+			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxElementYs()));
 	}
 
 	RxBeamformerCuda::~RxBeamformerCuda()
@@ -751,170 +698,5 @@ namespace supra
 			rawData->getSyncTimestamp());
 
 		return retImage;
-	}
-
-	using std::setw;
-	using std::setprecision;
-
-	template <>
-	void RxBeamformerCuda::writeMetaDataForMock(string filename, shared_ptr<const USRawData<int16_t> > rawData) const
-	{
-		std::ofstream f(filename);
-		f << "rawDataMockMetadata v 3" << std::endl;
-		f << rawData->getNumElements() << " "
-			<< rawData->getElementLayout().x << " "
-			<< rawData->getElementLayout().y << " "
-			<< rawData->getNumReceivedChannels() << " "
-			<< rawData->getNumSamples() << " "
-			<< rawData->getNumScanlines() << " "
-			<< m_rxScanlineLayout.x << " "
-			<< m_rxScanlineLayout.y << " "
-			<< rawData->getImageProperties()->getDepth() << " "
-			<< rawData->getSamplingFrequency() << " "
-			<< m_rxNumDepths << " "
-			<< m_speedOfSoundMMperS << std::endl;
-
-		auto rxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
-		auto rxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxDepths));
-		auto rxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementXs));
-		auto rxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementYs));
-
-		for (size_t idx = 0; idx < m_numRxScanlines; idx++)
-		{
-			f << rxScanlines->get()[idx] << " ";
-		}
-		f << std::endl;
-		for (size_t idx = 0; idx < m_rxNumDepths; idx++)
-		{
-			f << setprecision(9) << rxDepths->get()[idx] << " ";
-		}
-		f << std::endl;
-		for (size_t idx = 0; idx < rawData->getNumElements(); idx++)
-		{
-			f << setprecision(9) << rxElementXs->get()[idx] << " ";
-		}
-		for (size_t idx = 0; idx < rawData->getNumElements(); idx++)
-		{
-			f << setprecision(9) << rxElementYs->get()[idx] << " ";
-		}
-		f << std::endl;
-		f.close();
-	}
-
-	template<>
-	shared_ptr<USRawData<int16_t> > RxBeamformerCuda::readMetaDataForMock(const std::string & mockMetadataFilename)
-	{
-		std::ifstream f(mockMetadataFilename);
-
-		shared_ptr<USRawData<int16_t> > rawData;
-
-		size_t numElements;
-		size_t numReceivedChannels;
-		size_t numSamples;
-		size_t numTxScanlines;
-		vec2s scanlineLayout;
-		vec2s elementLayout;
-		double depth;
-		double samplingFrequency;
-		size_t rxNumDepths;
-		double speedOfSoundMMperS;
-		//f << "rawDataMockMetadata v 1";
-		string dummy;
-		int version;
-		f >> dummy;
-		f >> dummy;
-		f >> version;
-
-		f >> numElements;
-		f >> elementLayout.x;
-		f >> elementLayout.y;
-		f >> numReceivedChannels;
-		f >> numSamples;
-		f >> numTxScanlines;
-		f >> scanlineLayout.x;
-		f >> scanlineLayout.y;
-		f >> depth;
-		f >> samplingFrequency;
-		f >> rxNumDepths;
-		f >> speedOfSoundMMperS;
-
-		size_t numRxScanlines = scanlineLayout.x*scanlineLayout.y;
-
-		vector<ScanlineRxParameters3D> rxScanlines(numRxScanlines);
-		vector<LocationType> rxDepths(rxNumDepths);
-		vector<LocationType> rxElementXs(numElements);
-		vector<LocationType> rxElementYs(numElements);
-
-		shared_ptr<vector<vector<ScanlineRxParameters3D> > > scanlines =
-			make_shared<vector<vector<ScanlineRxParameters3D> > >(scanlineLayout.x, vector<ScanlineRxParameters3D>(scanlineLayout.y));
-
-		size_t scanlineIdx = 0;
-		for (size_t idxY = 0; idxY < scanlineLayout.y; idxY++)
-		{
-			for (size_t idxX = 0; idxX < scanlineLayout.x; idxX++)
-			{
-				ScanlineRxParameters3D params;
-				f >> params;
-				(*scanlines)[idxX][idxY] = params;
-				rxScanlines[scanlineIdx] = params;
-				scanlineIdx++;
-			}
-		}
-
-		for (size_t idx = 0; idx < rxNumDepths; idx++)
-		{
-			LocationType val;
-			f >> val;
-			rxDepths[idx] = val;
-		}
-		for (size_t idx = 0; idx < numElements; idx++)
-		{
-			LocationType val;
-			f >> val;
-			rxElementXs[idx] = val;
-		}
-		for (size_t idx = 0; idx < numElements; idx++)
-		{
-			LocationType val;
-			f >> val;
-			rxElementYs[idx] = val;
-		}
-
-		f.close();
-
-		auto imageProps = make_shared<USImageProperties>(
-			vec2s{ numTxScanlines, 1 },
-			rxNumDepths,
-			USImageProperties::ImageType::BMode,
-			USImageProperties::ImageState::Raw,
-			USImageProperties::TransducerType::Linear,
-			depth);
-
-		imageProps->setScanlineInfo(scanlines);
-
-		auto rxBeamformer = shared_ptr<RxBeamformerCuda>(new RxBeamformerCuda(
-			numRxScanlines,
-			scanlineLayout,
-			speedOfSoundMMperS,
-			rxDepths,
-			rxScanlines,
-			rxElementXs,
-			rxElementYs,
-			rxNumDepths));
-
-		auto pRawData = make_shared<USRawData<int16_t> >(
-			numTxScanlines,
-			numElements,
-			elementLayout,
-			numReceivedChannels,
-			numSamples,
-			samplingFrequency,
-			nullptr,
-			rxBeamformer,
-			imageProps,
-			0,
-			0);
-
-		return pRawData;
 	}
 }

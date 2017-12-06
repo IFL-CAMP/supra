@@ -21,6 +21,8 @@
 #include "AbstractNode.h"
 #include "RecordObject.h"
 #include "SyncRecordObject.h"
+#include "RxBeamformerParameters.h"
+#include "RxBeamformerCuda.h"
 
 namespace supra
 {
@@ -62,6 +64,9 @@ namespace supra
 		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
 		void readWindowType();
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
+
+		std::shared_ptr<RxBeamformerCuda> m_beamformer;
+		std::shared_ptr<const RxBeamformerParameters> m_lastSeenBeamformerParameters;
 
 		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
 		std::shared_ptr<USImageProperties> m_editedImageProperties;

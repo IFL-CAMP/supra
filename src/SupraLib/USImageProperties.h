@@ -62,14 +62,21 @@ namespace supra
 
 		bool operator== (const ScanlineRxParameters3D& b) const
 		{
-			return txParameters == b.txParameters &&
+			return txParameters[0] == b.txParameters[0] &&
+				txParameters[1] == b.txParameters[1] &&
+				txParameters[2] == b.txParameters[2] &&
+				txParameters[3] == b.txParameters[3] &&
+				txWeights[0] == b.txWeights[0] &&
+				txWeights[1] == b.txWeights[1] &&
+				txWeights[2] == b.txWeights[2] &&
+				txWeights[3] == b.txWeights[3] &&
 				position == b.position &&
 				direction == b.direction &&
 				maxElementDistance == b.maxElementDistance;
 		}
 
 		friend std::ostream& operator<< (std::ostream& os, const ScanlineRxParameters3D& params);
-		friend std::istream& operator >> (std::istream& is, ScanlineRxParameters3D& params);
+		friend std::istream& operator>> (std::istream& is, ScanlineRxParameters3D& params);
 	};
 
 

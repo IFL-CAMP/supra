@@ -189,6 +189,7 @@ IF(SUPRA_BEAMFORMER)
 		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
+		Beamformer/RxBeamformerParameters.cpp
 		Beamformer/IQDemodulator.cu
 		Beamformer/LogCompressor.cu
 		Beamformer/ScanConverter.cu
@@ -197,6 +198,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/Sequencer.h
 		Beamformer/Beamformer.h
 		Beamformer/RxBeamformerCuda.h
+		Beamformer/RxBeamformerParameters.h
 		Beamformer/WindowFunction.h
 		Beamformer/USTransducer.h
 		Beamformer/BeamformingNode.h
