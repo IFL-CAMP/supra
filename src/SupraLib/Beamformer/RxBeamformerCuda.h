@@ -29,18 +29,25 @@ namespace supra
 	class RxBeamformerCuda
 	{
 	public:
+		enum RxSampleBeamformer {
+			DelayAndSum,
+			DelayAndStdDev,
+			TestSignal,
+			INVALID
+		};
+
 		RxBeamformerCuda(const RxBeamformerParameters& parameters);
 		~RxBeamformerCuda();
 
 		// perform the receive beamforming
 		template <typename ChannelDataType, typename ImageDataType>
 		shared_ptr<USImage<ImageDataType> > performRxBeamforming(
+			RxSampleBeamformer sampleBeamformer,
 			shared_ptr<const USRawData<ChannelDataType> > rawData,
 			double fNumber,
 			WindowType windowType,
 			WindowFunction::ElementType windowParameters,
-			bool interpolateBetweenTransmits,
-			bool testSignal) const;
+			bool interpolateBetweenTransmits) const;
 
 	private:
 		typedef RxBeamformerParameters::LocationType LocationType;

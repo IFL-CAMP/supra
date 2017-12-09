@@ -97,7 +97,7 @@ namespace supra
 		}
 	}
 
-	template <bool interpolateRFlines, bool interpolateBetweenTransmits, unsigned int maxNumElements, unsigned int maxNumFunctionElements, bool testSignal, typename RFType, typename ResultType, typename LocationType>
+	template <class SampleBeamformer, bool interpolateRFlines, bool interpolateBetweenTransmits, unsigned int maxNumElements, unsigned int maxNumFunctionElements, typename RFType, typename ResultType, typename LocationType>
 	__global__
 		void rxBeamformingDTSPACE3DKernel(
 			uint32_t numTransducerElements,
@@ -188,25 +188,12 @@ namespace supra
 						return;
 					}
 					float sLocal = 0.0f;
+					
+					sLocal = SampleBeamformer::template sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
+						txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+						x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
+						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
 
-					if (testSignal)
-					{
-						sLocal = RxSampleBeamformerTestSignal::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
-							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
-							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
-							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
-						sLocal+= RxSampleBeamformerDelayAndStdDev::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
-							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
-							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
-							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
-					}
-					else
-					{
-						sLocal = RxSampleBeamformerDelayAndSum::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
-							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
-							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
-							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
-					}
 					if (interpolateBetweenTransmits)
 					{
 						sInterp += static_cast<float>(scanline.txWeights[k])* sLocal;
@@ -221,7 +208,7 @@ namespace supra
 		}
 	}
 
-	template <bool interpolateRFlines, bool interpolateBetweenTransmits, typename RFType, typename ResultType, typename LocationType>
+	template <class SampleBeamformer, bool interpolateRFlines, bool interpolateBetweenTransmits, typename RFType, typename ResultType, typename LocationType>
 	__global__
 		void rxBeamformingDTSPACEKernel(
 			size_t numTransducerElements,
@@ -289,17 +276,7 @@ namespace supra
 					}
 
 					float sLocal = 0.0f;
-					sLocal = RxSampleBeamformerDelayAndSum::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
-						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
-						x_elemsDT, scanline_x, dirX, dirY, dirZ,
-						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
-
-
-					sLocal += RxSampleBeamformerDelayAndStdDev::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
-						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
-						x_elemsDT, scanline_x, dirX, dirY, dirZ,
-						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
-					sLocal += RxSampleBeamformerTestSignal::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
+					sLocal = SampleBeamformer::template sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
 						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
 						x_elemsDT, scanline_x, dirX, dirY, dirZ,
 						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
@@ -320,11 +297,10 @@ namespace supra
 		}
 	}
 
-	template <unsigned int maxWindowFunctionNumel, typename RFType, typename ResultType, typename LocationType>
+	template <class SampleBeamformer, unsigned int maxWindowFunctionNumel, typename RFType, typename ResultType, typename LocationType>
 	void rxBeamformingDTspaceCuda3D(
 		bool interpolateRFlines,
 		bool interpolateBetweenTransmits,
-		bool testSignal,
 		size_t numTransducerElements,
 		vec2s elementLayout,
 		size_t numReceivedChannels,
@@ -348,56 +324,46 @@ namespace supra
 		dim3 gridSize(
 			static_cast<unsigned int>((numRxScanlines + blockSize.x - 1) / blockSize.x),
 			static_cast<unsigned int>((numZs + blockSize.y - 1) / blockSize.y));
-		if (testSignal)
+
+		if (interpolateRFlines)
 		{
-			rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, true> << <gridSize, blockSize, 0, stream>> > (
-				(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
-				(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
-				(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
-				(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
-		}
-		else
-		{
-			if (interpolateRFlines)
+			if (interpolateBetweenTransmits)
 			{
-				if (interpolateBetweenTransmits)
-				{
-					rxBeamformingDTSPACE3DKernel<true, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
-						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
-						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
-						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
-						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
-				}
-				else {
-					rxBeamformingDTSPACE3DKernel<true, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
-						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
-						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
-						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
-						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
-				}
+				rxBeamformingDTSPACE3DKernel<SampleBeamformer, true, true, 1024, maxWindowFunctionNumel> << <gridSize, blockSize, 0, stream>> > (
+					(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
+					(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
+					(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
+					(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 			else {
-				if (interpolateBetweenTransmits)
-				{
-					rxBeamformingDTSPACE3DKernel<false, true, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
-						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
-						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
-						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
-						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
-				}
-				else {
-					rxBeamformingDTSPACE3DKernel<false, false, 1024, maxWindowFunctionNumel, false> << <gridSize, blockSize, 0, stream>> > (
-						(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
-						(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
-						(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
-						(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
-				}
+				rxBeamformingDTSPACE3DKernel<SampleBeamformer, true, false, 1024, maxWindowFunctionNumel> << <gridSize, blockSize, 0, stream>> > (
+					(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
+					(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
+					(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
+					(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
+			}
+		}
+		else {
+			if (interpolateBetweenTransmits)
+			{
+				rxBeamformingDTSPACE3DKernel<SampleBeamformer, false, true, 1024, maxWindowFunctionNumel> << <gridSize, blockSize, 0, stream>> > (
+					(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
+					(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
+					(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
+					(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
+			}
+			else {
+				rxBeamformingDTSPACE3DKernel<SampleBeamformer, false, false, 1024, maxWindowFunctionNumel> << <gridSize, blockSize, 0, stream>> > (
+					(uint32_t)numTransducerElements, static_cast<vec2T<uint32_t>>(elementLayout),
+					(uint32_t)numReceivedChannels, (uint32_t)numTimesteps, RF,
+					(uint32_t)numTxScanlines, (uint32_t)numRxScanlines, scanlines,
+					(uint32_t)numZs, zs, x_elems, y_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 		}
 		cudaSafeCall(cudaPeekAtLastError());
 	}
 
-	template <typename RFType, typename ResultType, typename LocationType>
+	template <class SampleBeamformer, typename RFType, typename ResultType, typename LocationType>
 	void rxBeamformingDTspaceCuda(
 		bool interpolateRFlines,
 		bool interpolateBetweenTransmits,
@@ -426,13 +392,13 @@ namespace supra
 		{
 			if (interpolateBetweenTransmits)
 			{
-				rxBeamformingDTSPACEKernel<true, true> << <gridSize, blockSize, 0, stream>> > (
+				rxBeamformingDTSPACEKernel<SampleBeamformer, true, true> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 			else {
-				rxBeamformingDTSPACEKernel<true, false> << <gridSize, blockSize, 0, stream>> > (
+				rxBeamformingDTSPACEKernel<SampleBeamformer, true, false> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
@@ -441,13 +407,13 @@ namespace supra
 		else {
 			if (interpolateBetweenTransmits)
 			{
-				rxBeamformingDTSPACEKernel<false, true> << <gridSize, blockSize, 0, stream>> > (
+				rxBeamformingDTSPACEKernel<SampleBeamformer, false, true> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
 			}
 			else {
-				rxBeamformingDTSPACEKernel<false, false> << <gridSize, blockSize, 0, stream>> > (
+				rxBeamformingDTSPACEKernel<SampleBeamformer, false, false> << <gridSize, blockSize, 0, stream>> > (
 					numTransducerElements, numReceivedChannels, numTimesteps, RF,
 					numTxScanlines, numRxScanlines, scanlines,
 					numZs, zs, x_elems, speedOfSound, dt, F, windowFunction, s);
@@ -458,12 +424,12 @@ namespace supra
 
 	template <>
 	shared_ptr<USImage<int16_t> > RxBeamformerCuda::performRxBeamforming(
+		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData<int16_t> > rawData,
 		double fNumber,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
-		bool interpolateBetweenTransmits,
-		bool testSignal) const
+		bool interpolateBetweenTransmits) const
 	{
 		//Ensure the raw-data are on the gpu
 		auto gRawData = rawData->getData();
@@ -482,13 +448,35 @@ namespace supra
 			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
 		}
 
+		auto beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+		auto beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+		switch (sampleBeamformer)
+		{
+		case DelayAndSum:
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+			break;
+		case DelayAndStdDev:
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndStdDev, int16_t, int16_t, LocationType>;
+			break;
+		case TestSignal:
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerTestSignal, int16_t, int16_t, LocationType>;
+			break;
+		case INVALID:
+		default:
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+		}
+
+
 		convertToDtSpace(dt, rawData->getNumElements());
 		if (m_is3D)
 		{
-			rxBeamformingDTspaceCuda3D<m_windowFunctionNumEntries, int16_t, int16_t, LocationType>(
+			beamformingFunction3D(
 				true,
 				interpolateBetweenTransmits,
-				testSignal,
 				rawData->getNumElements(),
 				rawData->getElementLayout(),
 				rawData->getNumReceivedChannels(),
@@ -509,7 +497,7 @@ namespace supra
 				);
 		}
 		else {
-			rxBeamformingDTspaceCuda<int16_t, int16_t, LocationType>(
+			beamformingFunction2D(
 				true,
 				interpolateBetweenTransmits,
 				rawData->getNumElements(),

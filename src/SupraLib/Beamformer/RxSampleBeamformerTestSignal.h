@@ -54,8 +54,8 @@ namespace supra
 
 			vec3f point{ scanline_x + dirX*depth, dirY*depth, scanline_z + dirZ*depth };
 			point = point *dt*speedOfSound; // bring point position back from dt space to world space
-											//check for all cylinders
-											// cylinders along z axis
+			//check for all cylinders
+			// cylinders along z axis
 			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
 			{
 				vec3f cylinderCenter = vec3f{ cylinderNo * cylinderSpacing, cylinderDepth, 0 };
@@ -112,8 +112,8 @@ namespace supra
 
 			vec3f point{ scanline_x + dirX*depth, dirY*depth, dirZ*depth };
 			point = point *dt*speedOfSound; // bring point position back from dt space to world space
-											//check for all cylinders
-											// cylinders along z axis
+			//check for all cylinders
+			// cylinders along z axis
 			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
 			{
 				vec3f cylinderCenter = vec3f{ cylinderNo * cylinderSpacing, cylinderDepth, 0 };
@@ -125,19 +125,6 @@ namespace supra
 					sample = 1000;
 				}
 			}
-			// cylinders along x axis
-			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
-			{
-				vec3f cylinderCenter = vec3f{ 0, cylinderDepth,  cylinderNo * cylinderSpacing };
-				vec3f pointInPlane = point;
-				pointInPlane.x = 0;
-				float distance = norm(pointInPlane - cylinderCenter);
-				if (distance <= cylinderDiameter)
-				{
-					sample = 1000;
-				}
-			}
-
 			return sample;
 		}
 	};
