@@ -9,25 +9,14 @@
 // 
 // ================================================================================================
 #include "RxBeamformerCuda.h"
-#include "Beamformer.h"
 #include "USImage.h"
 #include "USRawData.h"
-#include "utilities/cudaUtility.h"
-#include "utilities/Logging.h"
-
-#include <memory>
-#include <cassert>
-
-#include <iomanip>
-
-using std::make_shared;
-using std::unique_ptr;
-using std::string;
-using std::vector;
-using std::const_pointer_cast;
+#include "RxSampleBeamformerDelayAndSum.h"
+#include "RxSampleBeamformerDelayAndStdDev.h"
+#include "RxSampleBeamformerTestSignal.h"
+#include "RxBeamformerCommon.h"
 
 //TODO ALL ELEMENT/SCANLINE Y positons are actually Z! Change all variable names accordingly
-
 namespace supra
 {
 	RxBeamformerCuda::RxBeamformerCuda(const RxBeamformerParameters & parameters)
@@ -42,15 +31,15 @@ namespace supra
 		m_rxNumDepths = parameters.getRxNumDepths();
 
 		// create and fill new buffers
-		m_pRxDepths = unique_ptr<Container<LocationType> >(
+		m_pRxDepths = std::unique_ptr<Container<LocationType> >(
 			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxDepths()));
 
-		m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(
+		m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(
 			new Container<ScanlineRxParameters3D>(LocationGpu, cudaStreamDefault, parameters.getRxScanlines()));
 
-		m_pRxElementXs = unique_ptr<Container<LocationType> >(
+		m_pRxElementXs = std::unique_ptr<Container<LocationType> >(
 			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxElementXs()));
-		m_pRxElementYs = unique_ptr<Container<LocationType> >(
+		m_pRxElementYs = std::unique_ptr<Container<LocationType> >(
 			new Container<LocationType>(LocationGpu, cudaStreamDefault, parameters.getRxElementYs()));
 	}
 
@@ -73,7 +62,7 @@ namespace supra
 				factor = (m_lastSeenDt / dt);
 				factorTime = factor;
 			}
-			m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
+			m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
 			for (size_t i = 0; i < m_numRxScanlines; i++)
 			{
 				ScanlineRxParameters3D p = m_pRxScanlines->get()[i];
@@ -85,69 +74,27 @@ namespace supra
 				p.maxElementDistance = p.maxElementDistance*factor;
 				m_pRxScanlines->get()[i] = p;
 			}
-			m_pRxScanlines = unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, *m_pRxScanlines));
+			m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationGpu, *m_pRxScanlines));
 
-			m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxDepths));
+			m_pRxDepths = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxDepths));
 			for (size_t i = 0; i < m_rxNumDepths; i++)
 			{
 				m_pRxDepths->get()[i] = static_cast<LocationType>(m_pRxDepths->get()[i] * factor);
 			}
-			m_pRxDepths = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxDepths));
+			m_pRxDepths = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxDepths));
 
-			m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementXs));
-			m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementYs));
+			m_pRxElementXs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementXs));
+			m_pRxElementYs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationHost, *m_pRxElementYs));
 			for (size_t i = 0; i < numTransducerElements; i++)
 			{
 				m_pRxElementXs->get()[i] = static_cast<LocationType>(m_pRxElementXs->get()[i] * factor);
 				m_pRxElementYs->get()[i] = static_cast<LocationType>(m_pRxElementYs->get()[i] * factor);
 			}
-			m_pRxElementXs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
-			m_pRxElementYs = unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
+			m_pRxElementXs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
+			m_pRxElementYs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
 			
 			m_lastSeenDt = dt;
 		}
-	}
-
-	template <typename T>
-	__device__ inline T computeAperture_D(T F, T z)
-	{
-		return z / (2 * F);
-	}
-
-	template <typename T>
-	__device__ inline T computeDelayDTSPACE_D(T dirX, T dirY, T dirZ, T x_element, T x, T z)
-	{
-		return sqrt((x_element - (x + dirX*z))*
-			(x_element - (x + dirX*z)) +
-			(dirY*z)*(dirY*z)) + z;
-	}
-
-	template <typename T>
-	__device__ inline T computeDelayDTSPACE3D_D(T dirX, T dirY, T dirZ, T x_element, T z_element, T x, T z, T d)
-	{
-		return sqrt(
-			squ(x_element - (x + dirX*d)) +
-			squ(z_element - (z + dirZ*d)) +
-			squ(dirY*d)) + d;
-	}
-
-	// distance has to be normalized to [-1, 1] (inclusive)
-	__device__ inline WindowFunctionGpu::ElementType
-		computeWindow3D(const WindowFunctionGpu& windowFunction, const vec2f& distance)
-	{
-		return
-			sqrt(windowFunction.get(distance.x)*
-				windowFunction.get(distance.y));
-	}
-
-
-	// distance has to be normalized to [-1, 1] (inclusive)
-	__device__ inline WindowFunctionGpu::ElementType
-		computeWindow3DShared(const WindowFunctionGpu& windowFunction, const WindowFunctionGpu::ElementType * __restrict__ sharedData, const vec2f& distance)
-	{
-		return
-			sqrt(windowFunction.getShared(sharedData, distance.x)*
-				windowFunction.getShared(sharedData, distance.y));
 	}
 
 	template <bool interpolateRFlines, bool interpolateBetweenTransmits, unsigned int maxNumElements, unsigned int maxNumFunctionElements, bool testSignal, typename RFType, typename ResultType, typename LocationType>
@@ -240,107 +187,33 @@ namespace supra
 						//ERROR!
 						return;
 					}
-					LocationType initialDelay = static_cast<LocationType>(txParams.initialDelay);
 					float sLocal = 0.0f;
-					float weightAcum = 0.0f;
-					int numAdds = 0;
 
-					/*if (r == 0)
-					{
-						printf("#%d: tx scanline: %d, scanline x: %f, z: %f, dx: %f, dy: %f, dz: %f\n    firstIndX %d, firstIndY %d, lastIndX %d, lastIndY %d\n",
-							scanlineIdx, txScanlineIdx, scanline_x, scanline_z, dirX, dirY, dirZ, scanline.firstActiveElementIndex.x, scanline.firstActiveElementIndex.y,
-							scanline.lastActiveElementIndex.x, scanline.lastActiveElementIndex.y);
-
-					}*/
 					if (testSignal)
 					{
-						constexpr float cylinderSpacing = 6; //[mm]
-						constexpr float cylinderDiameter = 2; //[mm]
-						constexpr float cylinderDepth = 30; //[mm]
-						constexpr int numCylindersHalf = 3;
-
-						vec3f point = static_cast<vec3f>(scanline.position) + d * static_cast<vec3f>(scanline.direction);
-						point = point *dt*speedOfSound; // bring point position back from dt space to world space
-						//check for all cylinders
-						// cylinders along z axis
-						for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
-						{
-							vec3f cylinderCenter = vec3f{ cylinderNo * cylinderSpacing, cylinderDepth, 0 };
-							vec3f pointInPlane = point;
-							pointInPlane.z = 0;
-							float distance = norm(pointInPlane - cylinderCenter);
-							if (distance <= cylinderDiameter)
-							{
-								sLocal = 1000;
-							}
-						}
-						// cylinders along x axis
-						for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
-						{
-							vec3f cylinderCenter = vec3f{ 0, cylinderDepth,  cylinderNo * cylinderSpacing };
-							vec3f pointInPlane = point;
-							pointInPlane.x = 0;
-							float distance = norm(pointInPlane - cylinderCenter);
-							if (distance <= cylinderDiameter)
-							{
-								sLocal = 1000;
-							}
-						}
+						sLocal = RxSampleBeamformerTestSignal::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
+							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
+							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
+						sLocal+= RxSampleBeamformerDelayAndStdDev::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
+							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
+							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
 					}
 					else
 					{
-						for (uint32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
-						{
-							for (uint32_t elemIdxY = txParams.firstActiveElementIndex.y; elemIdxY < txParams.lastActiveElementIndex.y; elemIdxY++)
-							{
-								uint32_t elemIdx = elemIdxX + elemIdxY*elementLayout.x;
-								uint32_t  channelIdx = elemIdx % numReceivedChannels;
-								LocationType x_elem = x_elemsDTsh[elemIdx];
-								LocationType z_elem = z_elemsDTsh[elemIdx];
-
-								if ((squ(x_elem - scanline_x) + squ(z_elem - scanline_z)) <= aDT)
-								{
-									vec2f elementScanlineDistance = { x_elem - scanline_x, z_elem - scanline_z };
-									float weight = computeWindow3DShared(windowFunction, functionShared, elementScanlineDistance * invMaxElementDistance);
-									weightAcum += weight;
-									numAdds++;
-									if (interpolateRFlines)
-									{
-										LocationType delayf = initialDelay +
-											computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, d);
-										uint32_t delay = static_cast<uint32_t>(::floor(delayf));
-										delayf -= delay;
-										if (delay < (numTimesteps - 1))
-										{
-											sLocal +=
-												weight * ((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
-													delayf  * RF[(delay + 1) + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps]);
-										}
-										else if (delay < numTimesteps && delayf == 0.0)
-										{
-											sLocal += weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
-										}
-									}
-									else
-									{
-										uint32_t delay = static_cast<uint32_t>(::round(
-											initialDelay + computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, d)));
-										if (delay < numTimesteps)
-										{
-											sLocal += weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
-										}
-									}
-								}
-							}
-						}
+						sLocal = RxSampleBeamformerDelayAndSum::sampleBeamform3D<interpolateRFlines, RFType, float, LocationType>(
+							txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+							x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
+							aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared);
 					}
 					if (interpolateBetweenTransmits)
 					{
-						sInterp += static_cast<float>(scanline.txWeights[k])* sLocal / weightAcum * numAdds;
+						sInterp += static_cast<float>(scanline.txWeights[k])* sLocal;
 					}
 					else
 					{
-						sInterp += sLocal / weightAcum * numAdds;
+						sInterp += sLocal;
 					}
 				}
 			}
@@ -414,58 +287,35 @@ namespace supra
 						//ERROR!
 						return;
 					}
-					LocationType initialDelay = static_cast<LocationType>(txParams.initialDelay);
 
 					float sLocal = 0.0f;
-					float weightAcum = 0.0f;
-					int numAdds = 0;
-					for (int32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
-					{
-						int32_t  channelIdx = elemIdxX % numReceivedChannels;
-						LocationType x_elem = x_elemsDT[elemIdxX];
-						if (abs(x_elem - scanline_x) <= aDT)
-						{
-							float weight = windowFunction.get((x_elem - scanline_x) * invMaxElementDistance);
-							weightAcum += weight;
-							numAdds++;
-							if (interpolateRFlines)
-							{
-								LocationType delayf = initialDelay +
-									computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, d);
-								int32_t delay = static_cast<int32_t>(floor(delayf));
-								delayf -= delay;
-								if (delay < (numTimesteps - 1))
-								{
-									sLocal +=
-										weight * ((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
-											delayf  * RF[(delay + 1) + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps]);
-								}
-								else if (delay < numTimesteps && delayf == 0.0)
-								{
-									sLocal += weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
-								}
-							}
-							else
-							{
-								int32_t delay = static_cast<int32_t>(round(
-									initialDelay + computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, d)));
-								if (delay < numTimesteps)
-								{
-									sLocal += weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
-								}
-							}
-						}
-					}
+					sLocal = RxSampleBeamformerDelayAndSum::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
+						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
+						x_elemsDT, scanline_x, dirX, dirY, dirZ,
+						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
+
+
+					sLocal += RxSampleBeamformerDelayAndStdDev::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
+						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
+						x_elemsDT, scanline_x, dirX, dirY, dirZ,
+						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
+					sLocal += RxSampleBeamformerTestSignal::sampleBeamform2D<interpolateRFlines, RFType, float, LocationType>(
+						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
+						x_elemsDT, scanline_x, dirX, dirY, dirZ,
+						aDT, d, invMaxElementDistance, speedOfSound, dt, &windowFunction);
+
 					if (interpolateBetweenTransmits)
 					{
-						sInterp += static_cast<float>(scanline.txWeights[k])* sLocal / weightAcum * numAdds;
+						sInterp += static_cast<float>(scanline.txWeights[k])* sLocal;
 					}
 					else
 					{
-						sInterp += sLocal / weightAcum * numAdds;
+						sInterp += sLocal;
 					}
 				}
 			}
+
+
 			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(sInterp);
 		}
 	}
@@ -619,11 +469,11 @@ namespace supra
 		auto gRawData = rawData->getData();
 		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
 		{
-			gRawData = make_shared<Container<int16_t> >(LocationGpu, *gRawData);
+			gRawData = std::make_shared<Container<int16_t> >(LocationGpu, *gRawData);
 		}
 
 		size_t numelOut = m_numRxScanlines*m_rxNumDepths;
-		shared_ptr<Container<int16_t> > pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
+		shared_ptr<Container<int16_t> > pData = std::make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
 
 		double dt = 1.0 / rawData->getSamplingFrequency();
 
@@ -683,14 +533,14 @@ namespace supra
 		if (rawData->getImageProperties() != m_lastSeenImageProperties)
 		{
 			m_lastSeenImageProperties = rawData->getImageProperties();
-			shared_ptr<USImageProperties> newProps = make_shared<USImageProperties>(*m_lastSeenImageProperties);
+			shared_ptr<USImageProperties> newProps = std::make_shared<USImageProperties>(*m_lastSeenImageProperties);
 			newProps->setScanlineLayout(m_rxScanlineLayout);
 			newProps->setNumSamples(m_rxNumDepths);
 			newProps->setImageState(USImageProperties::RF);
-			m_editedImageProperties = const_pointer_cast<const USImageProperties>(newProps);
+			m_editedImageProperties = std::const_pointer_cast<const USImageProperties>(newProps);
 		}
 
-		auto retImage = make_shared<USImage<int16_t> >(
+		auto retImage = std::make_shared<USImage<int16_t> >(
 			vec2s{ m_numRxScanlines, m_rxNumDepths },
 			pData,
 			m_editedImageProperties,

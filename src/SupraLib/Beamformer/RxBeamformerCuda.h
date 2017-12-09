@@ -12,7 +12,6 @@
 #ifndef __RXBEAMFORMERCUDA_H__
 #define __RXBEAMFORMERCUDA_H__
 
-#include "USTransducer.h"
 #include "USImage.h"
 #include "WindowFunction.h"
 #include "RxBeamformerParameters.h"
