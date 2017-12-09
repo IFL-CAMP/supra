@@ -16,6 +16,16 @@
 #include "WindowFunction.h"
 #include "RxBeamformerCommon.h"
 
+// Beamformer accoring to
+//
+// R.S.Bandaru, A.R.Sornes, J.Hermans, E.Samset, and J.D’Hooge, 
+// “Delay and Standard Deviation Beamforming to Enhance Specular Reflections in Ultrasound Imaging,”
+// IEEE Trans.Ultrason.Ferroelectr.Freq.Control, vol. 63, no. 12, 2016.
+//
+// with the modification of calculating the std dev for the real channel data, 
+// instead of IQ as proposed in the article.
+
+
 //TODO ALL ELEMENT/SCANLINE Y positons are actually Z! Change all variable names accordingly
 namespace supra
 {
