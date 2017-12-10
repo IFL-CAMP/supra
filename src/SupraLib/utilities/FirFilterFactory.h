@@ -60,7 +60,7 @@ namespace supra
 			ElementType omegaBandwidth = static_cast<ElementType>(2 * M_PI* bandwidth / samplingFrequency);
 			int halfWidth = ((int)length - 1) / 2;
 
-			auto filter = std::make_shared<Container<ElementType> >(LocationHost, length);
+			auto filter = std::make_shared<Container<ElementType> >(LocationHost, cudaStreamPerThread, length);
 
 			//determine the filter function
 			std::function<ElementType(int)> filterFunction = [halfWidth](int n) -> ElementType {

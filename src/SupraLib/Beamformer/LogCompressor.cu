@@ -48,13 +48,12 @@ namespace supra
 		size_t height = size.y;
 		size_t depth = size.z;
 
-		auto pComprGpu = make_shared<Container<uint8_t> >(LocationGpu, width*height*depth);
+		auto pComprGpu = make_shared<Container<uint8_t> >(LocationGpu, inImageData->getStream(), width*height*depth);
 
 		thrustLogcompress<int16_t, uint8_t, WorkType> c(pow(10, (dynamicRange / 20)), static_cast<int16_t>(inMax), std::numeric_limits<uint8_t>::max(), scale);
-		thrust::transform(thrust::device, inImageData->get(), inImageData->get() + (width*height*depth),
+		thrust::transform(thrust::cuda::par.on(inImageData->getStream()), inImageData->get(), inImageData->get() + (width*height*depth),
 			pComprGpu->get(), c);
 		cudaSafeCall(cudaPeekAtLastError());
-		cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 
 		return pComprGpu;
 	}

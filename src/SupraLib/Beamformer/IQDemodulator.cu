@@ -198,7 +198,7 @@ namespace supra
 			FirFilterFactory::FilterTypeLowPass,
 			FirFilterFactory::FilterWindowHamming,
 			m_samplingFrequency, m_cutoffFrequency);
-		m_decimationLowpassFilter = m_decimationLowpassFilter->getCopy(LocationGpu);
+		m_decimationLowpassFilter = make_shared<Container<float> >(LocationGpu, *m_decimationLowpassFilter);
 	}
 
 	int IQDemodulator::decimatedSignalLength(int numSamples, uint32_t decimation)
@@ -251,7 +251,7 @@ namespace supra
 						m_samplingFrequency,
 						m_frequencyCompoundingReferenceFrequencies[k],
 						m_frequencyCompoundingBandwidths[k]);
-				m_frequencyCompoundingBandpassFilters[k] = m_frequencyCompoundingBandpassFilters[k]->getCopy(LocationGpu);
+				m_frequencyCompoundingBandpassFilters[k] = make_shared<Container<WorkType> >(LocationGpu, *m_frequencyCompoundingBandpassFilters[k]);
 				bankNeedsUpdate = true;
 			}
 
@@ -273,8 +273,8 @@ namespace supra
 		}
 		if (bankNeedsUpdate)
 		{
-			m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies = make_shared<Container<WorkType> >(LocationHost, numBandpassFilters);
-			m_frequencyCompoundingBandpassFilterBank = make_shared <Container<WorkType> >(LocationGpu, numBandpassFilters * m_frequencyCompoundingBandpassFilterLength);
+			m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies = make_shared<Container<WorkType> >(LocationHost, inImageData->getStream(), numBandpassFilters);
+			m_frequencyCompoundingBandpassFilterBank = make_shared <Container<WorkType> >(LocationGpu, inImageData->getStream(), numBandpassFilters * m_frequencyCompoundingBandpassFilterLength);
 			for (size_t k = 0; k < numBandpassFilters; k++)
 			{
 				cudaSafeCall(cudaMemcpy(
@@ -287,26 +287,27 @@ namespace supra
 					m_frequencyCompoundingReferenceFrequencies[k] / m_samplingFrequency);
 			}
 
-			m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies = m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies->getCopy(LocationGpu);
+			m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies =
+				make_shared<Container<WorkType> >(LocationGpu, *m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies);
 		}
 		if (weightsNeedUpdate)
 		{
-			m_frequencyCompoundingWeightsGpu = make_shared<Container<WorkType> >(LocationHost, numBandpassFilters);
+			m_frequencyCompoundingWeightsGpu = make_shared<Container<WorkType> >(LocationHost, inImageData->getStream(), numBandpassFilters);
 			for (size_t k = 0; k < numBandpassFilters; k++)
 			{
 				m_frequencyCompoundingWeightsGpu->get()[k] = static_cast<WorkType>(m_frequencyCompoundingWeights[k]);
 			}
-			m_frequencyCompoundingWeightsGpu = m_frequencyCompoundingWeightsGpu->getCopy(LocationGpu);
+			m_frequencyCompoundingWeightsGpu = make_shared<Container<WorkType> >(LocationGpu, *m_frequencyCompoundingWeightsGpu);
 		}
 
 		// now that the filters are guaranteed to be current, perform frequency compounding envelope detection
-		auto pBandpass = shared_ptr<Container<WorkType> >(new Container<WorkType>(LocationGpu, numScanlines*numSamples*numBandpassFilters));
+		auto pBandpass = make_shared<Container<WorkType> >(LocationGpu, inImageData->getStream(), numScanlines*numSamples*numBandpassFilters);
 		dim3 blockSizeFilter(16, 8);
 		dim3 gridSizeFilter(
 			static_cast<unsigned int>((numScanlines + blockSizeFilter.x - 1) / blockSizeFilter.x),
 			static_cast<unsigned int>((numSamples + blockSizeFilter.y - 1) / blockSizeFilter.y));
 
-		kernelFilterBankDemodulation<maxNumbandpassFilters, 0, 1, 3, 4> <<<gridSizeFilter, blockSizeFilter, 0, cudaStreamPerThread>>> (
+		kernelFilterBankDemodulation<maxNumbandpassFilters, 0, 1, 3, 4> <<<gridSizeFilter, blockSizeFilter, 0, inImageData->getStream()>>> (
 			inImageData->get(),
 			m_frequencyCompoundingBandpassFilterBank->get(),
 			pBandpass->get(),
@@ -319,11 +320,10 @@ namespace supra
 			1/ weightAcum,
 			m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies->get());
 		cudaSafeCall(cudaPeekAtLastError());
-		cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 
 		//Apply the decimation lowpass filter on all bank outputs at the same time
 		int numSamplesDecimated = decimatedSignalLength(numSamples, decimation);
-		auto pEnv = shared_ptr<Container<int16_t> >(new Container<int16_t>(LocationGpu, numScanlines*numSamplesDecimated));
+		auto pEnv = make_shared<Container<int16_t> >(LocationGpu, inImageData->getStream(), numScanlines*numSamplesDecimated);
 
 		uint32_t stride = std::max(decimation, (uint32_t)1);
 		dim3 blockSizeDecimation(16, 8);
@@ -331,7 +331,7 @@ namespace supra
 			static_cast<unsigned int>((numScanlines + blockSizeDecimation.x - 1) / blockSizeDecimation.x),
 			static_cast<unsigned int>((numSamplesDecimated + blockSizeDecimation.y - 1) / blockSizeDecimation.y));
 
-		kernelFilterStrided <<<gridSizeDecimation, blockSizeDecimation, 0, cudaStreamPerThread>>> (
+		kernelFilterStrided <<<gridSizeDecimation, blockSizeDecimation, 0, inImageData->getStream()>>> (
 			pBandpass->get(),
 			m_decimationLowpassFilter->get(),
 			pEnv->get(),
@@ -340,7 +340,6 @@ namespace supra
 			(int)m_decimationLowpassFilterLength,
 			stride);
 		cudaSafeCall(cudaPeekAtLastError());
-		cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
 
 		return pEnv;
 	}

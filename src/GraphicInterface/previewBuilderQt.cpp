@@ -120,7 +120,7 @@ namespace supra
 							auto inImageData = inImage8Bit->getData();
 							if (!inImageData->isHost())
 							{
-								inImageData = inImageData->getCopy(ContainerLocation::LocationHost);
+								inImageData = make_shared<Container<uint8_t> >(LocationHost, *inImageData);
 							}
 							qtimage = std::make_shared<QImage>(
 								static_cast<int>(inImage8Bit->getSize().x),
@@ -141,7 +141,7 @@ namespace supra
 							auto inImageData = inImage16Bit->getData();
 							if (!inImageData->isHost())
 							{
-								inImageData = inImageData->getCopy(ContainerLocation::LocationHost);
+								inImageData = make_shared<Container<int16_t> >(LocationHost, *inImageData);
 							}
 							qtimage = std::make_shared<QImage>(
 								static_cast<int>(inImage16Bit->getSize().x),

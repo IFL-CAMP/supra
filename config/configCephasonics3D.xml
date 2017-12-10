@@ -27,11 +27,11 @@
 				<param name="numScanlinesY" type="uint32_t">
 					16
 				</param>
-				<param name="rxNumScanlinesX" type="uint32_t">
-					32
+				<param name="rxScanlineSubdivisionX" type="uint32_t">
+					1
 				</param>
-				<param name="rxNumScanlinesY" type="uint32_t">
-					16
+				<param name="rxScanlineSubdivisionY" type="uint32_t">
+					1
 				</param>
 				<param name="numSamplesRecon" type="uint32_t">
 					2000
@@ -173,6 +173,12 @@
 			<node type="LogCompressorNode" id="LOGC">
 			</node>
 			<node type="ScanConverterNode" id="SCAN">
+				<param name="imageResolutionForced" type="bool">
+					1
+				</param>
+				<param name="imageResolution" type="double">
+					0.15
+				</param>
 			</node>
 		</nodes>
 	</devices>
