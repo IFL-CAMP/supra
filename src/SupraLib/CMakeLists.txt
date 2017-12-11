@@ -310,9 +310,11 @@ IF(SUPRA_DEVICE_CEPHASONICS)
 ENDIF()
 IF(SUPRA_DEVICE_ITK_FILE_OUT)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
-		InputOutput/MetaImageOutputDevice.cpp)
+		InputOutput/MetaImageOutputDevice.cpp
+		InputOutput/MhdSequenceWriter.cpp)
 	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
-		InputOutput/MetaImageOutputDevice.h)
+		InputOutput/MetaImageOutputDevice.h
+		InputOutput/MhdSequenceWriter.h)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_METAIMAGE_OUTPUT)
 ENDIF()
