@@ -210,6 +210,16 @@ namespace supra
 		}
 	}
 
+	void ContainerFactory::garbageCollectionThreadFunction()
+	{
+		sm_garbageCollectionThread.detach();
+		while (true)
+		{
+			ContainerFactory::freeOldBuffers();
+			std::this_thread::sleep_for(std::chrono::duration<double>(sm_deallocationTimeout));
+		}
+	}
+
 	void ContainerFactory::freeMemory(uint8_t * pointer, size_t numBytes, ContainerLocation location)
 	{
 		switch (location)
@@ -241,4 +251,6 @@ namespace supra
 	std::mutex ContainerFactory::sm_streamMutex;
 
 	std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_queue<std::pair<uint8_t*, double> > >, LocationINVALID> ContainerFactory::sm_bufferMaps;
+
+	std::thread ContainerFactory::sm_garbageCollectionThread(&ContainerFactory::garbageCollectionThreadFunction);
 }
