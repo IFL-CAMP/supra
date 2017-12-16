@@ -31,12 +31,12 @@ namespace supra
 	public:
 		MhdSequenceWriter();
 		
-		void open(std::string basefilename);
+		void open(std::string basefilename, size_t memoryBufferSize = sm_memoryBufferDefaultSize);
 
 		bool isOpen();
 
 		template <typename ValueType>
-		size_t addImage(const ValueType* imageData, size_t w, size_t h, size_t d,
+		std::pair<bool, size_t> addImage(const ValueType* imageData, size_t w, size_t h, size_t d,
 			double timestamp, double spacing,
 			std::function<void(const uint8_t*, size_t)> deleteCallback = std::function<void(const uint8_t*, size_t)>());
 
@@ -47,12 +47,15 @@ namespace supra
 
 		void closeFiles();
 
-		void addImageQueue(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
+		bool addImageQueue(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
 		void writerThread();
 		void addImageInternal(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
+		static constexpr size_t sm_memoryBufferDefaultSize = 4 * 1024 * 1024 * (size_t)1024; // [Bytes]
+
 		bool m_wroteHeaders;
 		size_t m_nextFrameNumber;
+		size_t m_memoryBufferSize;
 		std::ofstream m_mhdFile;
 		std::ofstream m_rawFile;
 		std::string m_baseFilename;

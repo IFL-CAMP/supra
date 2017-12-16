@@ -167,13 +167,18 @@ namespace supra
 			auto mainRecord = syncMessage->getMainRecord();
 			if (mainRecord->getType() == TypeUSImage)
 			{
-				size_t frameNum = addImage(mainRecord);
+				auto successframeNum = addImage(mainRecord);
+				bool success = get<0>(successframeNum);
+				size_t frameNum = get<1>(successframeNum);
 
-				for (shared_ptr<const RecordObject> syncedO : syncMessage->getSyncedRecords())
+				if (success)
 				{
-					if (syncedO->getType() == TypeTrackerDataSet)
+					for (shared_ptr<const RecordObject> syncedO : syncMessage->getSyncedRecords())
 					{
-						addTracking(syncedO, frameNum);
+						if (syncedO->getType() == TypeTrackerDataSet)
+						{
+							addTracking(syncedO, frameNum);
+						}
 					}
 				}
 			}
@@ -181,8 +186,9 @@ namespace supra
 	}
 
 	template <typename ElementType>
-	size_t MetaImageOutputDevice::addImageTemplated(shared_ptr<const USImage<ElementType> > imageData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addImageTemplated(shared_ptr<const USImage<ElementType> > imageData)
 	{
+		bool success = false;
 		size_t frameNum = 0;
 		if (imageData)
 		{
@@ -209,19 +215,22 @@ namespace supra
 					pData = pDataCopy;
 				}
 
-				frameNum = m_pWriter->addImage(
+				auto successframeNum = m_pWriter->addImage(
 					pData->get(), imageSize.x, imageSize.y, imageSize.z,
 					imageData->getSyncTimestamp(), resolution,
 					[pData](const uint8_t*, size_t){}
 				);
+				success = get<0>(successframeNum);
+				frameNum = get<1>(successframeNum);
 			}
 		}
-		return frameNum;
+		return std::make_pair(success, frameNum);
 	}
 
 	template <typename ElementType>
-	size_t MetaImageOutputDevice::addUSRawDataTemplated(shared_ptr<const USRawData<ElementType> > rawData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addUSRawDataTemplated(shared_ptr<const USRawData<ElementType> > rawData)
 	{
+		bool success = false;
 		size_t frameNum = 0;
 		if (rawData)
 		{
@@ -240,41 +249,43 @@ namespace supra
 				pData = pDataCopy;
 			}
 			double resolution = rawData->getImageProperties()->getSampleDistance();
-			frameNum = m_pWriter->addImage<ElementType>(
+			auto successframeNum = m_pWriter->addImage<ElementType>(
 				pData->get(), numSamples, numChannels, numScanlines, 
 				rawData->getSyncTimestamp(), resolution,
 				[pData](const uint8_t*, size_t){}
 			);
+			success = get<0>(successframeNum);
+			frameNum = get<1>(successframeNum);
 		}
-		return frameNum;
+		return std::make_pair(success, frameNum);
 	}
 
-	size_t MetaImageOutputDevice::addImage(shared_ptr<const RecordObject> _imageData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addImage(shared_ptr<const RecordObject> _imageData)
 	{
-		size_t frameNum = 0;
+		std::pair<bool, size_t> successframeNum = std::make_pair(false, 0);
 		auto imageData8Bit = dynamic_pointer_cast<const USImage<uint8_t>>(_imageData);
 		if (imageData8Bit)
 		{
-			frameNum = addImageTemplated<uint8_t>(imageData8Bit);
+			successframeNum = addImageTemplated<uint8_t>(imageData8Bit);
 		}
 
 		auto imageData16Bit = dynamic_pointer_cast<const USImage<int16_t>>(_imageData);
 		if (imageData16Bit)
 		{
-			frameNum = addImageTemplated<int16_t>(imageData16Bit);
+			successframeNum = addImageTemplated<int16_t>(imageData16Bit);
 		}
-		return frameNum;
+		return successframeNum;
 	}
 
-	size_t MetaImageOutputDevice::addUSRawData(shared_ptr<const RecordObject> _rawData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addUSRawData(shared_ptr<const RecordObject> _rawData)
 	{
-		size_t frameNum = 0;
+		std::pair<bool, size_t> successframeNum = std::make_pair(false, 0);
 		auto rawData = dynamic_pointer_cast<const USRawData<int16_t>>(_rawData);
 		if (rawData)
 		{
-			frameNum = addUSRawDataTemplated<int16_t>(rawData);
+			successframeNum = addUSRawDataTemplated<int16_t>(rawData);
 		}
-		return frameNum;
+		return successframeNum;
 	}
 
 	void MetaImageOutputDevice::addTracking(shared_ptr<const RecordObject> _trackData, size_t frameNum)

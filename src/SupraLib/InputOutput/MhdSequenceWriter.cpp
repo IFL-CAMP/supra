@@ -20,6 +20,7 @@ namespace supra
 	MhdSequenceWriter::MhdSequenceWriter()
 		: m_wroteHeaders(false)
 		, m_nextFrameNumber(0)
+		, m_memoryBufferSize(0)
 		, m_closing(false)
 	{};
 
@@ -28,7 +29,7 @@ namespace supra
 		closeFiles();
 	};
 
-	void MhdSequenceWriter::open(std::string basefilename)
+	void MhdSequenceWriter::open(std::string basefilename, size_t memoryBufferSize)
 	{
 		m_baseFilename = basefilename;
 		m_mhdFilename = m_baseFilename + ".mhd";
@@ -36,14 +37,13 @@ namespace supra
 
 		m_rawFilename = m_baseFilename + ".raw";
 		m_rawFilenameNoPath = m_baseFilename.substr(m_baseFilename.find_last_of("/\\") + 1) + ".raw";
+		// Turn of buffering for raw writer to increase throughput
+		m_rawFile.rdbuf()->pubsetbuf(0, 0);
 		m_rawFile.open(m_rawFilename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-
-		//TODO: If performace is not sufficient, try unbuffered output (must happen before opening the file)
-		//m_mhdFile.rdbuf()->pubsetbuf(0, 0);
-		//m_rawFile.rdbuf()->pubsetbuf(0, 0);
 
 		m_mhdFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
 
+		m_memoryBufferSize = memoryBufferSize;
 		m_writerThread = std::thread(&MhdSequenceWriter::writerThread, this);
 	}
 
@@ -53,7 +53,7 @@ namespace supra
 	}
 
 	template <typename ValueType>
-	size_t MhdSequenceWriter::addImage(const ValueType* imageData, size_t w, size_t h, size_t d, 
+	std::pair<bool, size_t> MhdSequenceWriter::addImage(const ValueType* imageData, size_t w, size_t h, size_t d, 
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback)
 	{
 		static_assert(
@@ -105,41 +105,48 @@ namespace supra
 					m_wroteHeaders = true;
 				}
 
-				size_t thisFrameNum = m_nextFrameNumber;
-				m_nextFrameNumber++;
-
 				//add data to the write queue
-				addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
-				
-				//write the image sequence info
-				std::stringstream frameNumStr;
-				frameNumStr << std::setfill('0') << std::setw(4) << thisFrameNum;
-				m_mhdFile << "Seq_Frame" << frameNumStr.str() << "_ImageStatus = OK\n"
-					<< "Seq_Frame" << frameNumStr.str() << "_Timestamp = " << timestamp << "\n";
+				bool written = addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
 
-				//update the sequence size
-				m_mhdFile.seekp(m_positionImageCount);
-				m_mhdFile << thisFrameNum + 1;
-				m_mhdFile.seekp(0, std::ios_base::end);
+				if(!written)
+				{ 
+					return std::make_pair(false, 0);
+				}
+				else
+				{
+					size_t thisFrameNum = m_nextFrameNumber;
+					m_nextFrameNumber++;
 
-				return thisFrameNum;
+					//write the image sequence info
+					std::stringstream frameNumStr;
+					frameNumStr << std::setfill('0') << std::setw(4) << thisFrameNum;
+					m_mhdFile << "Seq_Frame" << frameNumStr.str() << "_ImageStatus = OK\n"
+						<< "Seq_Frame" << frameNumStr.str() << "_Timestamp = " << timestamp << "\n";
+
+					//update the sequence size
+					m_mhdFile.seekp(m_positionImageCount);
+					m_mhdFile << thisFrameNum + 1;
+					m_mhdFile.seekp(0, std::ios_base::end);
+
+					return std::make_pair(true, thisFrameNum);
+				}
 			}
 			else {
 				logging::log_warn("Could not write frame to MHD, file already contains 9999 frames.");
-				return m_nextFrameNumber;
+				return std::make_pair(false, 0);
 			}
 		}
 		else {
 			logging::log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
-			return m_nextFrameNumber;
+			return std::make_pair(false, 0);
 		}
 	}
 
 	template
-	size_t MhdSequenceWriter::addImage<uint8_t>(const uint8_t* imageData, size_t w, size_t h, size_t d,
+	std::pair<bool, size_t> MhdSequenceWriter::addImage<uint8_t>(const uint8_t* imageData, size_t w, size_t h, size_t d,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 	template
-	size_t MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d,
+	std::pair<bool, size_t>MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
 	void MhdSequenceWriter::addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName)
@@ -184,13 +191,18 @@ namespace supra
 		}
 	}
 
-	void MhdSequenceWriter::addImageQueue(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
+	bool MhdSequenceWriter::addImageQueue(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
 	{
 		std::unique_lock<std::mutex> l(m_queueMutex);
-		m_writeQueue.push(
-			std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> >{ imageData, numel, deleteCallback });
 
-		m_queueConditionVariable.notify_one();
+		if (m_writeQueue.size() * numel <= m_memoryBufferSize)
+		{
+			m_writeQueue.push(std::make_tuple(imageData, numel, deleteCallback));
+			m_queueConditionVariable.notify_one();
+
+			return true;
+		}
+		return false;
 	}
 
 	void MhdSequenceWriter::writerThread()
@@ -244,4 +256,6 @@ namespace supra
 		}
 		deleteCallback(imageData, numel);
 	}
+
+	constexpr size_t MhdSequenceWriter::sm_memoryBufferDefaultSize;
 }
