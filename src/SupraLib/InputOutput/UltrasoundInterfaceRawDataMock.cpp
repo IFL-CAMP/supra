@@ -106,7 +106,7 @@ namespace supra
 		{
 			m_singleImage = m_configurationDictionary.get<bool>("singleImage");
 		}
-		if (configKey == "sequenceOnce")
+		if (configKey == "streamSequenceOnce")
 		{
 			m_streamSequenceOnce = m_configurationDictionary.get<bool>("streamSequenceOnce");
 		}
