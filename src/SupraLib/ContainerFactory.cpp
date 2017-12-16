@@ -250,6 +250,8 @@ namespace supra
 	size_t ContainerFactory::sm_streamIndex = 0;
 	std::mutex ContainerFactory::sm_streamMutex;
 
+	constexpr double ContainerFactory::sm_deallocationTimeout;
+
 	std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_queue<std::pair<uint8_t*, double> > >, LocationINVALID> ContainerFactory::sm_bufferMaps;
 
 	std::thread ContainerFactory::sm_garbageCollectionThread(&ContainerFactory::garbageCollectionThreadFunction);

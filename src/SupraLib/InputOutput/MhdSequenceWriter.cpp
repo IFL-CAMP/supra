@@ -187,7 +187,8 @@ namespace supra
 	void MhdSequenceWriter::addImageQueue(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
 	{
 		std::unique_lock<std::mutex> l(m_queueMutex);
-		m_writeQueue.push({ imageData, numel, deleteCallback });
+		m_writeQueue.push(
+			std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> >{ imageData, numel, deleteCallback });
 
 		m_queueConditionVariable.notify_one();
 	}
