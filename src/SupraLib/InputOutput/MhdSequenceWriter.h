@@ -16,6 +16,13 @@
 
 #include <array>
 #include <functional>
+#include <fstream>
+#include <string>
+#include <queue>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#include <thread>
 
 namespace supra
 {
@@ -23,20 +30,27 @@ namespace supra
 	{
 	public:
 		MhdSequenceWriter();
-		~MhdSequenceWriter();
-
+		
 		void open(std::string basefilename);
 
 		bool isOpen();
 
 		template <typename ValueType>
 		size_t addImage(const ValueType* imageData, size_t w, size_t h, size_t d,
-			double timestamp, double spacing, std::function<void(void)> deleteCallback = std::function<void(void)>());
+			double timestamp, double spacing,
+			std::function<void(const uint8_t*, size_t)> deleteCallback = std::function<void(const uint8_t*, size_t)>());
 
 		void addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName);
-
 		void close();
 	private:
+		~MhdSequenceWriter();
+
+		void closeFiles();
+
+		void addImageQueue(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
+		void writerThread();
+		void addImageInternal(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
+
 		bool m_wroteHeaders;
 		size_t m_nextFrameNumber;
 		std::ofstream m_mhdFile;
@@ -47,6 +61,14 @@ namespace supra
 		std::string m_rawFilenameNoPath;
 
 		std::streampos m_positionImageCount;
+
+		std::queue<std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> > > m_writeQueue;
+
+		std::atomic_bool m_closing;
+		std::mutex m_rawFileMutex;
+		std::mutex m_queueMutex;
+		std::condition_variable m_queueConditionVariable;
+		std::thread m_writerThread;
 	};
 }
 

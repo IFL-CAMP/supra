@@ -12,20 +12,19 @@
 //
 // ================================================================================================
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <array>
-#include <cassert>
-
 #include "MetaImageOutputDevice.h"
-
+#include "MhdSequenceWriter.h"
 #include <SyncRecordObject.h>
 #include <USImage.h>
 #include <Beamformer/USRawData.h>
 #include <TrackerDataSet.h>
 #include <utilities/Logging.h>
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <array>
+#include <cassert>
 
 using namespace std;
 namespace supra
@@ -39,6 +38,7 @@ namespace supra
 		, m_isRecording(false)
 		, m_sequencesWritten(0)
 		, m_active(true)
+		, m_pWriter(nullptr)
 	{
 		m_callFrequency.setName("MHD");
 
@@ -97,6 +97,7 @@ namespace supra
 			lock_guard<mutex> l(m_writerMutex);
 			m_isRecording = false;
 			m_pWriter->close();
+			m_pWriter = nullptr;
 
 			m_sequencesWritten++;
 		}
@@ -129,7 +130,11 @@ namespace supra
 		}
 		log_info("MetaImage file Name: ", filename);
 
-		m_pWriter = unique_ptr<MhdSequenceWriter>(new MhdSequenceWriter());
+		if (m_pWriter)
+		{
+			m_pWriter->close();
+		}
+		m_pWriter = new MhdSequenceWriter();
 		m_pWriter->open(filename);
 		m_isRecording = m_pWriter->isOpen();
 	}
@@ -204,7 +209,11 @@ namespace supra
 					pData = pDataCopy;
 				}
 
-				frameNum = m_pWriter->addImage(pData->get(), imageSize.x, imageSize.y, imageSize.z, imageData->getSyncTimestamp(), resolution);
+				frameNum = m_pWriter->addImage(
+					pData->get(), imageSize.x, imageSize.y, imageSize.z,
+					imageData->getSyncTimestamp(), resolution,
+					[pData](const uint8_t*, size_t){}
+				);
 			}
 		}
 		return frameNum;
@@ -231,7 +240,11 @@ namespace supra
 				pData = pDataCopy;
 			}
 			double resolution = rawData->getImageProperties()->getSampleDistance();
-			frameNum = m_pWriter->addImage(pData->get(), numSamples, numChannels, numScanlines, rawData->getSyncTimestamp(), resolution);
+			frameNum = m_pWriter->addImage<ElementType>(
+				pData->get(), numSamples, numChannels, numScanlines, 
+				rawData->getSyncTimestamp(), resolution,
+				[pData](const uint8_t*, size_t){}
+			);
 		}
 		return frameNum;
 	}

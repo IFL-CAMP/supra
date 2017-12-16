@@ -10,8 +10,8 @@
 // ================================================================================================
 
 #include "MhdSequenceWriter.h"
+#include "utilities/Logging.h"
 
-#include <fstream>
 #include <sstream>
 #include <iomanip>
 
@@ -20,14 +20,12 @@ namespace supra
 	MhdSequenceWriter::MhdSequenceWriter()
 		: m_wroteHeaders(false)
 		, m_nextFrameNumber(0)
+		, m_closing(false)
 	{};
 
 	MhdSequenceWriter::~MhdSequenceWriter()
 	{
-		if (m_mhdFile.is_open() || m_rawFile.is_open())
-		{
-			close();
-		}
+		closeFiles();
 	};
 
 	void MhdSequenceWriter::open(std::string basefilename)
@@ -45,16 +43,18 @@ namespace supra
 		//m_rawFile.rdbuf()->pubsetbuf(0, 0);
 
 		m_mhdFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
+
+		m_writerThread = std::thread(&MhdSequenceWriter::writerThread, this);
 	}
 
 	bool MhdSequenceWriter::isOpen()
 	{
-		return m_mhdFile.is_open() && m_rawFile.is_open();
+		return !m_closing && m_mhdFile.is_open() && m_rawFile.is_open();
 	}
 
 	template <typename ValueType>
 	size_t MhdSequenceWriter::addImage(const ValueType* imageData, size_t w, size_t h, size_t d, 
-		double timestamp, double spacing, std::function<void(void)> deleteCallback)
+		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback)
 	{
 		static_assert(
 			std::is_same<ValueType, uint8_t>::value ||
@@ -108,39 +108,39 @@ namespace supra
 				size_t thisFrameNum = m_nextFrameNumber;
 				m_nextFrameNumber++;
 
-				//write the data
-				m_rawFile.write(reinterpret_cast<const char*>(imageData), w*h*d * sizeof(ValueType));
-
+				//add data to the write queue
+				addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
+				
 				//write the image sequence info
-				stringstream frameNumStr;
-				frameNumStr << setfill('0') << setw(4) << thisFrameNum;
+				std::stringstream frameNumStr;
+				frameNumStr << std::setfill('0') << std::setw(4) << thisFrameNum;
 				m_mhdFile << "Seq_Frame" << frameNumStr.str() << "_ImageStatus = OK\n"
 					<< "Seq_Frame" << frameNumStr.str() << "_Timestamp = " << timestamp << "\n";
 
 				//update the sequence size
 				m_mhdFile.seekp(m_positionImageCount);
 				m_mhdFile << thisFrameNum + 1;
-				m_mhdFile.seekp(0, ios_base::end);
+				m_mhdFile.seekp(0, std::ios_base::end);
 
 				return thisFrameNum;
 			}
 			else {
-				log_warn("Could not write frame to MHD, file already contains 9999 frames.");
+				logging::log_warn("Could not write frame to MHD, file already contains 9999 frames.");
 				return m_nextFrameNumber;
 			}
 		}
 		else {
-			log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
+			logging::log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
 			return m_nextFrameNumber;
 		}
 	}
 
-	template <>
+	template
 	size_t MhdSequenceWriter::addImage<uint8_t>(const uint8_t* imageData, size_t w, size_t h, size_t d,
-		double timestamp, double spacing, std::function<void(void)> deleteCallback);
-	template <>
+		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
+	template
 	size_t MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d,
-		double timestamp, double spacing, std::function<void(void)> deleteCallback);
+		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
 	void MhdSequenceWriter::addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName)
 	{
@@ -164,14 +164,83 @@ namespace supra
 
 	void MhdSequenceWriter::close()
 	{
+		m_closing = true;
+		m_writerThread.detach();
+	}
+
+	void MhdSequenceWriter::closeFiles()
+	{
 		if (m_mhdFile.is_open())
 		{
 			m_mhdFile << "ElementDataFile = " << m_rawFilenameNoPath << "\n";
 			m_mhdFile.close();
 		}
-		if (m_rawFile.is_open())
 		{
-			m_rawFile.close();
+			std::unique_lock<std::mutex> l(m_rawFileMutex);
+			if (m_rawFile.is_open())
+			{
+				m_rawFile.close();
+			}
 		}
+	}
+
+	void MhdSequenceWriter::addImageQueue(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
+	{
+		std::unique_lock<std::mutex> l(m_queueMutex);
+		m_writeQueue.push({ imageData, numel, deleteCallback });
+
+		m_queueConditionVariable.notify_one();
+	}
+
+	void MhdSequenceWriter::writerThread()
+	{
+		while (!m_closing)
+		{
+			std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> > queueEntry;
+			bool haveEntry = false;
+			{
+				std::unique_lock<std::mutex> l(m_queueMutex);
+				if (m_writeQueue.size() > 0)
+				{
+					queueEntry = m_writeQueue.front();
+					m_writeQueue.pop();
+					haveEntry = true;
+				}
+			}
+			if (haveEntry)
+			{
+				addImageInternal(std::get<0>(queueEntry), std::get<1>(queueEntry), std::get<2>(queueEntry));
+			}
+			{
+				std::unique_lock<std::mutex> l(m_queueMutex);
+				if (m_writeQueue.size() == 0)
+				{
+					m_queueConditionVariable.wait(l);
+				}
+			}
+		}
+
+		//After the sequence is marked to be closed, no other thread will interfere anymore
+		{
+			std::unique_lock<std::mutex> l(m_queueMutex);
+			while (m_writeQueue.size() > 0)
+			{
+				auto queueEntry = m_writeQueue.front();
+				m_writeQueue.pop();
+				addImageInternal(std::get<0>(queueEntry), std::get<1>(queueEntry), std::get<2>(queueEntry));
+			}
+		}
+
+		// Now that everything has been written, this object can be destroyed
+		delete this;
+	}
+
+	void MhdSequenceWriter::addImageInternal(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
+	{
+		{
+			std::unique_lock<std::mutex> l(m_rawFileMutex);
+			m_rawFile.write(reinterpret_cast<const char*>(imageData), numel);
+		}
+		deleteCallback(imageData, numel);
 	}
 }

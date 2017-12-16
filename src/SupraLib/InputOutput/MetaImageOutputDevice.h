@@ -64,7 +64,7 @@ namespace supra
 		template <typename ElementType>
 		size_t addUSRawDataTemplated(std::shared_ptr < const USRawData<ElementType> > rawData);
 
-		std::unique_ptr<MhdSequenceWriter> m_pWriter;
+		MhdSequenceWriter* m_pWriter;
 
 		bool m_isReady;
 		bool m_createSequences;
