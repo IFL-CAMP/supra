@@ -41,7 +41,7 @@ OPTION(SUPRA_DEVICE_ROS_IMAGE_OUT  "Build ROS image output Interface"  OFF)
 SET( SUPRA_DEVICE_ULTRASONIX_V     "5.7"  CACHE STRING "Ultrasonix Version (5.7|6.07)")
 
 # external folder
-SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external")
+SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE PATH "Path to external libs e.g. ultrasonix.")
 SET( SUPRA_EXTERNALS_TBB      ""  CACHE PATH "Path to the TBB base dir")
 SET( SUPRA_EXTERNALS_TBB_LIBS ""  CACHE PATH "Path to the TBB lib dir")
 
