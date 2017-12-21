@@ -32,19 +32,25 @@ OPTION(SUPRA_BEAMFORMER            "Build Software beamformer"         ON)
 OPTION(SUPRA_DEVICE_ULTRASOUND_SIM "Build Ultrasound Test"             ON)
 OPTION(SUPRA_DEVICE_TRACKING_SIM   "Build Tracker Test"                ON)
 OPTION(SUPRA_DEVICE_TRACKING_IGTL  "Build OpenIGTLink Tracking Input"  ON)
-OPTION(SUPRA_DEVICE_TRACKING_ROS   "Build ROS Tracking Input"          OFF)
 OPTION(SUPRA_DEVICE_ULTRASONIX     "Build Ultrasonix Ultrasound"       OFF)
 OPTION(SUPRA_DEVICE_IGTL_OUTPUT    "Build OpenIGTLink Output"          ON)
 OPTION(SUPRA_DEVICE_CEPHASONICS    "Build Cephasonics Ultrasound"      OFF)
 OPTION(SUPRA_DEVICE_ITK_FILE_OUT   "Build ITK file output Interface"   ON)
 OPTION(SUPRA_DEVICE_ROS_IMAGE_OUT  "Build ROS image output Interface"  OFF)
 SET( SUPRA_DEVICE_ULTRASONIX_V     "5.7"  CACHE STRING "Ultrasonix Version (5.7|6.07)")
+IF(WIN32)
+	# Ros tracking output is by default activated on windows as it does not add dependencies
+	OPTION(SUPRA_DEVICE_TRACKING_ROS   "Build ROS Tracking Input"          ON)
+ELSE()
+	OPTION(SUPRA_DEVICE_TRACKING_ROS   "Build ROS Tracking Input"          OFF)
+ENDIF()
 
 # external folder
-SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external")
+SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE PATH "Path to external libs e.g. ultrasonix.")
 SET( SUPRA_EXTERNALS_TBB      ""  CACHE PATH "Path to the TBB base dir")
 SET( SUPRA_EXTERNALS_TBB_LIBS ""  CACHE PATH "Path to the TBB lib dir")
 
+	
 ADD_SUBDIRECTORY(src/SupraLib)
 IF(SUPRA_INTERFACE_COMMANDLINE)
 ADD_SUBDIRECTORY(src/CommandlineInterface)
