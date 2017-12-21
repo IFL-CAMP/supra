@@ -150,6 +150,7 @@ namespace supra
 		, m_pProbe(nullptr)
 		, m_cUSEngine(nullptr)
 		, m_numMuxedChannels(0)
+		, m_numChannelsTotal(0)
 		, m_probeMapping(0)
 		, m_systemRxClock(40)
 		, m_mockDataWritten(false)
@@ -171,6 +172,8 @@ namespace supra
 
 			m_environSet = true;
 		}
+
+		m_cPlatformHandle = setupPlatform();
 
 		// number of different frames (e.g. 1 PW follwed by 1 B-Mode) as basic determinator for other settings
 		m_valueRangeDictionary.set<uint32_t>("sequenceNumFrames", 1, 10, 1, "Number of different beam sequences");
@@ -426,7 +429,19 @@ namespace supra
 					m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 				}
 			}
-			else if (m_numMuxedChannels == 1152)
+			else if ((m_numMuxedChannels == 192 || m_numMuxedChannels == 128) && m_numChannelsTotal == 64)
+			{
+				// 64 channel system which allows for full realtime imaging of 128 element probe
+				m_probeElementsToMuxedChannelIndices.resize(128);
+
+				// Linear transducer is expected to be at platform 0
+				// and it uses the first 2 mux switches from each element
+				for(size_t probeElem = 0; probeElem < 128; probeElem++)
+				{
+					m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
+				}
+			}
+			else if (m_numMuxedChannels == 1152 && m_numChannelsTotal == 384)
 			{
 				// 384 channel system which allows for full realtime imaging of 128 element probe
 				m_probeElementsToMuxedChannelIndices.resize(128);
@@ -469,7 +484,11 @@ namespace supra
 					m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 				}
 			}
-			else if (m_numMuxedChannels == 384)
+			else if (m_numMuxedChannels == 192 && m_numChannelsTotal == 64)
+			{
+				log_error("UsIntCephasonicsCc: 64 element array not yet supported in 64 channel system with muxing.");
+			}
+			else if (m_numMuxedChannels == 1152 && m_numChannelsTotal == 384)
 			{
 				log_error("UsIntCephasonicsCc: 64 element array not yet supported in 384 channel system.");
 			}
@@ -645,9 +664,6 @@ namespace supra
 
 	void UsIntCephasonicsCc::initializeDevice()
 	{
-		//Step 1 ------------------ "Setup Platform"
-		m_cPlatformHandle = setupPlatform();
-	
 		checkOptions();	
 	
 		m_cUSEngine = unique_ptr<USEngine>(new USEngine(*m_cPlatformHandle));
