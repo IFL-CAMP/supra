@@ -12,9 +12,9 @@
 #ifndef __RXBEAMFORMERCUDA_H__
 #define __RXBEAMFORMERCUDA_H__
 
-#include "USTransducer.h"
 #include "USImage.h"
 #include "WindowFunction.h"
+#include "RxBeamformerParameters.h"
 
 #include <memory>
 
@@ -29,37 +29,28 @@ namespace supra
 	class RxBeamformerCuda
 	{
 	public:
-		RxBeamformerCuda(std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > rxParameters, size_t numDepths, double depth, double speedOfSoundMMperS, const USTransducer* pTransducer);
+		enum RxSampleBeamformer {
+			DelayAndSum,
+			DelayAndStdDev,
+			TestSignal,
+			INVALID
+		};
+
+		RxBeamformerCuda(const RxBeamformerParameters& parameters);
 		~RxBeamformerCuda();
 
 		// perform the receive beamforming
 		template <typename ChannelDataType, typename ImageDataType>
 		shared_ptr<USImage<ImageDataType> > performRxBeamforming(
+			RxSampleBeamformer sampleBeamformer,
 			shared_ptr<const USRawData<ChannelDataType> > rawData,
 			double fNumber,
 			WindowType windowType,
 			WindowFunction::ElementType windowParameters,
-			bool interpolateBetweenTransmits,
-			bool testSignal) const;
-
-		template <typename ChannelDataType>
-		void writeMetaDataForMock(std::string filename, shared_ptr<const USRawData<ChannelDataType> > rawData) const;
-		template <typename ChannelDataType>
-		static shared_ptr<USRawData<ChannelDataType> > readMetaDataForMock(const std::string & mockMetadataFilename);
+			bool interpolateBetweenTransmits) const;
 
 	private:
-		typedef float LocationType;
-
-		//only for mock creation
-		RxBeamformerCuda(
-			size_t numRxScanlines,
-			vec2s rxScanlineLayout,
-			double speedOfSoundMMperS,
-			const std::vector<LocationType> & rxDepths,
-			const std::vector<ScanlineRxParameters3D> & rxScanlines,
-			const std::vector<LocationType> & rxElementXs,
-			const std::vector<LocationType> & rxElementYs,
-			size_t rxNumDepths);
+		typedef RxBeamformerParameters::LocationType LocationType;
 
 		void convertToDtSpace(double dt, size_t numTransducerElements) const;
 

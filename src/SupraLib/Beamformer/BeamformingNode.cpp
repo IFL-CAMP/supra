@@ -25,13 +25,15 @@ namespace supra
 		: AbstractNode(nodeID)
 		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
 		, m_lastSeenImageProperties(nullptr)
+		, m_beamformer(nullptr)
+		, m_lastSeenBeamformerParameters(nullptr)
 	{
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
+		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "TestSignal"}, "DelayAndSum", "RxBeamformer");
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
-		m_valueRangeDictionary.set<bool>("testSignal", { false, true }, false, "Test signal");
 		configurationChanged();
 	}
 
@@ -40,8 +42,8 @@ namespace supra
 		m_fNumber = m_configurationDictionary.get<double>("fNumber");
 		readWindowType();
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
+		readBeamformerType();
 		m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
-		m_testSignal = m_configurationDictionary.get<bool>("testSignal");
 	}
 
 	void BeamformingNode::configurationEntryChanged(const std::string& configKey)
@@ -59,13 +61,13 @@ namespace supra
 		{
 			m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
 		}
+		else if (configKey == "beamformerType")
+		{
+			readBeamformerType();
+		}
 		else if (configKey == "interpolateTransmits")
 		{
 			m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
-		}
-		else if (configKey == "testSignal")
-		{
-			m_testSignal = m_configurationDictionary.get<bool>("testSignal");
 		}
 		if (m_lastSeenImageProperties)
 		{
@@ -84,8 +86,21 @@ namespace supra
 			if (pRawData)
 			{
 				m_callFrequency.measure();
-				pImageRF = pRawData->getRxBeamformer()->performRxBeamforming<int16_t, int16_t>(
-					pRawData, m_fNumber, m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_testSignal);
+				
+				// We need to create a new beamformer if we either did not create one yet, or if the beamformer parameters changed
+				bool needNewBeamformer = !m_beamformer;
+				if (!m_lastSeenBeamformerParameters || m_lastSeenBeamformerParameters != pRawData->getRxBeamformerParameters())
+				{
+					m_lastSeenBeamformerParameters = pRawData->getRxBeamformerParameters();
+					needNewBeamformer = true;
+				}
+				if (needNewBeamformer)
+				{
+					m_beamformer = std::make_shared<RxBeamformerCuda>(*m_lastSeenBeamformerParameters);
+				}
+				pImageRF = m_beamformer->performRxBeamforming<int16_t, int16_t>(
+					m_beamformerType, pRawData, m_fNumber, 
+					m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
 				m_callFrequency.measureEnd();
 
 				if (m_lastSeenImageProperties != pImageRF->getImageProperties())
@@ -122,6 +137,24 @@ namespace supra
 		}
 	}
 
+	void BeamformingNode::readBeamformerType()
+	{
+		string beamformer = m_configurationDictionary.get<string>("beamformerType");
+		m_beamformerType = RxBeamformerCuda::DelayAndSum;
+		if (beamformer == "DelayAndSum")
+		{
+			m_beamformerType = RxBeamformerCuda::DelayAndSum;
+		}
+		else if (beamformer == "DelayAndStdDev")
+		{
+			m_beamformerType = RxBeamformerCuda::DelayAndStdDev;
+		}
+		else if (beamformer == "TestSignal")
+		{
+			m_beamformerType = RxBeamformerCuda::TestSignal;
+		}
+	}
+
 	void BeamformingNode::updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties)
 	{
 		m_lastSeenImageProperties = imageProperties;
@@ -129,7 +162,7 @@ namespace supra
 		m_editedImageProperties->setSpecificParameter("Beamformer.FNumber", m_fNumber);
 		m_editedImageProperties->setSpecificParameter("Beamformer.WindowType", m_windowType);
 		m_editedImageProperties->setSpecificParameter("Beamformer.WindowParameter", m_windowParameter);
+		m_editedImageProperties->setSpecificParameter("Beamformer.BeamformerType", m_beamformerType);
 		m_editedImageProperties->setSpecificParameter("Beamformer.InterpolateTransmits", m_interpolateTransmits);
-		m_editedImageProperties->setSpecificParameter("Beamformer.TestSignal", m_testSignal);
 	}
 }

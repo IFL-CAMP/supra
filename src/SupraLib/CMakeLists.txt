@@ -179,6 +179,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		Beamformer/Sequencer.cpp
 		Beamformer/Beamformer.cpp
+		Beamformer/RxBeamformerParameters.cpp
 		Beamformer/WindowFunction.cpp
 		Beamformer/USTransducer.cpp
 		Beamformer/BeamformingNode.cpp
@@ -197,6 +198,11 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/Sequencer.h
 		Beamformer/Beamformer.h
 		Beamformer/RxBeamformerCuda.h
+		Beamformer/RxBeamformerCommon.h
+		Beamformer/RxSampleBeamformerDelayAndSum.h
+		Beamformer/RxSampleBeamformerDelayAndStdDev.h
+		Beamformer/RxSampleBeamformerTestSignal.h
+		Beamformer/RxBeamformerParameters.h
 		Beamformer/WindowFunction.h
 		Beamformer/USTransducer.h
 		Beamformer/BeamformingNode.h

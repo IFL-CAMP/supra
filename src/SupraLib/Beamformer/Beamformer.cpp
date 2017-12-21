@@ -29,7 +29,7 @@ namespace supra
 	using namespace logging;
 
 	Beamformer::Beamformer()
-		: m_pRxBeamformer(nullptr)
+		: m_pRxBeamformerParameters(nullptr)
 		, m_pTransducer(nullptr)
 		, m_type(Beamformer::Linear)
 		, m_correctMatchingLayers(true)
@@ -56,7 +56,7 @@ namespace supra
 	Beamformer::Beamformer(const std::shared_ptr<Beamformer> bf)
 		: m_txParameters(bf->m_txParameters)
 		, m_rxParameters(nullptr) // re-computed online
-		, m_pRxBeamformer(nullptr) // re-computed online
+		, m_pRxBeamformerParameters(nullptr) // re-computed online
 		, m_pTransducer(bf->m_pTransducer)
 		, m_type(bf->m_type)
 		, m_correctMatchingLayers(bf->m_correctMatchingLayers)
@@ -783,18 +783,18 @@ namespace supra
 		return m_rxParameters;
 	}
 
-	shared_ptr<const RxBeamformerCuda> Beamformer::getCurrentRxBeamformer()
+	shared_ptr<const RxBeamformerParameters> Beamformer::getCurrentRxBeamformerParameters()
 	{
 		size_t numDepths = m_numSamplesRecon;
 
 		//TODO if we get new parameters, create new RxBeamformer if neccessary
-		if (!m_pRxBeamformer)
+		if (!m_pRxBeamformerParameters)
 		{
-			m_pRxBeamformer = make_shared<RxBeamformerCuda>(
+			m_pRxBeamformerParameters = make_shared<RxBeamformerParameters>(
 				m_rxParameters, numDepths, m_depth,
 				m_speedOfSoundMMperS, m_pTransducer);
 		}
-		return m_pRxBeamformer;
+		return m_pRxBeamformerParameters;
 	}
 
 	ScanlineTxParameters3D Beamformer::getTxScanline3D(
