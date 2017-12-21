@@ -55,16 +55,16 @@ namespace supra
 		void initializeSequence();
 		void addData(std::shared_ptr<const RecordObject> data);
 		void addSyncRecord(std::shared_ptr<const RecordObject> _syncMessage);
-		size_t addImage(std::shared_ptr<const RecordObject> imageData);
-		size_t addUSRawData(std::shared_ptr<const RecordObject> _rawData);
+		std::pair<bool, size_t> addImage(std::shared_ptr<const RecordObject> imageData);
+		std::pair<bool, size_t> addUSRawData(std::shared_ptr<const RecordObject> _rawData);
 		void addTracking(std::shared_ptr<const RecordObject> trackingData, size_t frameNum);
 
 		template <typename ElementType>
-		size_t addImageTemplated(std::shared_ptr<const USImage<ElementType> > imageData);
+		std::pair<bool, size_t> addImageTemplated(std::shared_ptr<const USImage<ElementType> > imageData);
 		template <typename ElementType>
-		size_t addUSRawDataTemplated(std::shared_ptr < const USRawData<ElementType> > rawData);
+		std::pair<bool, size_t> addUSRawDataTemplated(std::shared_ptr < const USRawData<ElementType> > rawData);
 
-		std::unique_ptr<MhdSequenceWriter> m_pWriter;
+		MhdSequenceWriter* m_pWriter;
 
 		bool m_isReady;
 		bool m_createSequences;
