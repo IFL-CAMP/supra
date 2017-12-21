@@ -351,6 +351,8 @@ namespace supra
 		}
 		catch(const cs::csException& e)
 		{
+			log_error("UsIntCephasonicsCc: Exception during USPlatformMgr::discoverPlatforms. Message: ",
+					e.what());
 			// how to handle? for now we simply abort.
 		}
 		if (numPlatforms < 1 || numPlatforms > (int)USPlatformMgr::MAX_HANDLES)
