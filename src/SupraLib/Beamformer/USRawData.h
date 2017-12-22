@@ -18,7 +18,7 @@
 #include "Container.h"
 #include "RecordObject.h"
 #include "USImageProperties.h"
-#include "RxBeamformerCuda.h"
+#include "RxBeamformerParameters.h"
 
 namespace supra
 {
@@ -33,7 +33,7 @@ namespace supra
 			size_t numSamples,
 			double samplingFrequency,
 			std::shared_ptr<const Container<ElementType> > pData,
-			std::shared_ptr<const RxBeamformerCuda> pRxBeamformer,
+			std::shared_ptr<const RxBeamformerParameters> pRxBeamformerParameters,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp,
 			double syncTimestamp)
@@ -45,7 +45,7 @@ namespace supra
 			, m_numSamples(numSamples)
 			, m_samplingFrequency(samplingFrequency)
 			, m_pData(pData)
-			, m_pRxBeamformer(pRxBeamformer)
+			, m_pRxBeamformerParameters(pRxBeamformerParameters)
 			, m_pImageProperties(pImageProperties)
 		{};
 
@@ -57,7 +57,7 @@ namespace supra
 		size_t getNumReceivedChannels() const { return m_numReceivedChannels; };
 		size_t getNumSamples() const { return m_numSamples; };
 		double getSamplingFrequency() const { return m_samplingFrequency; };
-		std::shared_ptr<const RxBeamformerCuda> getRxBeamformer() const { return m_pRxBeamformer; };
+		std::shared_ptr<const RxBeamformerParameters> getRxBeamformerParameters() const { return m_pRxBeamformerParameters; };
 
 		virtual RecordObjectType getType() const { return TypeUSRawData; }
 
@@ -69,7 +69,7 @@ namespace supra
 		size_t m_numSamples;
 		double m_samplingFrequency; // [MHz]
 		std::shared_ptr<const Container<ElementType> > m_pData;
-		std::shared_ptr<const RxBeamformerCuda> m_pRxBeamformer;
+		std::shared_ptr<const RxBeamformerParameters> m_pRxBeamformerParameters;
 
 		std::shared_ptr<const USImageProperties> m_pImageProperties;
 	};

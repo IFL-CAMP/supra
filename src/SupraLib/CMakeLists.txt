@@ -179,6 +179,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		Beamformer/Sequencer.cpp
 		Beamformer/Beamformer.cpp
+		Beamformer/RxBeamformerParameters.cpp
 		Beamformer/WindowFunction.cpp
 		Beamformer/USTransducer.cpp
 		Beamformer/BeamformingNode.cpp
@@ -197,6 +198,11 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/Sequencer.h
 		Beamformer/Beamformer.h
 		Beamformer/RxBeamformerCuda.h
+		Beamformer/RxBeamformerCommon.h
+		Beamformer/RxSampleBeamformerDelayAndSum.h
+		Beamformer/RxSampleBeamformerDelayAndStdDev.h
+		Beamformer/RxSampleBeamformerTestSignal.h
+		Beamformer/RxBeamformerParameters.h
 		Beamformer/WindowFunction.h
 		Beamformer/USTransducer.h
 		Beamformer/BeamformingNode.h
@@ -242,6 +248,9 @@ IF(SUPRA_DEVICE_TRACKING_IGTL)
 		${OpenIGTLink_LIBRARY_DIRS})
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
 		${OpenIGTLink_LIBRARIES})
+	IF(WIN32)
+		SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES} ws2_32 wsock32)
+	ENDIF(WIN32)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_TRACKING_IGTL)
 ENDIF()
@@ -310,9 +319,11 @@ IF(SUPRA_DEVICE_CEPHASONICS)
 ENDIF()
 IF(SUPRA_DEVICE_ITK_FILE_OUT)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
-		InputOutput/MetaImageOutputDevice.cpp)
+		InputOutput/MetaImageOutputDevice.cpp
+		InputOutput/MhdSequenceWriter.cpp)
 	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
-		InputOutput/MetaImageOutputDevice.h)
+		InputOutput/MetaImageOutputDevice.h
+		InputOutput/MhdSequenceWriter.h)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_METAIMAGE_OUTPUT)
 ENDIF()

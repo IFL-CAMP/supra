@@ -22,6 +22,7 @@ namespace supra
 	using std::max;
 	using std::round;
 	using std::vector;
+	using std::shared_ptr;
 	using std::make_shared;
 	using std::pair;
 
@@ -34,8 +35,8 @@ namespace supra
 
 		for (auto k=0; k<numBeamformers; ++k)
 		{
-			m_beamformers.push_back(shared_ptr<Beamformer>(new Beamformer));
-			m_imageProperties.push_back(shared_ptr<USImageProperties>(new USImageProperties));
+			m_beamformers.push_back(make_shared<Beamformer>());
+			m_imageProperties.push_back(make_shared<USImageProperties>());
 		}	
 	}
 

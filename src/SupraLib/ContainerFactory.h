@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <mutex>
+#include <thread>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_queue.h>
 
@@ -60,10 +61,11 @@ namespace supra
 		static uint8_t* allocateMemory(size_t numBytes, ContainerLocation location);
 		static void freeBuffers(size_t numBytesMin, ContainerLocation location);
 		static void freeOldBuffers();
+		static void garbageCollectionThreadFunction();
 		static void freeMemory(uint8_t* pointer, size_t numBytes, ContainerLocation location);
 
 		static std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_queue<std::pair<uint8_t*, double> > >, LocationINVALID> sm_bufferMaps;
-		//static std::array<std::mutex, LocationINVALID> sm_bufferMutexes;
+		static std::thread sm_garbageCollectionThread;
 	};
 
 	class ContainerFactoryContainerInterface : public ContainerFactory
