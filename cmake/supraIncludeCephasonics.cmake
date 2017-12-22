@@ -80,19 +80,23 @@ SET(APP_UI_LIBS us_ui)
 #CEPHASONICS_INCLUDE += -I /opt/local/include/boost
 #CEPHASONICS_INCLUDE += -I /opt/local/include/boost/thread
 #CEPHASONICS_LIBDIRS += -L /opt/local/lib
-#APP_DEP_LIBS += -lboost_thread-mt -lboost_system-mt -lboost_filesystem-mt -lboost_program_options-mt -framework CoreFoundation -framework IOKit
-#CQLINK_DEP_LIBS = -framework CoreFoundation -framework IOKit
-#ELSE
-SET(APP_DEP_LIBS boost_system boost_filesystem boost_program_options boost_thread)
-#CQLINK_DEP_LIBS =
-#CQLINK_CLI_LIBS += -lrt
-SET(CEPHASONICS_INCLUDE 
-	/usr/include/
-	/usr/include/boost/
-	/usr/include/boost/thread)
-#ENDIF(MAC)
+
+
+SET(CEPHASONICS_INCLUDE /usr/include/)
+
+set(Boost_USE_STATIC_LIBS      OFF)
+set(Boost_USE_MULTITHREADED    ON)
+set(Boost_USE_STATIC_RUNTIME   OFF)
+find_package(Boost 1.54.0 EXACT REQUIRED COMPONENTS system filesystem program_options thread)
+if(Boost_FOUND)
+  SET(CEPHASONICS_INCLUDE ${CEPHASONICS_INCLUDE} ${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIR}/boost ${Boost_INCLUDE_DIR}/boost/thread)
+  SET(CEPHASONICS_LIBRARIES ${CEPHASONICS_LIBRARIES} ${Boost_LIBRARIES})
+  SET(CEPHASONICS_LIBDIRS ${CEPHASONICS_LIBDIRS} ${Boost_LIBRARY_DIRS})
+endif()
 	
 SET(CEPHASONICS_INCLUDE ${CEPHASONICS_INCLUDE} ${APP_INC_CORE})# ${APP_INC_UI})
-SET(CEPHASONICS_LIBRARIES ${APP_CORE_LIBS} ${APP_DEP_LIBS} ${APP_UI_LIBS})
-SET(CEPHASONICS_LIBDIRS ${APP_LIBDIR})
+SET(CEPHASONICS_LIBRARIES ${CEPHASONICS_LIBRARIES} ${APP_CORE_LIBS} ${APP_UI_LIBS})
+SET(CEPHASONICS_LIBDIRS ${CEPHASONICS_LIBDIRS} ${APP_LIBDIR})
+
+
 
