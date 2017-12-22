@@ -1642,14 +1642,14 @@ namespace supra
 					numSamples,
 					 m_systemRxClock * 1e6, //MHz to Hz
 					pData,
-					bf->getCurrentRxBeamformer(),
+					bf->getCurrentRxBeamformerParameters(),
 					imProps,
 					timestamp,
 					timestamp);
 
 				if(m_writeMockData && !m_mockDataWritten)
 				{
-					rawData->getRxBeamformer()->writeMetaDataForMock(m_mockDataFilename, const_pointer_cast<const USRawData<int16> >(rawData));
+					rawData->getRxBeamformerParameters()->writeMetaDataForMock(m_mockDataFilename, const_pointer_cast<const USRawData<int16> >(rawData));
 					m_mockDataWritten = true;
 				}
 
