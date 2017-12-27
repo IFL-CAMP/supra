@@ -22,14 +22,14 @@ using namespace std;
 
 namespace supra
 {
+#define SCANCONVERTERINTERNALS_TETRAHEDRON_TEST_DISTANCE_THRESHOLD (1e-9)
+#define SCANCONVERTERINTERNALS_MAPPING_MAX_ITERATIONS (SCANCONVERTER_MAPPING_MAX_ITERATIONS)
+#define SCANCONVERTERINTERNALS_MAPPING_DISTANCE_THRESHOLD (SCANCONVERTER_MAPPING_DISTANCE_THRESHOLD)
+
 	class ScanConverterInternals {
 	public:
 		typedef ScanConverter::IndexType IndexType;
 		typedef ScanConverter::WeightType WeightType;
-
-		static constexpr double m_tetrahedronTestDistanceThreshold = 1e-9;
-		static constexpr int m_mappingMaxIterations = ScanConverter::m_mappingMaxIterations;
-		static constexpr double m_mappingDistanceThreshold = ScanConverter::m_mappingDistanceThreshold;
 
 		template <typename Tf, typename Ti>
 		static __device__ __host__ void computeParametersVoxel3D(
@@ -124,10 +124,10 @@ namespace supra
 			Tf w4 = barycentricCoordinate3D(a, b, c, p);
 
 			return w0 > 0 &&
-				w1 >= -m_tetrahedronTestDistanceThreshold &&
-				w2 >= -m_tetrahedronTestDistanceThreshold &&
-				w3 >= -m_tetrahedronTestDistanceThreshold &&
-				w4 >= -m_tetrahedronTestDistanceThreshold;
+				w1 >= -SCANCONVERTERINTERNALS_TETRAHEDRON_TEST_DISTANCE_THRESHOLD &&
+				w2 >= -SCANCONVERTERINTERNALS_TETRAHEDRON_TEST_DISTANCE_THRESHOLD &&
+				w3 >= -SCANCONVERTERINTERNALS_TETRAHEDRON_TEST_DISTANCE_THRESHOLD &&
+				w4 >= -SCANCONVERTERINTERNALS_TETRAHEDRON_TEST_DISTANCE_THRESHOLD;
 		}
 
 		template <typename Tf>
@@ -191,8 +191,8 @@ namespace supra
 			vec3T<Tf> planeBaseY1;
 			vec3T<Tf> planeBaseX2;
 			vec3T<Tf> planeBaseY2;
-			for (int numIter = 0; numIter < m_mappingMaxIterations &&
-				(dist.x > m_mappingDistanceThreshold || dist.y > m_mappingDistanceThreshold); numIter++)
+			for (int numIter = 0; numIter < SCANCONVERTER_MAPPING_MAX_ITERATIONS &&
+				(dist.x > SCANCONVERTER_MAPPING_DISTANCE_THRESHOLD || dist.y > SCANCONVERTER_MAPPING_DISTANCE_THRESHOLD); numIter++)
 			{
 				t = (1 - highDist / (highDist + lowDist))*highT + (1 - lowDist / (highDist + lowDist))*lowT;
 
@@ -521,7 +521,7 @@ namespace supra
 						}
 						//scanlines are not skew
 						scanlinesGood = scanlinesGood &&
-							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < m_skewnessTestThreshold;
+							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < SCANCONVERTER_SKEWNESS_TEST_THRESHOLD;
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
@@ -562,7 +562,7 @@ namespace supra
 						}
 						//scanlines are not skew
 						scanlinesGood = scanlinesGood &&
-							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < m_skewnessTestThreshold;
+							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < SCANCONVERTER_SKEWNESS_TEST_THRESHOLD;
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
@@ -839,7 +839,7 @@ namespace supra
 		double dist = 1e10;
 		double t = (highT - lowT) / 2 + lowT;
 		vec lineBase;
-		for (size_t numIter = 0; numIter < m_mappingMaxIterations && dist > m_mappingDistanceThreshold; numIter++)
+		for (size_t numIter = 0; numIter < SCANCONVERTER_MAPPING_MAX_ITERATIONS && dist > SCANCONVERTER_MAPPING_DISTANCE_THRESHOLD; numIter++)
 		{
 			t = (1 - highDist / (highDist + lowDist))*highT + (1 - lowDist / (highDist + lowDist))*lowT;
 

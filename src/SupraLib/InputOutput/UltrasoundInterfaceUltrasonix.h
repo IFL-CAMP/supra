@@ -20,6 +20,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
 #include "AbstractInput.h"
 #include "USImage.h"
@@ -134,7 +135,7 @@ namespace supra
 		double m_hostToUSOffsetInSec;
 		double m_speedOfSound;
 
-		std::atomic_bool m_frozen;
+		std::atomic<bool> m_frozen;
 
 		USImagingMode m_imagingMode;
 
@@ -146,7 +147,7 @@ namespace supra
 		double m_rfSamplingFrequInHz;
 
 		std::shared_ptr<const USImageProperties> m_pImageProperties;
-		std::atomic_bool m_initialized;
+		std::atomic<bool> m_initialized;
 
 		bool m_RFStreamEnabled;
 

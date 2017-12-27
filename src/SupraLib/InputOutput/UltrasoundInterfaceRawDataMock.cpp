@@ -66,10 +66,10 @@ namespace supra
 			m_mockDataStreams[k] = std::shared_ptr<std::ifstream>(new std::ifstream);
 			m_mockDataStreams[k]->open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
 			m_mockDataStreams[k]->rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());	
-			size_t filesizeBytes = m_mockDataStreams[k]->tellg();
+			std::streamoff filesizeBytes = m_mockDataStreams[k]->tellg();
 			m_mockDataStreams[k]->seekg(0);
 
-			m_sequenceLengths[k] = filesizeBytes / (m_numel * sizeof(int16_t));
+			m_sequenceLengths[k] = static_cast<size_t>(filesizeBytes / (m_numel * sizeof(int16_t)));
 		}
 
 		readNextFrame();

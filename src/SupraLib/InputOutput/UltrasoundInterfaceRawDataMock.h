@@ -54,9 +54,6 @@ namespace supra
 		virtual bool timerCallback();
 
 	private:
-		static constexpr size_t m_maxSequenceLength = 20;
-		static constexpr size_t m_maxSequenceSizeMb = 512;
-
 		void readConfiguration();
 		void readNextFrame();
 
@@ -75,7 +72,7 @@ namespace supra
 		size_t m_sequenceIndex;
 		size_t m_frameIndex;
 		size_t m_numel;
-		std::atomic_bool m_frozen;
+		std::atomic<bool> m_frozen;
 
 		std::mutex m_objectMutex;
 	};

@@ -19,13 +19,13 @@ using namespace std;
 namespace supra
 {
 	/// minimum width of the nodes list
-	constexpr int listWidthMin = 50;
+	#define MAINWINDOW_LIST_WIDTH_MIN (50)
 
 	/// Sets minimum and maximum width of a list widget to the width-hint
 	void setMinMaxWidthAdaptive(QListWidget* o, bool keepMax = false)
 	{
 		int curW = o->minimumWidth();
-		int w = std::max(o->sizeHintForColumn(0) + 2 * o->frameWidth(), listWidthMin);
+		int w = std::max(o->sizeHintForColumn(0) + 2 * o->frameWidth(), MAINWINDOW_LIST_WIDTH_MIN);
 
 		if (keepMax)
 		{

@@ -63,7 +63,7 @@ namespace supra
 		double m_width;
 		std::shared_ptr<USImageProperties> m_pImageProperties;
 
-		std::atomic_bool m_frozen;
+		std::atomic<bool> m_frozen;
 
 		std::mutex m_objectMutex;
 	};

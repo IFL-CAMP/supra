@@ -51,12 +51,12 @@ namespace supra
 #ifdef HAVE_CUDA
 			if(location == LocationGpu)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyDefault, associatedStream));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
 				createAndRecordEvent();
 			}
 			else if(location == LocationBoth)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyDefault, associatedStream));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), data.data(), this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
 				createAndRecordEvent();
 			}
 			else
@@ -75,14 +75,26 @@ namespace supra
 			:Container(location, associatedStream, dataEnd - dataBegin)
 		{
 #ifdef HAVE_CUDA
-			cudaSafeCall(cudaMemcpyAsync(this->get(), dataBegin, this->size() * sizeof(T), cudaMemcpyDefault, associatedStream));
-			createAndRecordEvent();
+			if (location == LocationGpu)
+			{
+				cudaSafeCall(cudaMemcpyAsync(this->get(), dataBegin, this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
+				createAndRecordEvent();
+			}
+			else if (location == LocationBoth)
+			{
+				cudaSafeCall(cudaMemcpyAsync(this->get(), dataBegin, this->size() * sizeof(T), cudaMemcpyHostToDevice, associatedStream));
+				createAndRecordEvent();
+			}
+			else
+			{
+				std::copy(dataBegin, dataBegin + this->size() * sizeof(T), this->get());
+			}
 			if (waitFinished)
 			{
 				waitCreationFinished();
 			}
 #else
-			std::copy(data.begin(), data.end(), this->get());
+			std::copy(dataBegin, dataBegin + this->size() * sizeof(T), this->get());
 #endif
 		};
 		Container(ContainerLocation location, const Container<T>& source, bool waitFinished = true)
@@ -94,17 +106,17 @@ namespace supra
 			}
 			else if (source.m_location == LocationHost && location == LocationGpu)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault, source.getStream()));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyHostToDevice, source.getStream()));
 				createAndRecordEvent();
 			}
 			else if (source.m_location == LocationGpu && location == LocationHost)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault, source.getStream()));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDeviceToHost, source.getStream()));
 				createAndRecordEvent();
 			}
 			else if (source.m_location == LocationGpu && location == LocationGpu)
 			{
-				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault, source.getStream()));
+				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDeviceToDevice, source.getStream()));
 				createAndRecordEvent();
 			}
 			else
@@ -174,7 +186,19 @@ namespace supra
 		{
 #ifdef HAVE_CUDA
 			assert(maxSize >= this->size());
-			cudaSafeCall(cudaMemcpy(dst, this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
+			if (m_location == LocationHost)
+			{
+				std::copy(this->get(), this->get() + this->size(), dst);
+			}
+			else if (m_location == LocationGpu)
+			{
+				cudaSafeCall(cudaMemcpyAsync(dst, this->get(), this->size() * sizeof(T), cudaMemcpyDeviceToHost, getStream()));
+				cudaSafeCall(cudaStreamSynchronize(getStream()));
+			}
+			else
+			{
+				cudaSafeCall(cudaMemcpy(dst, this->get(), this->size() * sizeof(T), cudaMemcpyDefault));
+			}
 #endif
 		}
 

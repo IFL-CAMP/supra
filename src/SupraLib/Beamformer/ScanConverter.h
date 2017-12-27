@@ -19,14 +19,15 @@
 
 namespace supra
 {
+#define SCANCONVERTER_MAPPING_MAX_ITERATIONS (1000)
+#define SCANCONVERTER_MAPPING_DISTANCE_THRESHOLD (1e-5)
+#define SCANCONVERTER_SKEWNESS_TEST_THRESHOLD (1e-6)
+
 	class ScanConverter
 	{
 	public:
 		typedef uint32_t IndexType;
 		typedef float WeightType;
-
-		static constexpr int m_mappingMaxIterations = 1000;
-		static constexpr double m_mappingDistanceThreshold = 1e-5;
 
 		template<typename InputType, typename OutputType>
 		std::shared_ptr<Container<OutputType> >
@@ -36,8 +37,6 @@ namespace supra
 		vec3s getImageSize() const { return m_imageSize; }
 
 	private:
-		static constexpr double m_skewnessTestThreshold = 1e-6;
-
 		double barycentricCoordinate2D(const vec2& a, const vec2& b, const vec2& c);
 		//double barycentricCoordinate3D(const vec& a, const vec& b, const vec& c, const vec& p);
 		bool pointInsideTriangle(const vec2& a, const vec2& b, const vec2& c, const vec2& p);
@@ -59,9 +58,9 @@ namespace supra
 		std::shared_ptr<Container<WeightType> > m_weightY;
 		std::shared_ptr<Container<WeightType> > m_weightZ;
 
-		vec m_bbMin = { 0,0,0 };
-		vec m_bbMax = { 0,0,0 };
-		vec3s m_imageSize = { 0,0,0 };
+		vec m_bbMin = vec{ 0,0,0 };
+		vec m_bbMax = vec{ 0,0,0 };
+		vec3s m_imageSize = vec3s{ 0,0,0 };
 	};
 }
 

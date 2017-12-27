@@ -62,7 +62,7 @@ namespace supra
 		double m_currentZ;
 		int m_frequency;
 		std::mutex m_objectMutex;
-		std::atomic_bool m_frozen;
+		std::atomic<bool> m_frozen;
 
 		void readConfiguration();
 	};

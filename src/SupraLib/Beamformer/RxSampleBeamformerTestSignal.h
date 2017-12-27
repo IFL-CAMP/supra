@@ -19,6 +19,11 @@
 //TODO ALL ELEMENT/SCANLINE Y positons are actually Z! Change all variable names accordingly
 namespace supra
 {
+#define RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_SPACING (6.0f) //[mm]
+#define RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DIAMETER (2.0f) //[mm]
+#define RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DEPTH (30.0f) //[mm]
+#define RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF (3)
+
 	class RxSampleBeamformerTestSignal
 	{
 	public:
@@ -45,36 +50,31 @@ namespace supra
 			const WindowFunction::ElementType* functionShared
 		)
 		{
-			constexpr float cylinderSpacing = 6; //[mm]
-			constexpr float cylinderDiameter = 2; //[mm]
-			constexpr float cylinderDepth = 30; //[mm]
-			constexpr int numCylindersHalf = 3;
-
 			float sample = 0.0f;
 
 			vec3f point{ scanline_x + dirX*depth, dirY*depth, scanline_z + dirZ*depth };
 			point = point *dt*speedOfSound; // bring point position back from dt space to world space
 			//check for all cylinders
 			// cylinders along z axis
-			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
+			for (int cylinderNo = -RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo <= RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo++)
 			{
-				vec3f cylinderCenter = vec3f{ cylinderNo * cylinderSpacing, cylinderDepth, 0 };
+				vec3f cylinderCenter = vec3f{ cylinderNo * RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_SPACING, RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DEPTH, 0 };
 				vec3f pointInPlane = point;
 				pointInPlane.z = 0;
 				float distance = norm(pointInPlane - cylinderCenter);
-				if (distance <= cylinderDiameter)
+				if (distance <= RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DIAMETER)
 				{
 					sample = 1000;
 				}
 			}
 			// cylinders along x axis
-			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
+			for (int cylinderNo = -RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo <= RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo++)
 			{
-				vec3f cylinderCenter = vec3f{ 0, cylinderDepth,  cylinderNo * cylinderSpacing };
+				vec3f cylinderCenter = vec3f{ 0, RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DEPTH, cylinderNo * RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_SPACING };
 				vec3f pointInPlane = point;
 				pointInPlane.x = 0;
 				float distance = norm(pointInPlane - cylinderCenter);
-				if (distance <= cylinderDiameter)
+				if (distance <= RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DIAMETER)
 				{
 					sample = 1000;
 				}
@@ -103,24 +103,19 @@ namespace supra
 			const WindowFunctionGpu* windowFunction
 		)
 		{
-			constexpr float cylinderSpacing = 6; //[mm]
-			constexpr float cylinderDiameter = 2; //[mm]
-			constexpr float cylinderDepth = 30; //[mm]
-			constexpr int numCylindersHalf = 3;
-
 			float sample = 0.0f;
 
 			vec3f point{ scanline_x + dirX*depth, dirY*depth, dirZ*depth };
 			point = point *dt*speedOfSound; // bring point position back from dt space to world space
 			//check for all cylinders
 			// cylinders along z axis
-			for (int cylinderNo = -numCylindersHalf; cylinderNo <= numCylindersHalf; cylinderNo++)
+			for (int cylinderNo = -RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo <= RXSAMPLEBEAMFORMERTESTSIGNAL_NUM_CYLINDERS_HALF; cylinderNo++)
 			{
-				vec3f cylinderCenter = vec3f{ cylinderNo * cylinderSpacing, cylinderDepth, 0 };
+				vec3f cylinderCenter = vec3f{ cylinderNo * RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_SPACING, RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DEPTH, 0 };
 				vec3f pointInPlane = point;
 				pointInPlane.z = 0;
 				float distance = norm(pointInPlane - cylinderCenter);
-				if (distance <= cylinderDiameter)
+				if (distance <= RXSAMPLEBEAMFORMERTESTSIGNAL_CYLINDER_DIAMETER)
 				{
 					sample = 1000;
 				}

@@ -33,21 +33,21 @@ namespace supra
 		, m_pTransducer(nullptr)
 		, m_type(Beamformer::Linear)
 		, m_correctMatchingLayers(true)
-		, m_numScanlines{ 0, 0 }
-		, m_rxScanlineSubdivision{ 1, 1 }
-		, m_numRxScanlines{ 0, 0 }
-		, m_maxApertureSize{ 0, 0 }
-		, m_txMaxApertureSize{ 0, 0 }
+		, m_numScanlines(vec2s{ 0, 0 })
+		, m_rxScanlineSubdivision(vec2s{ 1, 1 })
+		, m_numRxScanlines(vec2s{ 0, 0 })
+		, m_maxApertureSize(vec2s{ 0, 0 })
+		, m_txMaxApertureSize(vec2s{ 0, 0 })
 		, m_txWindow(WindowRectangular)
 		, m_depth(0.0)
-		, m_fov{ 0.0, 0.0 }
+		, m_fov(vec2{ 0.0, 0.0 })
 		, m_txFocusActive(false)
 		, m_txFocusDepth(0.0)
 		, m_txFocusWidth(0.0)
 		, m_rxFocusDepth(0.0)
 		, m_speedOfSound(1540.0)
 		, m_speedOfSoundMMperS(m_speedOfSound * 1000.0)
-		, m_txSteeringAngle{0,0}
+		, m_txSteeringAngle(vec2{0,0})
 		, m_numSamplesRecon(0)
 		, m_ready(false)
 	{
@@ -901,7 +901,7 @@ namespace supra
 					size_t localElementIdxX = activeElementIdxX - txAperture.begin.x;
 					size_t localElementIdxY = activeElementIdxY - txAperture.begin.y; // relative index (0 to 1) of element pos
 					vec2 relativeIndex = vec2{ static_cast<double>(localElementIdxX), static_cast<double>(localElementIdxY) }
-					/ static_cast<vec2>(supra::max(txAperture.end - txAperture.begin, { 1, 1 }));
+					/ static_cast<vec2>(supra::max(txAperture.end - txAperture.begin, vec2s{ 1, 1 }));
 					if (txAperture.end.x == txAperture.begin.x)
 					{
 						relativeIndex.x = 0.5;

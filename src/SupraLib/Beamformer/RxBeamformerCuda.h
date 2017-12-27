@@ -26,6 +26,8 @@ namespace supra
 
 	using std::shared_ptr;
 
+#define RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES (64)
+
 	class RxBeamformerCuda
 	{
 	public:
@@ -72,7 +74,6 @@ namespace supra
 
 		bool m_is3D;
 
-		static constexpr size_t m_windowFunctionNumEntries = 64;
 		mutable std::unique_ptr<WindowFunction> m_windowFunction;
 	};
 }

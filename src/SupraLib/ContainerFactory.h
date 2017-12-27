@@ -32,6 +32,9 @@ namespace supra
 		LocationINVALID
 	};
 
+#define CONTAINERFACTORY_NUMBER_STREAMS (16)
+#define CONTAINERFACTORY_DEALLOCATION_TIMEOUT (60)
+
 	class ContainerFactory
 	{
 	public:
@@ -50,13 +53,9 @@ namespace supra
 	private:
 		static void initStreams();
 	
-		static constexpr size_t sm_numberStreams = 16;
-
 		static std::vector<ContainerStreamType> sm_streams;
 		static size_t sm_streamIndex;
 		static std::mutex sm_streamMutex;
-
-		static constexpr double sm_deallocationTimeout = 60; // [seconds]
 
 		static uint8_t* allocateMemory(size_t numBytes, ContainerLocation location);
 		static void freeBuffers(size_t numBytesMin, ContainerLocation location);

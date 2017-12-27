@@ -30,7 +30,7 @@ namespace supra
 		}
 
 		size_t streamIndex = sm_streamIndex;
-		sm_streamIndex = (sm_streamIndex + 1) % sm_numberStreams;
+		sm_streamIndex = (sm_streamIndex + 1) % CONTAINERFACTORY_NUMBER_STREAMS;
 		return sm_streams[streamIndex];
 	}
 	uint8_t* ContainerFactory::acquireMemory(size_t numBytes, ContainerLocation location)
@@ -104,16 +104,16 @@ namespace supra
 	}
 	void ContainerFactory::initStreams()
 	{
-		logging::log_log("ContainerFactory: Initializing ", sm_numberStreams, " streams.");
+		logging::log_log("ContainerFactory: Initializing ", CONTAINERFACTORY_NUMBER_STREAMS, " streams.");
 		sm_streamIndex = 0;
 #ifdef HAVE_CUDA
-		sm_streams.resize(sm_numberStreams);
-		for (size_t k = 0; k < sm_numberStreams; k++)
+		sm_streams.resize(CONTAINERFACTORY_NUMBER_STREAMS);
+		for (size_t k = 0; k < CONTAINERFACTORY_NUMBER_STREAMS; k++)
 		{
 			cudaSafeCall(cudaStreamCreateWithFlags(&(sm_streams[k]), cudaStreamNonBlocking));
 		}
 #else
-		sm_streams.resize(sm_numberStreams, 0);
+		sm_streams.resize(CONTAINERFACTORY_NUMBER_STREAMS, 0);
 #endif
 	}
 
@@ -179,7 +179,7 @@ namespace supra
 	void ContainerFactory::freeOldBuffers()
 	{
 		double currentTime = getCurrentTime();
-		double deleteTime = currentTime - sm_deallocationTimeout;
+		double deleteTime = currentTime - (double)(CONTAINERFACTORY_DEALLOCATION_TIMEOUT);
 		for (ContainerLocation location = LocationHost; location < LocationINVALID; location = static_cast<ContainerLocation>(location + 1))
 		{
 			for (auto mapIterator = sm_bufferMaps[location].begin(); mapIterator != sm_bufferMaps[location].end(); mapIterator++)
@@ -216,7 +216,7 @@ namespace supra
 		while (true)
 		{
 			ContainerFactory::freeOldBuffers();
-			std::this_thread::sleep_for(std::chrono::duration<double>(sm_deallocationTimeout));
+			std::this_thread::sleep_for(std::chrono::duration<int>(CONTAINERFACTORY_DEALLOCATION_TIMEOUT));
 		}
 	}
 
@@ -249,8 +249,6 @@ namespace supra
 	std::vector<ContainerFactory::ContainerStreamType> ContainerFactory::sm_streams = {};
 	size_t ContainerFactory::sm_streamIndex = 0;
 	std::mutex ContainerFactory::sm_streamMutex;
-
-	constexpr double ContainerFactory::sm_deallocationTimeout;
 
 	std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_queue<std::pair<uint8_t*, double> > >, LocationINVALID> ContainerFactory::sm_bufferMaps;
 

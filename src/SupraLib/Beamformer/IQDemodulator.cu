@@ -24,6 +24,8 @@ using namespace thrust::placeholders;
 
 namespace supra
 {
+#define IQDEMODULATOR_MAX_NUM_BANDPASS_FILTERS (8)
+
 	template <typename In, typename Out>
 	struct thrustSqrt
 	{
@@ -219,8 +221,7 @@ namespace supra
 		const std::vector<double>& bandwidths,
 		const std::vector<double>& weights)
 	{
-		constexpr int maxNumbandpassFilters = 8;
-		assert(referenceFrequencies.size() <= maxNumbandpassFilters);
+		assert(referenceFrequencies.size() <= IQDEMODULATOR_MAX_NUM_BANDPASS_FILTERS);
 		assert(referenceFrequencies.size() == bandwidths.size());
 		assert(referenceFrequencies.size() == weights.size());
 
@@ -251,7 +252,6 @@ namespace supra
 						m_samplingFrequency,
 						m_frequencyCompoundingReferenceFrequencies[k],
 						m_frequencyCompoundingBandwidths[k]);
-				m_frequencyCompoundingBandpassFilters[k] = make_shared<Container<WorkType> >(LocationGpu, *m_frequencyCompoundingBandpassFilters[k]);
 				bankNeedsUpdate = true;
 			}
 
@@ -281,7 +281,7 @@ namespace supra
 					m_frequencyCompoundingBandpassFilterBank->get() + k*m_frequencyCompoundingBandpassFilterLength,
 					m_frequencyCompoundingBandpassFilters[k]->get(),
 					sizeof(WorkType)* m_frequencyCompoundingBandpassFilterLength,
-					cudaMemcpyDefault));
+					cudaMemcpyHostToDevice));
 
 				m_frequencyCompoundingReferenceFrequenciesOverSamplingFrequencies->get()[k] = static_cast<WorkType>(
 					m_frequencyCompoundingReferenceFrequencies[k] / m_samplingFrequency);
@@ -307,7 +307,7 @@ namespace supra
 			static_cast<unsigned int>((numScanlines + blockSizeFilter.x - 1) / blockSizeFilter.x),
 			static_cast<unsigned int>((numSamples + blockSizeFilter.y - 1) / blockSizeFilter.y));
 
-		kernelFilterBankDemodulation<maxNumbandpassFilters, 0, 1, 3, 4> <<<gridSizeFilter, blockSizeFilter, 0, inImageData->getStream()>>> (
+		kernelFilterBankDemodulation<IQDEMODULATOR_MAX_NUM_BANDPASS_FILTERS, 0, 1, 3, 4> << <gridSizeFilter, blockSizeFilter, 0, inImageData->getStream() >> > (
 			inImageData->get(),
 			m_frequencyCompoundingBandpassFilterBank->get(),
 			pBandpass->get(),

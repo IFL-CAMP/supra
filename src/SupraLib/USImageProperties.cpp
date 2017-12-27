@@ -87,7 +87,7 @@ namespace supra
 
 		USImageProperties::USImageProperties()
 		: m_numScanlines(0)
-		, m_scanlineLayout{ 0, 0 }
+		, m_scanlineLayout(vec2s{ 0, 0 })
 		, m_numSamples(0)
 		, m_imageType(USImageProperties::ImageType::BMode)
 		, m_imageState(USImageProperties::ImageState::Raw)

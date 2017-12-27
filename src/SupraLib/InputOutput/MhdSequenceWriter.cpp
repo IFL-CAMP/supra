@@ -256,6 +256,4 @@ namespace supra
 		}
 		deleteCallback(imageData, numel);
 	}
-
-	constexpr size_t MhdSequenceWriter::sm_memoryBufferDefaultSize;
 }

@@ -445,28 +445,28 @@ namespace supra
 
 		if (!m_windowFunction || m_windowFunction->getType() != windowType || m_windowFunction->getParameter() != windowParameter)
 		{
-			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
+			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES));
 		}
 
-		auto beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+		auto beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES, int16_t, int16_t, LocationType>;
 		auto beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
 		switch (sampleBeamformer)
 		{
 		case DelayAndSum:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES, int16_t, int16_t, LocationType>;
 			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
 			break;
 		case DelayAndStdDev:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES, int16_t, int16_t, LocationType>;
 			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndStdDev, int16_t, int16_t, LocationType>;
 			break;
 		case TestSignal:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES, int16_t, int16_t, LocationType>;
 			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerTestSignal, int16_t, int16_t, LocationType>;
 			break;
 		case INVALID:
 		default:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, RXBEAMFORMERCUDA_WINDOW_FUNCTION_NUM_ENTRIES, int16_t, int16_t, LocationType>;
 			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
 		}
 

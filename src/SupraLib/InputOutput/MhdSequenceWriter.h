@@ -26,12 +26,18 @@
 
 namespace supra
 {
+#ifdef _WIN32
+	#define MHDSEQUENCEWRITER_MEMORY_BUFFER_DEFAULT_SIZE (1*1024*1024*(size_t)(1024)) // [Bytes]
+#else
+	#define MHDSEQUENCEWRITER_MEMORY_BUFFER_DEFAULT_SIZE (4*1024*1024*(size_t)(1024)) // [Bytes]
+#endif
+
 	class MhdSequenceWriter
 	{
 	public:
 		MhdSequenceWriter();
 		
-		void open(std::string basefilename, size_t memoryBufferSize = sm_memoryBufferDefaultSize);
+		void open(std::string basefilename, size_t memoryBufferSize = MHDSEQUENCEWRITER_MEMORY_BUFFER_DEFAULT_SIZE);
 
 		bool isOpen();
 
@@ -51,8 +57,6 @@ namespace supra
 		void writerThread();
 		void addImageInternal(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
-		static constexpr size_t sm_memoryBufferDefaultSize = 4 * 1024 * 1024 * (size_t)1024; // [Bytes]
-
 		bool m_wroteHeaders;
 		size_t m_nextFrameNumber;
 		size_t m_memoryBufferSize;
@@ -67,7 +71,7 @@ namespace supra
 
 		std::queue<std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> > > m_writeQueue;
 
-		std::atomic_bool m_closing;
+		std::atomic<bool> m_closing;
 		std::mutex m_rawFileMutex;
 		std::mutex m_queueMutex;
 		std::condition_variable m_queueConditionVariable;

@@ -69,7 +69,7 @@ namespace supra
 		bool m_isReady;
 		bool m_createSequences;
 		bool m_active;
-		std::atomic_bool m_isRecording;
+		std::atomic<bool> m_isRecording;
 		size_t m_sequencesWritten;
 
 		std::mutex m_writerMutex;

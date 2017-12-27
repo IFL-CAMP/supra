@@ -28,10 +28,9 @@ namespace supra
 	struct ScanlineRxParameters3D
 	{
 		ScanlineRxParameters3D()
-			: txParameters{ {{0,0}, {0,0}, 0, 0} }
-			, position{ 0.0, 0.0, 0.0 }
-			, direction{ 0.0, 0.0, 0.0 }
-			, maxElementDistance{ 0.0, 0.0 }
+			: position(vec{ 0.0, 0.0, 0.0 })
+			, direction(vec{ 0.0, 0.0, 0.0 })
+			, maxElementDistance(vec2{ 0.0, 0.0 })
 		{}
 
 		struct TransmitParameters {

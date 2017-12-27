@@ -66,9 +66,9 @@ namespace supra
 		return true;
 	}
 
-	/// Returns the square of x. CUDA constexpr version
+	/// Returns the square of x. CUDA version
 	template <typename T>
-	__device__ constexpr inline T squ(const T& x)
+	__device__ inline T squ(const T& x)
 	{
 		return x*x;
 	}
