@@ -44,18 +44,12 @@ for paths, dirs, filenames in os.walk(os.path.abspath(start_dir)):
 pattern = re.compile(parameter_pattern)
 parameter_strings_collection = {}
 for filename in code_files:
-    lines_parameters = [line.rstrip('\n') for line in open(filename) if pattern.search(line) is not None]
+    lines_parameters = [line.rstrip('\n') for line in open(filename, encoding='utf8') if pattern.search(line) is not None]
     if len(lines_parameters) > 0:
         filebase = os.path.basename(filename)
         parameter_strings_collection[filebase] = lines_parameters
 
-#thecontent = pp.Word(pp.alphanums + '+' + '-' + '*' + '/' + '_' + '.' + ' ')
-
-#parens = pp.nestedExpr( pp.Literal('(') ^ pp.Literal('{') ^ pp.Literal('"'), pp.Literal(')') ^ pp.Literal('}') ^ pp.Literal('"'), content=thecontent)
-
 thecontent = pp.Word(pp.alphanums + '+' + '-' + '*' + '/' + '_' + '.' + ' ' + '"' + "'" + '[' + ']') | ','
-#thecontent = pp.delimitedList(thecontent)
-#thecontent = thecontent + pp.ZeroOrMore(',' + thecontent)
 parens = pp.nestedExpr( pp.Literal('(') ^ pp.Literal('{'), pp.Literal(')') ^ pp.Literal('}'), content=thecontent)
 num_params = 0
 parameters = {}
