@@ -36,15 +36,20 @@ namespace supra
 	UltrasoundInterfaceUltrasonix::UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID)
 		: AbstractInput<RecordObject>(graph, nodeID)
 		, m_tickTimestamp(0)
-		, m_imagingMode(usModeBMode)
+		, m_imagingMode(usModeBmode)
+		, m_imagingFormat(USImagingFormat{false, false, false})
 		, m_frozen(false)
+		, m_dataMask(0)
+		, m_colorEnsembleSize(0)
 	{
+		m_callFrequency.setName("Ultrasonix");
+
 		g_pUSLib = this;
 		m_pUlterius = new ulterius();
 
 		m_initialized = false;
 
-		m_pImageProperties = make_shared<USImageProperties>(
+		m_protoImageProperties = make_shared<USImageProperties>(
 			vec2s{ 128, 1 },
 			512,
 			USImageProperties::ImageType::BMode,
@@ -55,7 +60,10 @@ namespace supra
 		//TODO figure out value ranges
 		//Preload Value Range Dictionary with ranges of allowed values
 		m_valueRangeDictionary.set<string>("remoteIP", "127.0.0.1", "Ultrasonix IP");
-		m_valueRangeDictionary.set<bool>("RF", { false, true }, false, "Stream RF");
+		m_valueRangeDictionary.set<string>("imagingMode", { "BMode", "BMode + Color", "BMode + MMode", "BMode + Pulse" }, "BMode", "Imaging");
+		m_valueRangeDictionary.set<bool>("bmodeRF", { false, true }, false, "Stream BMode RF");
+		m_valueRangeDictionary.set<bool>("colordopplerRF", { false, true }, false, "Stream Color RF");
+		m_valueRangeDictionary.set<bool>("pulsedopplerRF", { false, true }, false, "Stream Pulse RF");
 		m_valueRangeDictionary.set<double>("speedOfSound", 1000, 3000, 1540, "Speed of sound [m/s]");
 	}
 
@@ -69,6 +77,43 @@ namespace supra
 
 	void UltrasoundInterfaceUltrasonix::initializeDevice()
 	{
+		// Connect to ulterius
+		bool initSuccess = true;
+		initSuccess &= m_pUlterius->connect((char*)m_remoteIp.c_str());
+		if (!initSuccess) {
+			log_error("Could not connect to Ultrasonix.");
+		}
+		//initSuccess &= m_pUlterius->setSharedMemoryStatus(0);
+
+		setImaging();
+
+		//enum uVariableType
+		//{
+		//	uTypeInteger = 0,
+		//	uTypeFloat = 1,
+		//	uTypeString = 2,
+		//	uTypeGainCurve = 3,
+		//	uTypeRectangle = 4,
+		//	uTypeCurve = 5,
+		//	uTypeColor = 6,
+		//	uTypeBoolean = 7,
+		//	uTypeDontKnow = 8,
+		//	uTypePoint = 9
+		//};
+		//fetching all the parameters
+		//uParam parameterStruct;
+		//int parameterIndex = 0;
+		//while (m_pUlterius->getParam(parameterIndex, parameterStruct))
+		//{
+		//	cout << "US Parameter: #" << parameterIndex << ", " << parameterStruct.id << ", " << parameterStruct.name << ", " << parameterStruct.source << ", " << parameterStruct.type << ", " << parameterStruct.unit << endl;
+		//	parameterIndex++;
+		//}
+
+
+		m_initialized = initSuccess;
+
+		// Initialize the parameters from the US machine itself
+		initializeParametersFromDevice();
 	}
 
 	bool UltrasoundInterfaceUltrasonix::ready()
@@ -121,77 +166,47 @@ namespace supra
 	void UltrasoundInterfaceUltrasonix::configurationEntryChanged(const std::string & configKey)
 	{
 		lock_guard<mutex> lock(m_objectMutex);
-		if (configKey == "RF")
+		if (configKey == "imagingMode" || 
+			configKey == "bmodeRF" ||
+			configKey == "colordopplerRF" ||
+			configKey == "pulsedopplerRF")
 		{
-			bool newRF = m_configurationDictionary.get<bool>(configKey, false);
-			if (newRF != m_RFStreamEnabled)
-			{
-				m_RFStreamEnabled = newRF;
-				setImagingModeInternal();
-				setImagingMode(m_imagingMode);
-			}
+			readImagingConfiguration();
+			setImaging();
 		}
 	}
 
 	void UltrasoundInterfaceUltrasonix::configurationChanged()
 	{
-		readConfiguration();
+		m_remoteIp = m_configurationDictionary.get<string>("remoteIP");
+		m_speedOfSound = m_configurationDictionary.get<double>("speedOfSound");
+		readImagingConfiguration();
 	}
 
+	void UltrasoundInterfaceUltrasonix::readImagingConfiguration()
+	{		
 
-
-	void UltrasoundInterfaceUltrasonix::readConfiguration()
-	{
-		std::string remoteIP;
-		
-		remoteIP = m_configurationDictionary.get<string>("remoteIP");
-		m_RFStreamEnabled = m_configurationDictionary.get<bool>("RF");
-		m_speedOfSound = m_configurationDictionary.get<double>("speedOfSound");
-
-		// Connect to ulterius
-		// TODO -> figure out offset via lan
-		m_hostToUSOffsetInSec = 0;
-
-		// TODO this should not be started here, but in initializeDevice
-		bool initSuccess = true;
-		initSuccess &= m_pUlterius->connect((char*)remoteIP.c_str());
-
-		setImagingModeInternal();
-		setImagingMode(m_imagingMode);
-
-		//initSuccess &= m_pUlterius->setSharedMemoryStatus(0);
-		if (!initSuccess) {
-			log_error("Could not connect to Ultrasonix.");
+		std::string imagingString = m_configurationDictionary.get<string>("imagingMode");
+		if (imagingString == "BMode")
+		{
+			m_imagingMode = usModeBmode;
+		}
+		else if (imagingString == "BMode + Color")
+		{
+			m_imagingMode = usModeBmodeAndColordoppler;
+		}
+		else if (imagingString == "BMode + MMode")
+		{
+			m_imagingMode = usModeBmodeAndMmode;
+		}
+		else if (imagingString == "BMode + Pulse")
+		{
+			m_imagingMode = usModeBmodeAndPulseddoppler;
 		}
 
-
-		//enum uVariableType
-		//{
-		//	uTypeInteger = 0,
-		//	uTypeFloat = 1,
-		//	uTypeString = 2,
-		//	uTypeGainCurve = 3,
-		//	uTypeRectangle = 4,
-		//	uTypeCurve = 5,
-		//	uTypeColor = 6,
-		//	uTypeBoolean = 7,
-		//	uTypeDontKnow = 8,
-		//	uTypePoint = 9
-		//};
-		//fetching all the parameters
-		//uParam parameterStruct;
-		//int parameterIndex = 0;
-		//while (m_pUlterius->getParam(parameterIndex, parameterStruct))
-		//{
-		//	cout << "US Parameter: #" << parameterIndex << ", " << parameterStruct.id << ", " << parameterStruct.name << ", " << parameterStruct.source << ", " << parameterStruct.type << ", " << parameterStruct.unit << endl;
-		//	parameterIndex++;
-		//}
-
-
-		m_initialized = initSuccess;
-
-		// Initialize the parameters from the US machine itself
-		initializeParametersFromDevice();
+		m_imagingFormat.bmodeRF = m_configurationDictionary.get<bool>("bmodeRF");
+		m_imagingFormat.colordopplerRF = m_configurationDictionary.get<bool>("colordopplerRF");
+		m_imagingFormat.pulsedopplerRF = m_configurationDictionary.get<bool>("pulsedopplerRF");
 	}
 
 	void UltrasoundInterfaceUltrasonix::manageParameterUpdates()
@@ -219,114 +234,100 @@ namespace supra
 		}
 	}
 
+	template <typename ImageType>
+	void UltrasoundInterfaceUltrasonix::copyAndSendNewImage(size_t port, std::shared_ptr<UlteriusPacket> packet,
+		std::shared_ptr<const USImageProperties> imProp)
+	{
+		// copy the data into a buffer managed by us (i.e. a shared pointer)
+		// and create the image
+		auto spData = make_shared<Container<ImageType> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(),
+			imProp->getNumSamples()*imProp->getNumScanlines());
+		memcpyTransposed(spData->get(), (ImageType*)(packet->pData), imProp->getNumScanlines(), imProp->getNumSamples());
+		shared_ptr<USImage<ImageType> > pImage = make_shared < USImage<ImageType> >(
+			vec2s{ imProp->getNumScanlines(), imProp->getNumSamples() }, spData, imProp, packet->dTimestamp, packet->dTimestamp);
+
+		switch (port)
+		{
+			case 0:
+			{
+				addData<0>(pImage);
+				break;
+			}
+			case 1:
+			{
+				// This needs to be changed to "1"
+				addData<0>(pImage);
+				break;
+			}
+		}
+	}
+
+	/// Processes received Ulterius packet and emits it into the graph
 	bool UltrasoundInterfaceUltrasonix::processUlteriusPacket(shared_ptr<UlteriusPacket> packet) {
 
 		//std::cout << " frame : " << packet->iFramenum << ", rate:  " << 1.0/(packet->dTimestamp-m_tickTimestamp) << ", ";
 		m_tickTimestamp = packet->dTimestamp;
-
-
-		/*udtScreen                 = 0x00000001,
-		udtBPre                   = 0x00000002,
-		udtBPost                  = 0x00000004,
-		udtBPost32                = 0x00000008,
-		udtRF                     = 0x00000010,
-		udtMPre                   = 0x00000020,
-		udtMPost                  = 0x00000040,
-		udtPWRF                   = 0x00000080,
-		udtPWSpectrum             = 0x00000100,
-		udtColorRF                = 0x00000200,
-		udtColorCombined          = 0x00000400,
-		udtColorVelocityVariance  = 0x00000800,
-		udtElastoCombined         = 0x00002000,
-		udtElastoOverlay          = 0x00004000,
-		udtElastoPre              = 0x00008000,
-		udtECG                    = 0x00010000,
-		udtPNG                    = 0x10000000*/
-
 		{
-			static CallFrequency m("Ultr");
-
 			lock_guard<mutex> lock(m_objectMutex);
-			// evaluate data type
-			if (udtBPre == packet->iType && !m_RFStreamEnabled) {
-				if (packet->iSize != m_bmodeNumSamples*m_bmodeNumVectors)
+
+			// Check whether the data type that arrived is within those we are interested in
+			if (m_dataMask & packet->iType)
+			{
+				int port = m_dataToOutputMap[packet->iType].first;
+				auto imProp = m_dataToOutputMap[packet->iType].second;
+
+				int sampleSize = 1; // Bytes per sample
+				if (packet->iType == udtBPre ||
+					packet->iType == udtMPre ||
+					packet->iType == udtMPost ||
+					packet->iType == udtPWSpectrum)
 				{
-					log_log("Ulterius packet did not have expected size. Was: ", packet->iSize, " expected ", m_bmodeNumSamples*m_bmodeNumVectors, " = ", m_bmodeNumVectors, " * ", m_bmodeNumSamples);
+					sampleSize = 1; // Bytes
+				}
+				else if (packet->iType == udtRF ||
+					packet->iType == udtPWRF)
+				{
+					sampleSize = 2; // Bytes
+				}
+				else if (packet->iType == udtColorRF)
+				{
+					sampleSize = 2 * m_colorEnsembleSize; // Bytes
+				}
+				else if (packet->iType == udtColorCombined)
+				{
+					sampleSize = 4; // Bytes
+				}
+
+				if (packet->iSize != imProp->getNumSamples() * imProp->getNumScanlines() * sampleSize)
+				{
+					log_log("Ulterius packet did not have expected size. Was: ", packet->iSize, " bytes, expected ", 
+						imProp->getNumSamples() * imProp->getNumScanlines() * sampleSize, 
+						" = ", imProp->getNumScanlines(), " * ", imProp->getNumSamples(), " * ", sampleSize);
 					log_warn("Dropping incomplete frame");
 					updateImagingParams();
 					return false;
 				}
 
-				// copy the data into a buffer managed by us (i.e. a shared pointer)
-				// and create the image
-				auto spData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_bmodeNumSamples*m_bmodeNumVectors);
-				memcpyTransposed(spData->get(), (uint8_t*)(packet->pData), m_bmodeNumVectors, m_bmodeNumSamples);
-				shared_ptr<USImage<uint8_t> > pImage = make_shared < USImage<uint8_t> >(
-					vec2s{ m_bmodeNumVectors, m_bmodeNumSamples }, spData, m_pImageProperties, packet->dTimestamp, packet->dTimestamp + m_hostToUSOffsetInSec);
-
-				m.measure();
-				addData<0>(pImage);
-			}
-			else if (udtRF == packet->iType) {
-				if (packet->iSize != m_rfNumSamples*m_rfNumVectors * sizeof(int16_t))
+				if (packet->iType == udtBPre ||
+					packet->iType == udtMPre ||
+					packet->iType == udtMPost ||
+					packet->iType == udtPWSpectrum ||
+					packet->iType == udtColorCombined)
 				{
-					log_log("Ulterius packet did not have expected size. Was: ", packet->iSize, " expected ", m_rfNumSamples*m_rfNumVectors * sizeof(int16_t), " = ", m_rfNumVectors, " * ", m_rfNumSamples, " * sizeof(int16_t)");
-					std::cout << "Dropping incomplete frame" << std::endl;
-					//TODO make sure we deal with that correctly
-					updateImagingParams();
-					return false;
+					copyAndSendNewImage<uint8_t>(port, packet, imProp);
+				}
+				else if (packet->iType == udtRF ||
+					packet->iType == udtPWRF ||
+					packet->iType == udtColorRF)
+				{
+					copyAndSendNewImage<int16_t>(port, packet, imProp);
 				}
 
-				// copy the data into a buffer managed by us (i.e. a shared pointer)
-				// and create the image
-				auto spData = make_shared<Container<int16_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_rfNumSamples*m_rfNumVectors);
-				memcpyTransposed(spData->get(), (int16_t*)(packet->pData), m_rfNumVectors, m_rfNumSamples);
-				shared_ptr<USImage<int16_t> > pImage = make_shared < USImage<int16_t> >(
-					vec2s{ m_rfNumVectors, m_rfNumSamples }, spData, m_pImageProperties, packet->dTimestamp, packet->dTimestamp + m_hostToUSOffsetInSec);
-
-				m.measure();
-				addData<0>(pImage);
+				if (port == 0)
+				{
+					m_callFrequency.measure();
+				}
 			}
-
-			//}  else if (udtColorRF == packet->iType) {
-
-		 //       if (packet->iSize != m_pCurrentContextMap->m_cfmNumVectors*m_pCurrentContextMap->m_cfmNumSamples*m_pCurrentContextMap->m_cfmEnsembleSize*sizeof(int16_t))
-		 //       {
-		 //           std::cout << "Dropping incomplete frame" << std::endl;
-			//		//TODO make sure we deal with that correctly
-			//		//updateImagingParams();
-		 //           return false;
-		 //       }
-
-
-			//    unsigned int noVectors = m_pCurrentContextMap->m_cfmNumVectors;
-		 //       unsigned int noSamples = m_pCurrentContextMap->m_cfmNumSamples;
-		 //       unsigned int ensembleSize = m_pCurrentContextMap->m_cfmEnsembleSize;
-
-			//	std::vector<QSharedPointer<USVectorRayCFMRF>> vectorRayData;
-			//	for (size_t k=0; k<noVectors; ++k) {
-			//		std::shared_ptr<std::vector<std::vector<int16_t>>> raySamples(new std::vector<std::vector<int16_t>>(ensembleSize, std::vector<int16_t>(noSamples, 0)));
-			//		std::shared_ptr<std::vector<double>> rayTimestamps(new std::vector<double>(std::vector<double>(ensembleSize, 0)));
-
-			//		for (unsigned int e=0; e<ensembleSize; ++e) {
-			//			rayTimestamps->at(e) = packet->dTimestamp;
-			//			memcpy(&(raySamples->at(e).front()), (void*)((char*)packet->pData + k * e * noSamples * sizeof(int16_t)), noSamples * sizeof(int16_t));
-			//		}
-			//		
-			//		QSharedPointer<USVectorRayCFMRF> rayData( new USVectorRayCFMRF(raySamples, 
-			//			m_numReceivedFrames,
-			//			k, 
-			//			noSamples, 
-			//			ensembleSize, 
-			//			rayTimestamps, 
-			//			packet->dTimestamp, 
-			//			packet->dTimestamp+m_hostToUSOffsetInSec)
-			//			);
-
-			//		vectorRayData.push_back(rayData);
-			//		Q_EMIT(newVectorRayCFMRF(qSharedPointerCast<RecordObject>(rayData)));
-			//	}
-			//}
 		}
 		return true;
 	}
@@ -377,36 +378,68 @@ namespace supra
 		lock_guard<mutex> lock(m_objectMutex);
 
 		//prepare new USImageProperties
-		shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*m_pImageProperties);
+		vector<shared_ptr<USImageProperties> > imProps;
+		for (auto pair : m_dataToOutputMap)
+		{
+			imProps.push_back(make_shared<USImageProperties>(*pair.second.second));
+		}
+		
 
 		bool paramOK = true;
 		bool needUpdateOfImagingParams = false;
 		if (paramName == "mode id")
 		{
-			//cout << "mode id" << endl;
-			// imaging modes
-			// 0 = default bmode
-			// 12 = bmode with rf possibilites
-			// 2 = color doppler
-			int imageMode = m_pUlterius->getActiveImagingMode();
-			log_log("Ultrasonix: Imaging-Mode: ", imageMode);
+			// imaging modes (Ulterius knows about)
+			// bmode only				= 0
+			// bmode + m mode			= 1
+			// bmode + color			    = 2
+			// bmode + Pulsed doppler	= 3
+			// bmode + Bmode RF			= 12 (somewhere I also read 16 for that)
+			
+			int ulteriusImagingMode = m_pUlterius->getActiveImagingMode();
+			log_log("Ultrasonix: Imaging-Mode: ", ulteriusImagingMode);
 
-			USImagingMode curMode = usModeBMode;
-			if (0 == imageMode) {
-				curMode = usModeBMode;
-			}
-			else if (2 == imageMode) {
-				curMode = usModeCFM;
-			}
-			else if (imageMode == 12)
+			// Figure out which of USImagingMode is currently selected on the machine
+			USImagingMode currentModeOnMachine = usModeBmode;
+			switch (ulteriusImagingMode)
 			{
-				curMode = usModeBModeRF;
-			} else {
-				std::cerr << "Error: unsupported mode! please update mode " << imageMode << std::endl;
+				case 0: // bmode only
+				{
+					currentModeOnMachine = usModeBmode;
+					break;
+				}
+				case 1: // bmode + m mode
+				{
+					currentModeOnMachine = usModeBmodeAndMmode;
+					break;
+				}
+				case 2: // bmode + color
+				{
+					currentModeOnMachine = usModeBmodeAndColordoppler;
+					break;
+				}
+				case 3: // bmode + Pulsed doppler
+				{
+					currentModeOnMachine = usModeBmodeAndPulseddoppler;
+					break;
+				}
+				case 12: // bmode + Bmode RF
+				{
+					currentModeOnMachine = usModeBmode;
+					break;
+				}
+				default:
+				{
+					log_error("Ultrasonix: Error: unsupported mode! please update mode ", ulteriusImagingMode);
+					break;
+				}
 			}
-			if (curMode != m_imagingMode)
+
+			if (currentModeOnMachine != m_imagingMode)
 			{
-				setImagingMode(curMode); // try to get to correct mode
+				// The imaging mode was changed for some reason, but we did not trigger this.
+				// Try to convince Ultrasonix to please get back to the mode we want
+				setImaging(); 
 			}
 		}
 		else if (paramName == "probe id")
@@ -415,18 +448,24 @@ namespace supra
 			paramOK &= m_pUlterius->getActiveProbe(tmp, 80);
 			if (strncmp(tmp, "C5-2/60", 80) == 0)
 			{
-				imProp->setTransducerType(USImageProperties::Curved);
-				imProp->setScanlineLayout({ 128, 1 });
-				//imProp->setProbeRadius(60);
-				//imProp->setFov(degToRad(60.0));
+				for (auto & imProp : imProps)
+				{
+					imProp->setTransducerType(USImageProperties::Curved);
+					imProp->setScanlineLayout({ 128, 1 });
+					//imProp->setProbeRadius(60);
+					//imProp->setFov(degToRad(60.0));
+				}
 				needUpdateOfImagingParams = true;
 			}
 			else if (strncmp(tmp, "L14-5/38", 80) == 0)
 			{
-				imProp->setTransducerType(USImageProperties::Linear);
-				imProp->setScanlineLayout({ 128, 1 });
-				//imProp->setProbeRadius(0);
-				//imProp->setFov(0.3*(128 - 1));
+				for (auto & imProp : imProps)
+				{
+					imProp->setTransducerType(USImageProperties::Linear);
+					imProp->setScanlineLayout({ 128, 1 });
+					//imProp->setProbeRadius(0);
+					//imProp->setFov(0.3*(128 - 1));
+				}
 				needUpdateOfImagingParams = true;
 			}
 			log_log("changed probe id: ", tmp);
@@ -440,16 +479,17 @@ namespace supra
 			int value;
 			needUpdateOfImagingParams = true;
 			paramOK &= m_pUlterius->getParamValue("b-depth", value);
-			imProp->setDepth(static_cast<double>(value));
-			log_log("changed b-depth: ", imProp->getDepth());
+			for (auto & imProp : imProps)
+			{
+				imProp->setDepth(static_cast<double>(value));
+			}
+			log_log("changed b-depth: ", value);
 		}
 		else if (paramName == "b-ldensity")
 		{
 			int value;
-			//needUpdateOfImagingParams = true;
+			needUpdateOfImagingParams = true;
 			paramOK &= m_pUlterius->getParamValue("b-ldensity", value);
-			imProp->setScanlineLayout({ static_cast<size_t>(value), 1 });
-			m_bmodeNumVectors = value;
 			log_log("changed b-ldensity: ", value);
 		}
 		else if (paramName == "b-tgc")
@@ -469,8 +509,11 @@ namespace supra
 			for (int k = 0; k < 8; ++k) {
 				tgcDepthVector.push_back((static_cast<double>(k) + 0.5)*100.0 / 8.0);
 			}
-			imProp->setSpecificParameter("b-tgc", tgcVector);
-			imProp->setSpecificParameter("b-tgc relative depth", tgcDepthVector);
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("b-tgc", tgcVector);
+				imProp->setSpecificParameter("b-tgc relative depth", tgcDepthVector);
+			}
 			log_log("changed b-tgc");
 		}
 		else if (paramName == "rf-mode")
@@ -479,42 +522,70 @@ namespace supra
 		    paramOK &= m_pUlterius->getParamValue("rf-mode", value);
 			log_log("Ultrasonix: rf-mode changed: ", value);
 		}
-		//  else if (paramName == "color-gain") 
-		//  {
-		//  	paramOK &= m_pUlterius->getParamValue("color-gain", value);
-		//      m_pCurrentContextMap->m_cfmGainInDB = value;
-		//      std::cout << "color-gain changed: " << value << std::endl;
-		//  }
-		//  else if (paramName == "color-ensemble") 
-		//  {
-		//      paramOK &= m_pUlterius->getParamValue("color-ensemble", value);
-		//      m_pCurrentContextMap->m_cfmEnsembleSize			= value;
-		//      std::cout << "color-ensemble changed: " << value << std::endl;
-		//  }
-		//  else if (paramName == "color-numDummyLines") 
-		//  {
-		//      paramOK &= m_pUlterius->getParamValue("color-numDummyLines", value);
-		//      m_pCurrentContextMap->m_cfmNumFirings			= m_pCurrentContextMap->m_cfmEnsembleSize + value;
-		//      std::cout << "color-numDummyLines changed: " << value << std::endl;
-		//  }
-		//  else if (paramName == "color-prp") 
-		//  {
-		//      paramOK &= m_pUlterius->getParamValue("color-prp", value);
-		   //   m_pCurrentContextMap->m_cfmPRFInHz				= 1000.0/(static_cast<double>(value)/1000);
-		//      std::cout << "color-prp changed: " << value << std::endl;
-		//  }
-		//  else if (paramName == "color-freq") 
-		//  {
-		//      paramOK &= m_pUlterius->getParamValue("color-freq", value);
-		   //   m_pCurrentContextMap->m_cfmRxFrequInHz			= static_cast<double>(value);
-		//      std::cout << "color-freq changed: " << value << std::endl;
-		//  } 
-		//  else if (paramName == "color-deviation")
-		//  {
-		//      paramOK &= m_pUlterius->getParamValue("color-deviation", value);
-		//      m_pCurrentContextMap->m_cfmSteeringAngleInRad = M_PI*180.0 / (static_cast<double>(value)/1000.0);	
-			  //std::cout << "changed color-deviation: " << m_pCurrentContextMap->m_cfmSteeringAngleInRad << std::endl;
-		//  }
+		else if (paramName == "color-gain") 
+		{
+			int value;
+			paramOK &= m_pUlterius->getParamValue("color-gain", value);
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-gain", value);
+			}
+			log_log("changed color-gain: ", value);
+		}
+		else if (paramName == "color-ensemble") 
+		{
+			int value;
+		    paramOK &= m_pUlterius->getParamValue("color-ensemble", value);
+			m_colorEnsembleSize = value;
+		    for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-ensemble", value);
+			}
+			log_log("changed color-ensemble: ", value);
+		}
+		else if (paramName == "color-numDummyLines") 
+		{
+			int value;
+		    paramOK &= m_pUlterius->getParamValue("color-numDummyLines", value);
+		    for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-numDummyLinesc", value);
+			}
+			log_log("changed color-numDummyLines: ", value);
+		}
+		else if (paramName == "color-prp") 
+		{
+			int value;
+		    paramOK &= m_pUlterius->getParamValue("color-prp", value);
+		    //m_pCurrentContextMap->m_cfmPRFInHz				= 1000.0/(static_cast<double>(value)/1000);
+		    for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-prpc", value);
+			}
+			log_log("changed color-prp: ", value);
+		}
+		else if (paramName == "color-freq") 
+		{
+			int value;
+		    paramOK &= m_pUlterius->getParamValue("color-freq", value);
+		    //m_pCurrentContextMap->m_cfmRxFrequInHz			= static_cast<double>(value);
+		    for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-freq", value);
+			}
+			log_log("changed color-freq: ", value);
+		} 
+		else if (paramName == "color-deviation")
+		{
+			int value;
+		    paramOK &= m_pUlterius->getParamValue("color-deviation", value);
+		    //m_pCurrentContextMap->m_cfmSteeringAngleInRad = M_PI*180.0 / (static_cast<double>(value)/1000.0);	
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter("color-deviation", value);
+			}
+			log_log("changed color-deviation: ", value);
+		}
 		//  else if (paramName == "color-ldensity")
 		//  {
 		//      // update both color and bmode density, as this may change for doppler acquisition
@@ -595,7 +666,10 @@ namespace supra
 		{
 			int value;
 			paramOK &= m_pUlterius->getParamValue(paramName.c_str(), value);
-			imProp->setSpecificParameter(paramName, value);
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter(paramName, value);
+			}
 			log_log("changed ", paramName, ": ", value);
 		}
 		else if (
@@ -605,7 +679,10 @@ namespace supra
 			uRect rect;
 			paramOK &= m_pUlterius->getParamValue(paramName.c_str(), rect);
 			string valueStr("[" + to_string(rect.left) + ", " + to_string(rect.top) + ", " + to_string(rect.right) + ", " + to_string(rect.bottom) + "]");
-			imProp->setSpecificParameter<string>(paramName, valueStr);
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter<string>(paramName, valueStr);
+			}
 			log_log("changed ", paramName, ": ", valueStr);
 		}
 		else if (
@@ -613,7 +690,10 @@ namespace supra
 		{
 			uPoint point;
 			paramOK &= m_pUlterius->getParamValue(paramName.c_str(), point);
-			imProp->setSpecificParameter<string>(paramName, "[" + to_string(point.x) + ", " + to_string(point.y) + "]");
+			for (auto & imProp : imProps)
+			{
+				imProp->setSpecificParameter<string>(paramName, "[" + to_string(point.x) + ", " + to_string(point.y) + "]");
+			}
 		}
 		else
 		{
@@ -626,7 +706,11 @@ namespace supra
 			MACROgetLastError;
 		}
 
-		m_pImageProperties = imProp;
+		size_t i = 0;
+		for (auto& pair : m_dataToOutputMap)
+		{
+			pair.second.second = imProps[i++];
+		}
 
 		if (needUpdateOfImagingParams)
 		{
@@ -648,136 +732,149 @@ namespace supra
 		m_pUlterius->toggleFreeze();
 	}
 
-
-	void UltrasoundInterfaceUltrasonix::setImagingMode(UltrasoundInterfaceUltrasonix::USImagingMode mode)
+	/// The imaging mode defines which types of acquisitions are performed on the machine
+	void UltrasoundInterfaceUltrasonix::setImaging()
 	{
-	
-	    // check if the given mode matches the currently set data mode
-		int curDataMask =  m_pUlterius->getDataToAcquire();
-	    USImagingMode curMode = usModeBMode;
-		if (curDataMask & udtColorRF  || curDataMask & udtColorCombined) {
-			curMode = usModeCFM;
-		}
-		else if (curDataMask & udtBPre)
-		{
-			curMode = usModeBMode;
-		}
-		else if (curDataMask & udtRF) 
-		{
-			curMode = usModeBModeRF;
-		}
-	
+		// imaging modes (Ulterius knows about)
+		// bmode only				= 0
+		// bmode + m mode			= 1
+		// bmode + color			    = 2
+		// bmode + Pulsed doppler	= 3
+		// bmode + Bmode RF			= 12 (somewhere I also read 16 for that)
+
+		//HERE
 	    int newUlteriusImageMode = 0;
-		if (usModeBMode == mode) {
-			// switch to BMode
-			newUlteriusImageMode = 0;
-		}
-		else if (m_RFStreamEnabled)
+		switch (m_imagingMode)
 		{
-			newUlteriusImageMode = 12;
-		}
-		else if (usModeCFM == mode)
-		{
-			// switch to Color Doppler
-	        newUlteriusImageMode = 2;
-		}
-	
-	    int curUlteriusImageMode = m_pUlterius->getActiveImagingMode();
-	    if (curMode != mode || newUlteriusImageMode != curUlteriusImageMode) 
-		{ 
-			if (!m_pUlterius->selectMode(newUlteriusImageMode))
+			case usModeBmode:
 			{
-				log_error("Ultrasonix: Failed to set imaging mode ", newUlteriusImageMode);
-				MACROgetLastError;
+				if (m_imagingFormat.bmodeRF)
+				{
+					newUlteriusImageMode = 12;
+				}
+				else
+				{
+					newUlteriusImageMode = 0;
+				}
+				break;
 			}
-			m_imagingMode = mode;
-	    }
+			case usModeBmodeAndColordoppler:
+			{
+				newUlteriusImageMode = 2;
+				break;
+			}
+			case usModeBmodeAndMmode:
+			{
+				newUlteriusImageMode = 1;
+				break;
+			}
+			case usModeBmodeAndPulseddoppler:
+			{
+				newUlteriusImageMode = 3;
+				break;
+			}
+			default:
+			{
+				log_error("Ultrasonix: Unhandled UsImagingMode.");
+				break;
+			}
+		}
+		
+		if (!m_pUlterius->selectMode(newUlteriusImageMode))
+		{
+			log_error("Ultrasonix: Failed to set imaging mode ", newUlteriusImageMode);
+			MACROgetLastError;
+		}
 	
-	    updateDataStreaming(m_imagingMode);
+	    updateDataStreaming();
 	}
 
+	/// Updates settings on the machine: Which data to stream and in which format.
+	/// The data that can be streamed depends on the selected imaging mode
+	void UltrasoundInterfaceUltrasonix::updateDataStreaming() {
+		m_dataMask = 0;
+		m_dataToOutputMap.clear();
+		int outputsUsed = 0;
 
-	//void UltrasonixHandler::getImagingMode(USImagingMode& mode) 
-	//{
-	//	m_accessMutex.lock();
-	//	mode = m_imagingMode;
-	//	m_accessMutex.unlock();
-	//}
-	//
-	//void UltrasonixHandler::getRFStreamState(bool& rfStreamEnabled) 
-	//{
-	//	m_accessMutex.lock();
-	//	rfStreamEnabled = m_bRFStreamEnabled;
-	//	m_accessMutex.unlock();
-	//}
-
-
-	//void UltrasonixHandler::getAvailableDepths(map<double,int>& depthMapping)
-	//{
-	//	depthMapping = m_availableDepths;
-	//}
-	//
-	//void UltrasonixHandler::getCurrentDepthIndex(int& depth) 
-	//{	
-	//	depth = m_availableDepths[m_pCurrentContextMap->m_rxDepthInM];
-	//}
-	//
-	//void UltrasonixHandler::setDepth(int index)
-	//{	
-	//	std::map<double,int>::iterator it=m_availableDepths.begin();
-	//	while (it->second != index && it != m_availableDepths.end()) {
-	//		it++;
-	//	}
-	//
-	//	int targetDepth = static_cast<int>(it->first * 1000);
-	//	m_pUlterius->setParamValue("b-depth", targetDepth);
-	//	Q_EMIT(newVectorMetaData(qSharedPointerCast<RecordObject>(m_pCurrentContextMap)));
-	//}
-	//
-
-
-	void UltrasoundInterfaceUltrasonix::setRFStreaming(bool rfEnabled)
-	{
-		/*std::lock_guard<std::mutex> lock(m_objectMutex);
-		if (rfEnabled)
+		if (m_imagingFormat.bmodeRF || m_imagingFormat.colordopplerRF || m_imagingFormat.pulsedopplerRF)
 		{
-			m_imagingMode = usModeBModeRF;
+			m_pUlterius->setParamValue("rf-mode", 2);
 		}
 		else
 		{
-			m_imagingMode = usModeBMode;
-		}
-	    updateDataStreaming(m_imagingMode);*/
-	}
-
-	void UltrasoundInterfaceUltrasonix::updateDataStreaming(USImagingMode mode) {
-	    int dataMask = 0;
-		if (usModeBMode == mode) {
-			// switch to BMode
-			dataMask = udtBPre;
 			m_pUlterius->setParamValue("rf-mode", 0);
 		}
-		else if(mode == usModeBModeRF)
+
+		if (m_imagingFormat.bmodeRF)
 		{
-			dataMask = udtRF | udtBPre;
-			m_pUlterius->setParamValue("rf-mode", 2);
-		} 
-		else if (usModeCFM == mode) {
-		    m_pUlterius->setParamValue("rf-mode", 2);
-	        m_pUlterius->setParamValue("color-rf decimation", 2);
-			
-	        /*if (rfEnabled)
-	        {
-	            std::cout << "Warning: simultaneous RF and ColorRF will result in massive dropped frames for CRF" << std::endl;
-	        }*/
-	
-			// switch to Color Doppler
-			//dataMask = rfEnabled ? (udtColorRF | udtRF) : (udtColorRF | udtBPre); // works only from 6.07 onwards!
-	        //dataMask = udtColorRF;
+			m_dataMask |= udtRF;
+			m_dataToOutputMap[udtRF] = std::make_pair(outputsUsed++, m_protoImageProperties);
 		}
+		else
+		{
+			m_dataMask |= udtBPre;
+			m_dataToOutputMap[udtBPre] = std::make_pair(outputsUsed++, m_protoImageProperties);
+		}
+
+		if (m_imagingMode == usModeBmodeAndColordoppler)
+		{
+			if (m_imagingFormat.colordopplerRF)
+			{
+				//m_pUlterius->setParamValue("color-rf decimation", 2); // To not loose frames? I suppose
+				m_dataMask |= udtColorRF;
+				m_dataToOutputMap[udtColorRF] = std::make_pair(outputsUsed++, m_protoImageProperties);
+			}
+			else
+			{
+				m_dataMask |= udtColorCombined;
+				m_dataToOutputMap[udtColorCombined] = std::make_pair(outputsUsed++, m_protoImageProperties);
+			}
+		}
+		if (m_imagingMode == usModeBmodeAndMmode)
+		{
+			m_dataMask |= udtMPre;
+			m_dataToOutputMap[udtMPre] = std::make_pair(outputsUsed++, m_protoImageProperties);
+		}
+		if (m_imagingMode == usModeBmodeAndPulseddoppler)
+		{
+			if (m_imagingFormat.colordopplerRF)
+			{
+				m_dataMask |= udtPWRF;
+				m_dataToOutputMap[udtPWRF] = std::make_pair(outputsUsed++, m_protoImageProperties);
+			}
+			else
+			{
+				m_dataMask |= udtPWSpectrum;
+				m_dataToOutputMap[udtPWSpectrum] = std::make_pair(outputsUsed++, m_protoImageProperties);
+			}
+		}
+
+		//if (usModeBMode == mode) {
+		//	// switch to BMode
+		//	dataMask = udtBPre;
+		//	m_pUlterius->setParamValue("rf-mode", 0);
+		//}
+		//else if(mode == usModeBModeRF)
+		//{
+		//	dataMask = udtRF | udtBPre;
+		//	
+		//} 
+		//else if (usModeCFM == mode) {
+		//    
+	 //       
+		//	//HERE
+	 //       /*if (rfEnabled)
+	 //       {
+	 //           std::cout << "Warning: simultaneous RF and ColorRF will result in massive dropped frames for CRF" << std::endl;
+	 //       }*/
+	
+		//	// switch to Color Doppler
+		//	//dataMask = rfEnabled ? (udtColorRF | udtRF) : (udtColorRF | udtBPre); // works only from 6.07 onwards!
+	 //       //dataMask = udtColorRF;
+		//}
 	
 	    // update
-	    m_pUlterius->setDataToAcquire(dataMask);
+		m_pUlterius->setDataToAcquire(m_dataMask);
 	}
 
 	void UltrasoundInterfaceUltrasonix::getLastError(const char* file, int line)
@@ -797,95 +894,39 @@ namespace supra
 		}
 	}
 
-
+	/// Get the details of transmitted images (size, etc.) from the machine
 	void UltrasoundInterfaceUltrasonix::updateImagingParams()
 	{
-		int dataMask;
-		if (m_imagingMode == usModeBMode) 
+		for (auto & dataToOutput : m_dataToOutputMap)
 		{
-			dataMask = udtBPre;
-
+			int dataType = get<0>(dataToOutput);
+			
 			uDataDesc dataDescriptor;
-			if (m_pUlterius->getDataDescriptor((uData)dataMask, dataDescriptor))
+			if (m_pUlterius->getDataDescriptor((uData)dataType, dataDescriptor))
 			{
-				m_bmodeNumVectors = dataDescriptor.w;
-				m_bmodeNumSamples = dataDescriptor.h;
+				int numVectors = dataDescriptor.w;
+				int numSamples = dataDescriptor.h;
 
-				shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*m_pImageProperties);
-				imProp->setNumSamples(m_bmodeNumSamples);
-				imProp->setScanlineLayout({ m_bmodeNumVectors, 1 });
-				imProp->setImageState(USImageProperties::ImageState::PreScan);
-				m_pImageProperties = imProp;
-				//->m_bmodeSamplesPerM = m_pCurrentContextMap->m_bmodeNumSamples / m_pCurrentContextMap->m_rxDepthInM;
+				shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*(dataToOutput.second.second));
+				imProp->setNumSamples(numSamples);
+				imProp->setScanlineLayout({ numVectors, 1 });
+				if (dataType == udtBPre || dataType == udtPWSpectrum || dataType == udtColorCombined)
+				{
+					imProp->setImageState(USImageProperties::ImageState::PreScan);
+				}
+				else if (dataType == udtRF || dataType == udtColorRF || dataType == udtPWRF)
+				{
+					imProp->setImageState(USImageProperties::ImageState::RF);
+				}
+				dataToOutput.second.second = imProp;
 
-				//double samplesPerM = 2*m_pCurrentContextMap->m_bmodeSamplingFrequInHz / m_pCurrentContextMap->m_tissueSpeedInMPerS;
-				//m_pCurrentContextMap->m_bmodeSamplesPerM = samplesPerM;
-
-				log_log("Ultrasonix: New image params - bmode vectors: ", m_bmodeNumVectors, ", samples: ", m_bmodeNumSamples);
+				log_info("Ultrasonix: New image params for data type ", dataType, " - vectors : ", numVectors, ", samples : ", numSamples);
 			}
 			else
 			{
-				log_error("Error fetching data descriptor.");
+				log_error("Error fetching data descriptor for data type ", dataType);
 				MACROgetLastError;
 			}
-		}
-		else if (m_imagingMode == usModeBModeRF)
-		{
-			dataMask = udtRF;
-			uDataDesc dataDescriptor;
-			//	std::cout << "Warning: Color RF data not thoroughly tested up to now." << std::endl;
-			if (m_pUlterius->getDataDescriptor((uData)dataMask, dataDescriptor))
-			{
-				m_rfNumVectors = dataDescriptor.w;
-				m_rfNumSamples = dataDescriptor.h;
-
-				shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*m_pImageProperties);
-				imProp->setNumSamples(m_rfNumSamples);
-				imProp->setScanlineLayout({ m_rfNumVectors, 1 });
-				imProp->setImageState(USImageProperties::ImageState::RF);
-				m_pImageProperties = imProp;
-
-				//m_pCurrentContextMap->m_rfSamplesPerM = m_pCurrentContextMap->m_rfNumSamples / m_pCurrentContextMap->m_rxDepthInM;
-
-				double samplesPerM = 2 * m_rfSamplingFrequInHz / m_speedOfSound;
-				//m_pCurrentContextMap->m_rfSamplesPerM = samplesPerM;
-				log_log("Ultrasonix: New image params - rf vectors: ", m_rfNumVectors, ", samples: ", m_rfNumSamples);
-			}
-			else
-			{
-				log_error("Error fetching data descriptor.");
-				MACROgetLastError;
-			}
-		}
-		//   if (m_imagingMode == usModeCFM) 
-		//   {
-		   //	dataMask = udtColorRF;	
-
-		   //	uDataDesc dataDescriptor;
-		   //	if (m_pUlterius->getDataDescriptor( (uData)dataMask, dataDescriptor )) 
-		//       {
-		   //		m_pCurrentContextMap->m_cfmNumVectors = dataDescriptor.w;
-		   //		m_pCurrentContextMap->m_cfmNumSamples = dataDescriptor.h;
-		   //		//m_pCurrentContextMap->m_cfmSamplesPerM = m_pCurrentContextMap->m_cfmNumSamples / m_pCurrentContextMap->m_rxDepthInM;
-		//           double samplesPerM = 2*m_pCurrentContextMap->m_cfmSamplingFrequInHz / m_pCurrentContextMap->m_tissueSpeedInMPerS;
-		//           m_pCurrentContextMap->m_cfmSamplesPerM = samplesPerM;
-
-		//           std::cout << "UltrasonixHandler(): New image params - cfm vectors: " << m_pCurrentContextMap->m_cfmNumVectors << ", samples: " << m_pCurrentContextMap->m_cfmNumSamples << std::endl;
-		   //	}
-
-		   //	//
-		   //}
-	}
-
-	void UltrasoundInterfaceUltrasonix::setImagingModeInternal()
-	{
-		if (m_RFStreamEnabled)
-		{
-			m_imagingMode = usModeBModeRF;
-		}
-		else
-		{
-			m_imagingMode = usModeBMode;
 		}
 	}
 
@@ -919,5 +960,59 @@ namespace supra
 
 		updateImagingParams();
 	}
+
+	//void UltrasonixHandler::getAvailableDepths(map<double,int>& depthMapping)
+	//{
+	//	depthMapping = m_availableDepths;
+	//}
+	//
+	//void UltrasonixHandler::getCurrentDepthIndex(int& depth) 
+	//{	
+	//	depth = m_availableDepths[m_pCurrentContextMap->m_rxDepthInM];
+	//}
+	//
+	//void UltrasonixHandler::setDepth(int index)
+	//{	
+	//	std::map<double,int>::iterator it=m_availableDepths.begin();
+	//	while (it->second != index && it != m_availableDepths.end()) {
+	//		it++;
+	//	}
+	//
+	//	int targetDepth = static_cast<int>(it->first * 1000);
+	//	m_pUlterius->setParamValue("b-depth", targetDepth);
+	//	Q_EMIT(newVectorMetaData(qSharedPointerCast<RecordObject>(m_pCurrentContextMap)));
+	//}
+
+	//void UltrasonixHandler::getImagingMode(USImagingMode& mode) 
+	//{
+	//	m_accessMutex.lock();
+	//	mode = m_imagingMode;
+	//	m_accessMutex.unlock();
+	//}
+	//
+	//void UltrasonixHandler::getRFStreamState(bool& rfStreamEnabled) 
+	//{
+	//	m_accessMutex.lock();
+	//	rfStreamEnabled = m_bRFStreamEnabled;
+	//	m_accessMutex.unlock();
+	//}
+
+
+
+	//
+
+	//void UltrasoundInterfaceUltrasonix::setRFStreaming(bool rfEnabled)
+	//{
+	/*std::lock_guard<std::mutex> lock(m_objectMutex);
+	if (rfEnabled)
+	{
+	m_imagingMode = usModeBModeRF;
+	}
+	else
+	{
+	m_imagingMode = usModeBMode;
+	}
+	updateDataStreaming(m_imagingMode);*/
+	//}
 
 }

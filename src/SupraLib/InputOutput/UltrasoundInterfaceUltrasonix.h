@@ -40,7 +40,6 @@ struct UlteriusPacket
 namespace supra
 {
 	//TODO add handling of software-controlled parameter changes
-	//TODO add other imaging modes
 	class UltrasoundInterfaceUltrasonix : public AbstractInput<RecordObject>
 	{
 	public:
@@ -66,7 +65,7 @@ namespace supra
 		//Needs to be thread safe
 		virtual void configurationChanged();
 
-		void readConfiguration();
+		void readImagingConfiguration();
 
 		//virtual void getImagingMode(USImagingMode& mode);
 		//virtual void getRFStreamState(bool& rfStreamEnabled);
@@ -110,46 +109,55 @@ namespace supra
 		void ulteriusParamChanged(std::shared_ptr<std::string> paramName);
 
 	protected:
+		/// Enum to select the imaging protocols the Ultrasonix should perform
 		enum USImagingMode
 		{
-			usModeBMode = 0,
-			usModeCFM = 1,
-			usModeBModeRF = 2,
-			usModeForce32bit = 0xFFFFFFFF    ///< Force enum to 32-bit.
+			usModeBmode,
+			usModeBmodeAndColordoppler,
+			usModeBmodeAndMmode,
+			usModeBmodeAndPulseddoppler
+		};
+		/// Struct that describes in which format images should be 
+		/// acquired from the Ultrasonix
+		struct USImagingFormat
+		{
+			bool bmodeRF;
+			bool colordopplerRF;
+			bool pulsedopplerRF;
 		};
 
-		void setImagingMode(USImagingMode mode);
-		void setRFStreaming(bool rfEnabled);
+		void setImaging();
+		//void setRFStreaming(bool rfEnabled);
 
 		//void ulteriusCallback(std::shared_ptr<UlteriusPacket> packet);
 		bool ulteriusParamCallback(void* paramID, int ptX, int ptY);
 
 		void manageParameterUpdates();
 		void updateImagingParams();
-		void setImagingModeInternal();
-		void updateDataStreaming(USImagingMode mode);
+		void updateDataStreaming();
+
+		template <typename ImageType>
+		void copyAndSendNewImage(size_t port, std::shared_ptr<UlteriusPacket> packet,
+			std::shared_ptr<const USImageProperties> imProp);
 		void getLastError(const char* file = nullptr, int line = 0);
 
 	private:
 		double m_tickTimestamp; // last timestamp where data arrived
-		double m_hostToUSOffsetInSec;
 		double m_speedOfSound;
 
 		std::atomic<bool> m_frozen;
 
 		USImagingMode m_imagingMode;
-
-		size_t m_bmodeNumVectors;
-		size_t m_bmodeNumSamples;
-
-		size_t m_rfNumVectors;
-		size_t m_rfNumSamples;
+		USImagingFormat m_imagingFormat;
+		int m_dataMask;
+		std::map<int, std::pair<size_t, std::shared_ptr<const USImageProperties> > > m_dataToOutputMap;
+		std::string m_remoteIp;
+		
+		int m_colorEnsembleSize;
 		double m_rfSamplingFrequInHz;
 
-		std::shared_ptr<const USImageProperties> m_pImageProperties;
+		std::shared_ptr<const USImageProperties> m_protoImageProperties;
 		std::atomic<bool> m_initialized;
-
-		bool m_RFStreamEnabled;
 
 		std::mutex m_objectMutex;
 		std::mutex m_parameterMutex;
