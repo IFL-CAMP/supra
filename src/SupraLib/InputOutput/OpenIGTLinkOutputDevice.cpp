@@ -140,10 +140,12 @@ namespace supra
 		{
 			double resolution = properties->getImageResolution();
 			vec3s imageSize = imageData->getSize();
+			size_t numChannels = imageData->getNumChannels();
 
 			igtl::ImageMessage::Pointer pImageMsg = igtl::ImageMessage::New();
 			pImageMsg->SetDimensions((int)imageSize.x, (int)imageSize.y, (int)imageSize.z);
 			pImageMsg->SetSpacing(resolution, resolution, resolution);
+			pImageMsg->SetNumComponents((int)(numChannels));
 			if (is_same<T, uint8_t>::value)
 			{
 				pImageMsg->SetScalarTypeToUint8();
@@ -168,7 +170,7 @@ namespace supra
 				imageContainer = make_shared<Container<T> >(LocationHost, *imageContainer);
 			}
 
-			size_t numElements = imageSize.x * imageSize.y * imageSize.z;
+			size_t numElements = imageSize.x * imageSize.y * imageSize.z * numChannels;
 			memcpy(pImageMsg->GetScalarPointer(), imageContainer->get(), numElements * sizeof(T));
 
 			pImageMsg->Pack();

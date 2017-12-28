@@ -53,7 +53,7 @@ namespace supra
 	}
 
 	template <typename ValueType>
-	std::pair<bool, size_t> MhdSequenceWriter::addImage(const ValueType* imageData, size_t w, size_t h, size_t d, 
+	std::pair<bool, size_t> MhdSequenceWriter::addImage(const ValueType* imageData, size_t w, size_t h, size_t d, size_t channels,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback)
 	{
 		static_assert(
@@ -78,7 +78,7 @@ namespace supra
 					m_positionImageCount = m_mhdFile.tellp();
 					//place a few spaces as placeholders, assuming trailing whitespace does not hurt
 					m_mhdFile << "          \n"; // 10 spaces that can be replaced with numbers
-					m_mhdFile << "ElementNumberOfChannels = 1\n";
+					m_mhdFile << "ElementNumberOfChannels = " << channels << "\n";
 					if (std::is_same<ValueType, uint8_t>::value)
 					{
 						m_mhdFile << "ElementType = MET_UCHAR\n";
@@ -106,7 +106,7 @@ namespace supra
 				}
 
 				//add data to the write queue
-				bool written = addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
+				bool written = addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d*channels * sizeof(ValueType), deleteCallback);
 
 				if(!written)
 				{ 
@@ -137,16 +137,16 @@ namespace supra
 			}
 		}
 		else {
-			logging::log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
+			logging::log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ", channels = ", channels, ")");
 			return std::make_pair(false, 0);
 		}
 	}
 
 	template
-	std::pair<bool, size_t> MhdSequenceWriter::addImage<uint8_t>(const uint8_t* imageData, size_t w, size_t h, size_t d,
+		std::pair<bool, size_t> MhdSequenceWriter::addImage<uint8_t>(const uint8_t* imageData, size_t w, size_t h, size_t d, size_t channels,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 	template
-	std::pair<bool, size_t>MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d,
+		std::pair<bool, size_t>MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d, size_t channels,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
 	void MhdSequenceWriter::addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName)

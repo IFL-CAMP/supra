@@ -42,7 +42,7 @@ namespace supra
 		bool isOpen();
 
 		template <typename ValueType>
-		std::pair<bool, size_t> addImage(const ValueType* imageData, size_t w, size_t h, size_t d,
+		std::pair<bool, size_t> addImage(const ValueType* imageData, size_t w, size_t h, size_t d, size_t channels,
 			double timestamp, double spacing,
 			std::function<void(const uint8_t*, size_t)> deleteCallback = std::function<void(const uint8_t*, size_t)>());
 

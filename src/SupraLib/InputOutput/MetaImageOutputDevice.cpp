@@ -199,6 +199,7 @@ namespace supra
 			{
 				double resolution = properties->getImageResolution();
 				vec3s imageSize = imageData->getSize();
+				size_t channels = imageData->getNumChannels();
 				if (imageSize.z == 0)
 				{
 					imageSize.z = 1;
@@ -216,7 +217,7 @@ namespace supra
 				}
 
 				auto successframeNum = m_pWriter->addImage(
-					pData->get(), imageSize.x, imageSize.y, imageSize.z,
+					pData->get(), imageSize.x, imageSize.y, imageSize.z, channels,
 					imageData->getSyncTimestamp(), resolution,
 					[pData](const uint8_t*, size_t){}
 				);
@@ -250,7 +251,7 @@ namespace supra
 			}
 			double resolution = rawData->getImageProperties()->getSampleDistance();
 			auto successframeNum = m_pWriter->addImage<ElementType>(
-				pData->get(), numSamples, numChannels, numScanlines, 
+				pData->get(), numSamples, numChannels, numScanlines, 1,
 				rawData->getSyncTimestamp(), resolution,
 				[pData](const uint8_t*, size_t){}
 			);
