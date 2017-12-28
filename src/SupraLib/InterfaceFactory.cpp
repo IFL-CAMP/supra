@@ -44,9 +44,9 @@ namespace supra
 		return make_shared<tbb::flow::graph>();
 	}
 
-	shared_ptr<AbstractInput<RecordObject>> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType)
+	shared_ptr<AbstractInput> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType)
 	{
-		shared_ptr<AbstractInput<RecordObject>> retVal = shared_ptr<AbstractInput<RecordObject> >(nullptr);
+		shared_ptr<AbstractInput> retVal = shared_ptr<AbstractInput>(nullptr);
 
 #ifdef HAVE_DEVICE_TRACKING_SIM
 		if (deviceType == "TrackerInterfaceSimulated")

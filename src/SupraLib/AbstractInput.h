@@ -48,14 +48,16 @@ namespace supra
 	 *		\see setupTimer and once \see timerLoop is entered, the timer continously calls 
 	 *		\see timerCallback for the node, sleeping appropriately inbetween calls.
 	 */
-	template<typename... InputTypes>
 	class AbstractInput : public AbstractNode
 	{
 	public:
 		/// Base constructor for the input node. Initializes its output ports.
-		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID) : AbstractNode(nodeID)
+		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID, size_t numOutputs) 
+			: AbstractNode(nodeID)
+			, m_numOutputs(numOutputs)
 		{
-			for (size_t i = 0; i < sizeof...(InputTypes); i++)
+			m_pOutputNodes.resize(m_numOutputs);
+			for (size_t i = 0; i < m_numOutputs; i++)
 			{
 				m_pOutputNodes[i] = std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > >(
 					new tbb::flow::broadcast_node<std::shared_ptr<RecordObject> >(graph));
@@ -116,11 +118,11 @@ namespace supra
 		/// Always 0 as an input has no inputs from the dataflow graph
 		virtual size_t getNumInputs() { return 0; }
 		/// returns the number of output ports of this node
-		virtual size_t getNumOutputs() { return m_pOutputNodes.size(); }
+		virtual size_t getNumOutputs() { return m_numOutputs; }
 
 		/// returns a pointer to the output port with the given index
 		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
-			if (index < m_pOutputNodes.size())
+			if (index < m_numOutputs)
 			{
 				return m_pOutputNodes[index].get();
 			}
@@ -130,10 +132,9 @@ namespace supra
 	protected:
 		/// The nodes output. An implementing node calls this method when it has a dataset 
 		/// to send into the graph.
-		template <size_t index>
-		bool addData(std::shared_ptr<typename std::tuple_element<index, std::tuple<InputTypes...> >::type> data)
+		bool addData(size_t index, std::shared_ptr<RecordObject> data)
 		{
-			return std::get<index>(m_pOutputNodes)->try_put(data);
+			return m_pOutputNodes[index]->try_put(data);
 		}
 
 		/// Returns the configured frequency of the \see SingleThreadTimer
@@ -161,7 +162,8 @@ namespace supra
 			}
 		}
 	private:
-		std::array<std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > >, sizeof...(InputTypes)> m_pOutputNodes;
+		std::vector<std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > > > m_pOutputNodes;
+		size_t m_numOutputs;
 
 		SingleThreadTimer m_timer;
 		std::shared_ptr<std::thread> m_pInputDeviceThread;

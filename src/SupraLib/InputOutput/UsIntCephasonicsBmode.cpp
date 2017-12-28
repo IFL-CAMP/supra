@@ -64,7 +64,7 @@ namespace supra
 	}
 
 	UsIntCephasonicsBmode::UsIntCephasonicsBmode(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 1)
 		, m_cPlatformHandle(nullptr)
 		, m_cScanDefiniton(nullptr)
 	{
@@ -198,7 +198,7 @@ namespace supra
 			pImage = make_shared<USImage<uint8_t> >(
 				vec2s{ numVectors, numSamples }, pData, m_pImageProperties, timestamp, timestamp);
 		}
-		addData<0>(pImage);
+		addData(0, pImage);
 	}
 
 	bool UsIntCephasonicsBmode::ready()

@@ -24,7 +24,7 @@ using namespace std::chrono;
 namespace supra
 {
 	TrackerInterfaceIGTL::TrackerInterfaceIGTL(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 1)
 		, m_connected(false)
 		, m_frozen(false)
 	{
@@ -204,7 +204,7 @@ namespace supra
 			}
 
 			auto pTrackingDataSet = make_shared<TrackerDataSet>(trackerData, timestamp, timestamp);
-			addData<0>(pTrackingDataSet);
+			addData(0, pTrackingDataSet);
 			m_callFrequency.measure();
 		}
 		else {

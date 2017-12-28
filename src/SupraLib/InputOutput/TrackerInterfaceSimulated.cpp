@@ -64,7 +64,7 @@ namespace supra
 
 				pTrackingDataSet = make_shared<TrackerDataSet>(trackingData, currentTime, currentTime);
 			}
-			addData<0>(pTrackingDataSet);
+			addData(0, pTrackingDataSet);
 		}
 		return getRunning();
 	}

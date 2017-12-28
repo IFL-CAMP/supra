@@ -40,7 +40,7 @@ struct UlteriusPacket
 namespace supra
 {
 	//TODO add handling of software-controlled parameter changes
-	class UltrasoundInterfaceUltrasonix : public AbstractInput<RecordObject>
+	class UltrasoundInterfaceUltrasonix : public AbstractInput
 	{
 	public:
 		UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID);
@@ -50,7 +50,7 @@ namespace supra
 		virtual void initializeDevice();
 		virtual bool ready();
 
-		virtual std::vector<size_t> getImageOutputPorts() { return{ 0 }; };
+		virtual std::vector<size_t> getImageOutputPorts() { return{ 0, 1 }; };
 		virtual std::vector<size_t> getTrackingOutputPorts() { return{}; };
 
 		virtual void freeze();

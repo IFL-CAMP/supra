@@ -48,7 +48,7 @@ namespace supra
 
 	class UsIntCephasonicsBtccProc;
 
-	class UsIntCephasonicsBtcc : public AbstractInput<RecordObject>
+	class UsIntCephasonicsBtcc : public AbstractInput
 	{
 	public:
 		UsIntCephasonicsBtcc(tbb::flow::graph& graph, const std::string& nodeID);

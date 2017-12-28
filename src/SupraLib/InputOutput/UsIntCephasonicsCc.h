@@ -65,7 +65,7 @@ namespace supra
 	};
 
 
-	class UsIntCephasonicsCc : public AbstractInput<RecordObject>
+	class UsIntCephasonicsCc : public AbstractInput
 	{
 	public:
 		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID);

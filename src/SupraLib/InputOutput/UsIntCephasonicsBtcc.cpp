@@ -573,7 +573,7 @@ namespace supra
 	}
 
 	UsIntCephasonicsBtcc::UsIntCephasonicsBtcc(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 1)
 	{
 		m_ready = false;
 
@@ -850,7 +850,7 @@ namespace supra
 				shared_ptr<USImage<uint8_t> > pImage;
 				pImage = make_shared<USImage<uint8_t> >(
 					vec2s{ numVectors, numSamples }, pData, m_pImageProperties, timestamp, timestamp);
-				addData<0>(pImage);
+				addData(0, pImage);
 			}
 			else if (m_layout == "64x" || m_layout == "32x")
 			{
@@ -886,7 +886,7 @@ namespace supra
 				shared_ptr<USImage<uint8_t> > pImage;
 				pImage = make_shared<USImage<uint8_t> >(
 					vec2s{ numChans, numRows }, pData, m_pImageProperties, timestamp, timestamp);
-				addData<0>(pImage);
+				addData(0, pImage);
 			}
 			platformsReceived.assign(_numPlatforms, false);
 			buff.assign(numVectors*numSamples, 0);

@@ -34,7 +34,7 @@ namespace supra
 	UltrasoundInterfaceUltrasonix* g_pUSLib = 0;
 
 	UltrasoundInterfaceUltrasonix::UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 2)
 		, m_tickTimestamp(0)
 		, m_imagingMode(usModeBmode)
 		, m_imagingFormat(USImagingFormat{false, false, false})
@@ -246,20 +246,7 @@ namespace supra
 		shared_ptr<USImage<ImageType> > pImage = make_shared < USImage<ImageType> >(
 			vec2s{ imProp->getNumScanlines(), imProp->getNumSamples() }, spData, imProp, packet->dTimestamp, packet->dTimestamp);
 
-		switch (port)
-		{
-			case 0:
-			{
-				addData<0>(pImage);
-				break;
-			}
-			case 1:
-			{
-				// This needs to be changed to "1"
-				addData<0>(pImage);
-				break;
-			}
-		}
+		addData(port, pImage);
 	}
 
 	/// Processes received Ulterius packet and emits it into the graph
@@ -910,7 +897,11 @@ namespace supra
 				shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*(dataToOutput.second.second));
 				imProp->setNumSamples(numSamples);
 				imProp->setScanlineLayout({ (size_t)numVectors, 1 });
-				if (dataType == udtBPre || dataType == udtPWSpectrum || dataType == udtColorCombined)
+				if (dataType == udtColorCombined)
+				{
+					imProp->setImageState(USImageProperties::ImageState::Scan);
+				}
+				if (dataType == udtBPre || dataType == udtPWSpectrum)
 				{
 					imProp->setImageState(USImageProperties::ImageState::PreScan);
 				}
@@ -918,6 +909,16 @@ namespace supra
 				{
 					imProp->setImageState(USImageProperties::ImageState::RF);
 				}
+
+				if (dataType == udtBPre || dataType == udtRF)
+				{
+					imProp->setImageType(USImageProperties::ImageType::BMode);
+				}
+				else if (dataType == udtPWSpectrum || dataType == udtColorRF || dataType == udtPWRF || dataType == udtColorCombined)
+				{
+					imProp->setImageType(USImageProperties::ImageType::Doppler);
+				}
+
 				dataToOutput.second.second = imProp;
 
 				log_info("Ultrasonix: New image params for data type ", dataType, " - vectors : ", numVectors, ", samples : ", numSamples);

@@ -210,7 +210,7 @@ namespace supra
 	{
 		std::vector<std::string> nodeIDs(m_inputDevices.size());
 		std::transform(m_inputDevices.begin(), m_inputDevices.end(), nodeIDs.begin(),
-			[](pair<string, shared_ptr<AbstractInput<RecordObject> > > mapPair) -> std::string {return mapPair.first; });
+			[](pair<string, shared_ptr<AbstractInput> > mapPair) -> std::string {return mapPair.first; });
 		return nodeIDs;
 	}
 
@@ -240,9 +240,9 @@ namespace supra
 		return retVal;
 	}
 
-	shared_ptr<AbstractInput<RecordObject>> SupraManager::getInputDevice(string nodeID)
+	shared_ptr<AbstractInput> SupraManager::getInputDevice(string nodeID)
 	{
-		shared_ptr<AbstractInput<RecordObject>> retVal = shared_ptr<AbstractInput<RecordObject>>(nullptr);
+		shared_ptr<AbstractInput> retVal = shared_ptr<AbstractInput>(nullptr);
 		if (m_inputDevices.find(nodeID) != m_inputDevices.end())
 		{
 			retVal = m_inputDevices[nodeID];

@@ -24,7 +24,7 @@ using namespace std;
 namespace supra
 {
 	UltrasoundInterfaceSimulated::UltrasoundInterfaceSimulated(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 1)
 		, m_frozen(false)
 	{
 		m_callFrequency.setName("US-Sim");
@@ -92,7 +92,7 @@ namespace supra
 					vec2s{ m_bmodeNumVectors, m_bmodeNumSamples }, pData, m_pImageProperties, timestamp, timestamp);
 				m_callFrequency.measureEnd();
 			}
-			addData<0>(pImage);
+			addData(0, pImage);
 		}
 		return getRunning();
 	}

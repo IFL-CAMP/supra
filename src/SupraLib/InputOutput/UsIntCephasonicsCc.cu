@@ -144,7 +144,7 @@ namespace supra
 
 
 	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 1)
 		, m_pTransducer(nullptr)
 		, m_pSequencer(nullptr)
 		, m_pProbe(nullptr)
@@ -1656,7 +1656,7 @@ namespace supra
 				pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, ContainerFactory::getNextStream(), sArraySize);
 				platformsReceived.assign(m_numPlatforms, false);
 
-				addData<0>(rawData);
+				addData(0, rawData);
 			}
 		}
 	}
