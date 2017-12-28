@@ -124,17 +124,48 @@ namespace supra
 							{
 								inImageData = make_shared<Container<uint8_t> >(LocationHost, *inImageData);
 							}
-							qtimage = std::make_shared<QImage>(
-								static_cast<int>(inImage8Bit->getSize().x),
-								static_cast<int>(inImage8Bit->getSize().y),
-								QImage::Format_Grayscale8);
-							for (size_t row = 0; row < inImage8Bit->getSize().y; row++)
+							auto numChannels = inImage8Bit->getNumChannels();
+							if (numChannels == 1 || numChannels == 3 || numChannels == 4)
 							{
-								std::memcpy(qtimage->scanLine(static_cast<int>(row)),
-									inImageData->get() + row*inImage8Bit->getSize().x + m_layerToShow * inImage8Bit->getSize().x*inImage8Bit->getSize().y,
-									inImage8Bit->getSize().x * sizeof(uint8_t));
-							}
+								QImage::Format format = QImage::Format_Grayscale8;
+								if (numChannels == 3)
+								{
+									format = QImage::Format_RGB888;
+								}
+								else if (numChannels == 4)
+								{
+									format = QImage::Format_RGB32;
+								}
 
+								qtimage = std::make_shared<QImage>(
+									static_cast<int>(inImage8Bit->getSize().x),
+									static_cast<int>(inImage8Bit->getSize().y),
+									format);
+								for (size_t row = 0; row < inImage8Bit->getSize().y; row++)
+								{
+									std::memcpy(qtimage->scanLine(static_cast<int>(row)),
+										inImageData->get() + row*inImage8Bit->getSize().x*numChannels + m_layerToShow * inImage8Bit->getSize().x*numChannels*inImage8Bit->getSize().y,
+										inImage8Bit->getSize().x * sizeof(uint8_t) * numChannels);
+								}
+							}
+							else
+							{
+								qtimage = std::make_shared<QImage>(
+									static_cast<int>(inImage8Bit->getSize().x),
+									static_cast<int>(inImage8Bit->getSize().y),
+									QImage::Format_RGB32);
+								for (size_t row = 0; row < inImage8Bit->getSize().y; row++)
+								{
+									uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+									const uint8_t* srcRow = inImageData->get() + row*inImage8Bit->getSize().x*numChannels + m_layerToShow * inImage8Bit->getSize().x*numChannels*inImage8Bit->getSize().y;
+									for (size_t col = 0; col < inImage8Bit->getSize().x; col++)
+									{
+										destRow[4 * col + 1] = srcRow[col * numChannels + 0];
+										destRow[4 * col + 2] = srcRow[col * numChannels + 1];
+										destRow[4 * col + 3] = srcRow[col * numChannels + 2];
+									}
+								}
+							}
 							worldSize = computeWorldSize(inImage8Bit);
 						}
 						if (inImage16Bit)
@@ -145,17 +176,50 @@ namespace supra
 							{
 								inImageData = make_shared<Container<int16_t> >(LocationHost, *inImageData);
 							}
-							qtimage = std::make_shared<QImage>(
-								static_cast<int>(inImage16Bit->getSize().x),
-								static_cast<int>(inImage16Bit->getSize().y),
-								QImage::Format_Grayscale8);
-							for (size_t row = 0; row < inImage16Bit->getSize().y; row++)
+
+							auto numChannels = inImage16Bit->getNumChannels();
+							if (numChannels == 1 || numChannels == 3 || numChannels == 4)
 							{
-								uchar* destRow = qtimage->scanLine(static_cast<int>(row));
-								const int16_t*srcRow = inImageData->get() + row*inImage16Bit->getSize().x + m_layerToShow * inImage16Bit->getSize().x*inImage16Bit->getSize().y;
-								for (size_t col = 0; col < inImage16Bit->getSize().x; col++)
+								QImage::Format format = QImage::Format_Grayscale8;
+								if (numChannels == 3)
 								{
-									destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col])), 255.0));
+									format = QImage::Format_RGB888;
+								}
+								else if (numChannels == 4)
+								{
+									format = QImage::Format_RGB32;
+								}
+
+								qtimage = std::make_shared<QImage>(
+									static_cast<int>(inImage16Bit->getSize().x),
+									static_cast<int>(inImage16Bit->getSize().y),
+									format);
+								for (size_t row = 0; row < inImage16Bit->getSize().y; row++)
+								{
+									uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+									const int16_t*srcRow = inImageData->get() + row*inImage16Bit->getSize().x*numChannels + m_layerToShow * inImage16Bit->getSize().x*numChannels*inImage16Bit->getSize().y;
+									for (size_t col = 0; col < inImage16Bit->getSize().x * numChannels; col++)
+									{
+										destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col])), 255.0));
+									}
+								}
+							}
+							else {
+								qtimage = std::make_shared<QImage>(
+									static_cast<int>(inImage16Bit->getSize().x),
+									static_cast<int>(inImage16Bit->getSize().y),
+									QImage::Format_RGB32);
+								for (size_t row = 0; row < inImage16Bit->getSize().y; row++)
+								{
+									uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+									const int16_t* srcRow = inImageData->get() + row*inImage16Bit->getSize().x*numChannels + m_layerToShow * inImage16Bit->getSize().x*numChannels*inImage16Bit->getSize().y;
+									for (size_t col = 0; col < inImage16Bit->getSize().x; col++)
+									{
+										destRow[4 * col + 0] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col * numChannels + 0])), 255.0));
+										destRow[4 * col + 1] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col * numChannels + 1])), 255.0));
+										destRow[4 * col + 2] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col * numChannels + 2])), 255.0));
+										destRow[4 * col + 3] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col * numChannels + 3])), 255.0));
+									}
 								}
 							}
 

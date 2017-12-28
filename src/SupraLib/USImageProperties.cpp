@@ -81,6 +81,7 @@ namespace supra
 		, m_depth(depth)
 		, m_imageResolutionSet(false)
 		, m_imageResolution(0)
+		, m_numChannels(1)
 	{
 	}
 
@@ -95,6 +96,7 @@ namespace supra
 		, m_depth(0.0)
 		, m_imageResolutionSet(false)
 		, m_imageResolution(0.0)
+		, m_numChannels(1)
 	{
 	}
 
@@ -110,6 +112,7 @@ namespace supra
 		m_depth = a.m_depth;
 		m_imageResolutionSet = a.m_imageResolutionSet;
 		m_imageResolution = a.m_imageResolution;
+		m_numChannels = a.m_numChannels;
 
 		//copy specific parameter map
 		m_specificParameters = a.m_specificParameters;
@@ -146,6 +149,11 @@ namespace supra
 	void USImageProperties::setNumSamples(size_t numSamples)
 	{
 		m_numSamples = numSamples;
+	}
+
+	void USImageProperties::setNumChannels(size_t numChannels)
+	{
+		m_numChannels = numChannels;
 	}
 
 	void USImageProperties::setDepth(double depth)
@@ -193,6 +201,11 @@ namespace supra
 	size_t USImageProperties::getNumSamples() const
 	{
 		return m_numSamples;
+	}
+
+	size_t USImageProperties::getNumChannels() const
+	{
+		return m_numChannels;
 	}
 
 	double USImageProperties::getDepth() const

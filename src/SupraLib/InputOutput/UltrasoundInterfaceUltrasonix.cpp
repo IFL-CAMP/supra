@@ -241,10 +241,26 @@ namespace supra
 		// copy the data into a buffer managed by us (i.e. a shared pointer)
 		// and create the image
 		auto spData = make_shared<Container<ImageType> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(),
-			imProp->getNumSamples()*imProp->getNumScanlines());
-		memcpyTransposed(spData->get(), (ImageType*)(packet->pData), imProp->getNumScanlines(), imProp->getNumSamples());
+			imProp->getNumSamples()*imProp->getNumScanlines()*imProp->getNumChannels());
+		memcpyTransposed(spData->get(), (ImageType*)(packet->pData), imProp->getNumScanlines()*imProp->getNumChannels(), imProp->getNumSamples());
 		shared_ptr<USImage<ImageType> > pImage = make_shared < USImage<ImageType> >(
-			vec2s{ imProp->getNumScanlines(), imProp->getNumSamples() }, spData, imProp, packet->dTimestamp, packet->dTimestamp);
+			vec3s{ imProp->getNumScanlines(), imProp->getNumSamples(), 1 }, spData, imProp, packet->dTimestamp, packet->dTimestamp, imProp->getNumChannels());
+
+		addData(port, pImage);
+	}
+
+	template <typename ImageType>
+	void UltrasoundInterfaceUltrasonix::copyAndSendNewColorImage(size_t port, std::shared_ptr<UlteriusPacket> packet,
+		std::shared_ptr<const USImageProperties> imProp)
+	{
+		// copy the data into a buffer managed by us (i.e. a shared pointer)
+		// and create the image
+		auto spData = make_shared<Container<ImageType> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(),
+			imProp->getNumSamples()*imProp->getNumScanlines()*imProp->getNumChannels());
+		memcpy(spData->get(), (ImageType*)(packet->pData), 
+			imProp->getNumScanlines() * imProp->getNumSamples() * imProp->getNumChannels());
+		shared_ptr<USImage<ImageType> > pImage = make_shared < USImage<ImageType> >(
+			vec3s{ imProp->getNumScanlines(), imProp->getNumSamples(), 1 }, spData, imProp, packet->dTimestamp, packet->dTimestamp, imProp->getNumChannels());
 
 		addData(port, pImage);
 	}
@@ -264,6 +280,7 @@ namespace supra
 				auto imProp = m_dataToOutputMap[packet->iType].second;
 
 				int sampleSize = 1; // Bytes per sample
+				size_t channels = 1;
 				if (packet->iType == udtBPre ||
 					packet->iType == udtMPre ||
 					packet->iType == udtMPost ||
@@ -278,18 +295,20 @@ namespace supra
 				}
 				else if (packet->iType == udtColorRF)
 				{
-					sampleSize = 2 * m_colorEnsembleSize; // Bytes
+					sampleSize = 2; // Bytes
+					channels = m_colorEnsembleSize;
 				}
 				else if (packet->iType == udtColorCombined)
 				{
-					sampleSize = 4; // Bytes
+					sampleSize = 1; // Bytes
+					channels = 4;
 				}
 
-				if (packet->iSize != imProp->getNumSamples() * imProp->getNumScanlines() * sampleSize)
+				if (packet->iSize != imProp->getNumSamples() * imProp->getNumScanlines() * channels * sampleSize)
 				{
 					log_log("Ulterius packet did not have expected size. Was: ", packet->iSize, " bytes, expected ", 
-						imProp->getNumSamples() * imProp->getNumScanlines() * sampleSize, 
-						" = ", imProp->getNumScanlines(), " * ", imProp->getNumSamples(), " * ", sampleSize);
+						imProp->getNumSamples() * imProp->getNumScanlines() * channels * sampleSize, 
+						" = ", imProp->getNumScanlines(), " * ", imProp->getNumSamples(), " * ", channels, " * ", sampleSize);
 					log_warn("Dropping incomplete frame");
 					updateImagingParams();
 					return false;
@@ -298,8 +317,7 @@ namespace supra
 				if (packet->iType == udtBPre ||
 					packet->iType == udtMPre ||
 					packet->iType == udtMPost ||
-					packet->iType == udtPWSpectrum ||
-					packet->iType == udtColorCombined)
+					packet->iType == udtPWSpectrum)
 				{
 					copyAndSendNewImage<uint8_t>(port, packet, imProp);
 				}
@@ -308,6 +326,10 @@ namespace supra
 					packet->iType == udtColorRF)
 				{
 					copyAndSendNewImage<int16_t>(port, packet, imProp);
+				}
+				else if (packet->iType == udtColorCombined)
+				{
+					copyAndSendNewColorImage<uint8_t>(port, packet, imProp);
 				}
 
 				if (port == 0)
@@ -917,6 +939,14 @@ namespace supra
 				else if (dataType == udtPWSpectrum || dataType == udtColorRF || dataType == udtPWRF || dataType == udtColorCombined)
 				{
 					imProp->setImageType(USImageProperties::ImageType::Doppler);
+					if (dataType == udtColorCombined)
+					{
+						imProp->setNumChannels(4);
+					}
+					if (dataType == udtColorRF)
+					{
+						imProp->setNumChannels(m_colorEnsembleSize);
+					}
 				}
 
 				dataToOutput.second.second = imProp;

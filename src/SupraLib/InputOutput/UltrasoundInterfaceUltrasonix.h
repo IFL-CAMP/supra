@@ -139,6 +139,9 @@ namespace supra
 		template <typename ImageType>
 		void copyAndSendNewImage(size_t port, std::shared_ptr<UlteriusPacket> packet,
 			std::shared_ptr<const USImageProperties> imProp);
+		template <typename ImageType>
+		void copyAndSendNewColorImage(size_t port, std::shared_ptr<UlteriusPacket> packet,
+			std::shared_ptr<const USImageProperties> imProp);
 		void getLastError(const char* file = nullptr, int line = 0);
 
 	private:

@@ -42,7 +42,8 @@ namespace supra
 			, m_pImageProperties(pImageProperties)
 			, m_dimensions(3)
 			, m_size{ size1, size2, size3 }
-		, m_pData(pData) {};
+			, m_pData(pData)
+			, m_channels(1) {};
 		/// Constructs a 2D Image
 		USImage(size_t size1,
 			size_t size2,
@@ -53,18 +54,20 @@ namespace supra
 			, m_pImageProperties(pImageProperties)
 			, m_dimensions(2)
 			, m_size{ size1, size2, 1 }
-		, m_pData(pData) {};
+			, m_pData(pData)
+			, m_channels(1) {};
 		/// Constructs a 3D or 2D Image.
 		/// If size.z == 1, the image is 2D.
 		USImage(vec3s size,
 			std::shared_ptr<Container<ElementType> > pData,
 			std::shared_ptr<const USImageProperties> pImageProperties,
-			double receiveTimestamp, double syncTimestamp)
+			double receiveTimestamp, double syncTimestamp, size_t channels = 1)
 			: RecordObject(receiveTimestamp, syncTimestamp)
 			, m_pImageProperties(pImageProperties)
 			, m_dimensions(3)
 			, m_size(size)
 			, m_pData(pData)
+			, m_channels(channels)
 		{
 			if (size.z == 1)
 			{
@@ -81,6 +84,7 @@ namespace supra
 			, m_pImageProperties(pImageProperties)
 			, m_dimensions(2)
 			, m_pData(pData)
+			, m_channels(1)
 		{
 			m_size.x = size.x;
 			m_size.y = size.y;
@@ -92,7 +96,8 @@ namespace supra
 			, m_dimensions(a.m_dimensions)
 			, m_size(a.m_size)
 			, m_pData(a.m_pData)
-			, m_pImageProperties(a.m_pImageProperties) {};
+			, m_pImageProperties(a.m_pImageProperties)
+			, m_channels(a.m_channels) {};
 		/// Special copy constructor, copies image metadata from the given image,
 		/// but uses the given Container for data
 		USImage(const USImage& a, std::shared_ptr<Container<ElementType> > pData)
@@ -100,7 +105,8 @@ namespace supra
 			, m_dimensions(a.m_dimensions)
 			, m_size(a.m_size)
 			, m_pData(pData)
-			, m_pImageProperties(a.m_pImageProperties) {};
+			, m_pImageProperties(a.m_pImageProperties)
+			, m_channels(a.m_channels) {};
 
 		//~USImage();
 		/// Returns a pointer to the \see USImageProperties that contain the associated metadata
@@ -109,6 +115,8 @@ namespace supra
 		void setImageProperties(std::shared_ptr<USImageProperties> & imageProperties) { m_pImageProperties = imageProperties; };
 		/// Returns the size of the image. If it is 2D, `getSize().z == 1`
 		vec3s getSize() const { return m_size; };
+		/// Returns the number of channels for this image
+		size_t getNumChannels() const { return m_channels; };
 		/// Returns a pointer to the image data
 		std::shared_ptr<const Container<ElementType> > getData() const { return m_pData; };
 
@@ -121,8 +129,10 @@ namespace supra
 
 		//number of image dimensions
 		int m_dimensions;
-		//the size of the image buffer (i.e. m_pData->size() == prod(m_size))
+		//the size of the image buffer (i.e. m_pData->size() == prod(m_size) * m_channels)
 		vec3s m_size;
+		//number of image channels
+		size_t m_channels;
 	};
 }
 

@@ -117,6 +117,7 @@ namespace supra
 		void setTransducerType(USImageProperties::TransducerType transducerType);	// Defines the type of transducer
 		void setScanlineLayout(vec2s scanlineLayout);	// number of scanlines acquired
 		void setNumSamples(size_t numSamples);		// number of samples acquired on each scanline
+		void setNumChannels(size_t numChannels);		// number of channels of the image
 		void setDepth(double depth);					// depth covered
 		void setImageResolution(double resolution);  // the resolution of the scanConverted image
 
@@ -135,6 +136,7 @@ namespace supra
 		size_t getNumScanlines() const;			// number of scanlines acquired
 		vec2s getScanlineLayout() const;
 		size_t getNumSamples() const;				// number of samples acquired on each scanline
+		size_t getNumChannels() const;			// numer of channels in the image
 		double getDepth() const;					// depth covered
 
 
@@ -161,6 +163,7 @@ namespace supra
 		size_t m_numScanlines;				// number of scanlines acquired
 		vec2s m_scanlineLayout;
 		size_t m_numSamples;					// number of samples acquired on each scanline
+		size_t m_numChannels;				// number of channels in the image
 		double m_depth;						// depth covered
 		bool m_imageResolutionSet;			// whether explicit image resolution has been set
 		double m_imageResolution;			// explicit image resolution
