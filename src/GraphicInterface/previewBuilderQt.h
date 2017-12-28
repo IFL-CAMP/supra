@@ -55,13 +55,16 @@ namespace supra
 		/// Constructor of the node. Beside the standard node parameters, it takes as parameters 
 		/// Its parentWidget, the layout to attach to, the maximum image size and whether to use
 		/// linear interpolation for rescaling
-		previewBuilderQT(tbb::flow::graph & g, const std::string & nodeID, std::string name, QWidget* parentWidget, QVBoxLayout* targetLayout, QSize imageMaxSize, bool linearInterpolation);
+		previewBuilderQT(tbb::flow::graph & g, const std::string & nodeID, std::string name, std::string srcNodeID, size_t srcPort, QWidget* parentWidget, QVBoxLayout* targetLayout, QSize imageMaxSize, bool linearInterpolation);
 		/// Changes the size of image previews
 		void setPreviewSize(QSize imageMaxSize);
 		/// Sets the use of linear interpolation for image scaling
 		void setLinearInterpolation(bool linearInterpolation);
 		/// Removes the preview widgets
 		void removePreviews();
+
+		std::string getSrcNodeID() { return m_srcNodeID; }
+		size_t getSrcPort() { return m_srcPort; }
 
 	private:
 		void processRecordObject(const shared_ptr<RecordObject> inMessage);
@@ -77,6 +80,10 @@ namespace supra
 		QVBoxLayout* m_targetLayout;
 		std::string m_name;
 		inputNodeType m_nodeIn;
+
+		std::string m_srcNodeID;
+		size_t m_srcPort;
+
 		QSize m_imageMaxSize;
 		bool m_linearInterpolation;
 

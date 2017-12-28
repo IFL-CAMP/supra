@@ -140,9 +140,22 @@ namespace supra
 			item->setData(Qt::UserRole, QVariant(QString::fromStdString(node)));
 			//ui->list_allNodes->addItem(QString::fromStdString(node));
 			ui->list_allNodes->addItem(item);
-			if (p_manager->getNode(node)->getNumOutputs() > 0)
-			{
-				ui->comboBoxPreviewNode->addItem(QString::fromStdString(node));
+			size_t numOutputs = p_manager->getNode(node)->getNumOutputs();
+			for (size_t port = 0; port < numOutputs; port++)
+			{	
+				QList<QVariant> list;
+				QString dispName;
+				if (numOutputs > 1)
+				{
+					dispName = QString("%1 (%2)").arg(QString::fromStdString(node)).arg(port);
+				}
+				else
+				{
+					dispName = QString::fromStdString(node);
+				}
+				list.append(QVariant(QString::fromStdString(node)));
+				list.append(QVariant(port));
+				ui->comboBoxPreviewNode->addItem(dispName, QVariant(list));
 			}
 		}
 		setMinMaxWidthAdaptive(ui->list_allNodes);
@@ -400,9 +413,10 @@ namespace supra
 		if (m_preview)
 		{
 			string existingNodeID = m_preview->getNodeID();
-			string existingSrcID = existingNodeID.substr(5, existingNodeID.length() - 5 - 2);
+			string existingSrcID = m_preview->getSrcNodeID();
+			size_t srcPort = m_preview->getSrcPort();
 
-			p_manager->disconnect(existingSrcID, 0, existingNodeID, 0);
+			p_manager->disconnect(existingSrcID, srcPort, existingNodeID, 0);
 			p_manager->removeNode(existingNodeID);
 
 			m_preview->removePreviews();
@@ -411,12 +425,15 @@ namespace supra
 			m_preview = nullptr;
 		}
 
-		string nodeID = text.toStdString();
+		QVariant curData = ui->comboBoxPreviewNode->currentData();
+		auto list = curData.toList();
+		string nodeID = list[0].toString().toStdString();
+		int srcPort = list[1].toInt();
 
-		string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
+		string previewNodeID = "PREV_" + nodeID + "_" + stringify(srcPort);
 		p_manager->addNodeConstruct<previewBuilderQT>(
-			previewNodeID, "Preview " + nodeID + stringify(0), ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
-		p_manager->connect(nodeID, 0, previewNodeID, 0);
+			previewNodeID, "Preview " + nodeID + stringify(0), nodeID, srcPort, ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
+		p_manager->connect(nodeID, srcPort, previewNodeID, 0);
 
 		previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
 		if (pPreview)

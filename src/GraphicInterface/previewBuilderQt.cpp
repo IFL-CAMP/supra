@@ -21,7 +21,7 @@ namespace supra
 	using namespace ::tbb::flow;
 	using namespace ::std;
 
-	previewBuilderQT::previewBuilderQT(graph & g, const std::string & nodeID, string name, QWidget* parentWidget, QVBoxLayout* targetLayout, QSize imageMaxSize, bool linearInterpolation)
+	previewBuilderQT::previewBuilderQT(graph & g, const std::string & nodeID, string name, string srcNodeID, size_t srcPort, QWidget* parentWidget, QVBoxLayout* targetLayout, QSize imageMaxSize, bool linearInterpolation)
 		: QObject()
 		, AbstractNode(nodeID)
 		, m_nodeIn(g, 1,
@@ -35,6 +35,8 @@ namespace supra
 		, m_targetLayout(targetLayout)
 		, m_name(name)
 		, m_layerToShow(0)
+		, m_srcNodeID(srcNodeID)
+		, m_srcPort(srcPort)
 	{
 #ifdef HAVE_CAMPVIS
 		m_pCampvisPreview = nullptr;
