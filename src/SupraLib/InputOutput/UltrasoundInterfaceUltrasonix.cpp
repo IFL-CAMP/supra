@@ -909,7 +909,7 @@ namespace supra
 
 				shared_ptr<USImageProperties> imProp = make_shared<USImageProperties>(*(dataToOutput.second.second));
 				imProp->setNumSamples(numSamples);
-				imProp->setScanlineLayout({ numVectors, 1 });
+				imProp->setScanlineLayout({ (size_t)numVectors, 1 });
 				if (dataType == udtBPre || dataType == udtPWSpectrum || dataType == udtColorCombined)
 				{
 					imProp->setImageState(USImageProperties::ImageState::PreScan);
