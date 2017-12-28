@@ -140,8 +140,8 @@ namespace supra
 			item->setData(Qt::UserRole, QVariant(QString::fromStdString(node)));
 			//ui->list_allNodes->addItem(QString::fromStdString(node));
 			ui->list_allNodes->addItem(item);
-			size_t numOutputs = p_manager->getNode(node)->getNumOutputs();
-			for (size_t port = 0; port < numOutputs; port++)
+			int numOutputs = static_cast<int>(p_manager->getNode(node)->getNumOutputs());
+			for (int port = 0; port < numOutputs; port++)
 			{	
 				QList<QVariant> list;
 				QString dispName;
