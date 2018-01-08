@@ -60,12 +60,14 @@ namespace supra
 			// Check whether there is enough free space for the requested buffer. 
 			size_t memoryFree;
 			size_t memoryTotal;
+#ifdef HAVE_CUDA
 			if (location == LocationGpu || location == LocationBoth)
 			{
 				cudaSafeCall(cudaMemGetInfo(&memoryFree, &memoryTotal));
 				memoryFree = static_cast<size_t>(std::max(static_cast<double>(memoryFree) - (static_cast<double>(memoryTotal) *0.02), 0.0));
 			}
 			else
+#endif
 			{
 				// For the host memory we just rely on the 
 				memoryFree = numBytes;
