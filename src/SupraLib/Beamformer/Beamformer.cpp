@@ -425,6 +425,7 @@ namespace supra
 				// use steering angle to derive scanline (sector angle n/a in linear scanning)
 				// number of scanlines equals to number of firings
 				auto steerAngle = m_txSteeringAngle.x;
+				auto sectorAngle = m_txSectorAngle.x;
 				size_t numScanlines = m_numScanlines.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
@@ -444,7 +445,8 @@ namespace supra
 					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ steerAngle, 0 });
+					double scanlineAngle = steerAngle - (sectorAngle / 2) + (scanlineIdx / (numScanlines - 1) * sectorAngle);
+					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ scanlineAngle, 0 });
 				}
 		
 			}
