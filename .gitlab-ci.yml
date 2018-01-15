@@ -94,7 +94,7 @@ build_ubuntu_nocuda:
   tags:
     - linux
     - g++
-  image: ubuntu:latest
+  image: supra-builder:nocuda-ubuntu
   script:
     - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
