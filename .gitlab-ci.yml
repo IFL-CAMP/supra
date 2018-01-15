@@ -88,6 +88,28 @@ build_ubuntu_1404_cuda_cephasonics:
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON
     - make    
+    
+build_ubuntu_nocuda:
+  stage: build
+  tags:
+    - linux
+    - g++
+  image: ubuntu:latest
+  script:
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - mv openigtlink* OpenIGTLink
+    - cd OpenIGTLink
+    - mkdir -p build
+    - cd build
+    - cmake .. -DBUILD_TESTING=OFF
+    - make
+    - make install
+    - cd ../..
+    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
+    - mkdir -p build_gcc
+    - cd build_gcc
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_BEAMFORMER=OFF -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=OFF
+    - make    
 
 build_windows:
   stage: build
