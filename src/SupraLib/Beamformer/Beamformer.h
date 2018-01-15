@@ -3,6 +3,9 @@
 // If not explicitly stated: Copyright (C) 2016, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
+// 			and
+//		Christoph Hennersperger
+//		c.hennersperger@tum.de
 //      Chair for Computer Aided Medical Procedures
 //      Technische Universität München
 //      Boltzmannstr. 3, 85748 Garching b. München, Germany
@@ -60,27 +63,58 @@ namespace supra
 
 		Beamformer(const std::shared_ptr<Beamformer> bf);
 
+
 		void setTransducer(const USTransducer* transducer);
 
 		void setScanType(const std::string scanType);
-		void setSpeedOfSound(const double speedOfSound);		// in meters per second
+
+		/// Set speed of sound as assumed for beamforming [m/s]
+		void setSpeedOfSound(const double speedOfSound);
+
+		/// Set penetration depth [mm]
 		void setDepth(const double depth);
-		void setNumScanlines(const vec2s numScanlines);
+
+		/// Set number of transmit scanlines in x/y 
+		void setNumTxScanlines(const vec2s numScanlines);
+
+		/// Set subdivisiion from transmit to receive scanlines x/y 
 		void setRxScanlineSubdivision(const vec2s scanlineSubdivision);
-		void setNumRxScanlines(const vec2s numRxScanlines);
-		void setMaxActiveElements(const vec2s maxActiveElements);
-		void setMaxTxElements(const vec2s maxTxElements);
+
+		/// Set window type for transmit aperture (apodization)
+		// Can be Hann, Hamming, Rectangular Gauss
 		void setTxWindowType(const std::string windowType);
+
+		/// Set associated window parameters for selected window type
 		void setWindowParameter(const WindowFunction::ElementType windowParameter);
-		void setFov(const vec2 fov);
-		void setMaxApertureSize (const vec2s aptertureSize);
-		void setTxMaxApertureSize (const vec2s txApertureSize);
-		void setTxFocusActive(const bool txFocusActive);
-		void setTxFocusDepth(const double txFocusDepth);
-		void setTxFocusWidth(const double txFocusWidth);
-        void setTxCorrectMatchingLayers(const bool txCorrectMatchingLayers);
+
+		// set center steering angle for scanline opening [degrees x/y]
 		void setTxSteeringAngle(const vec2 txSteeringAngle);
+
+		/// Set field of view for scanline opening [degrees x/y] 
+		void setTxSectorAngle(const vec2 txSectorAngle); 
+
+		/// Specify the maximum aperture to be used for beamforming [channels x/y] 
+		void setMaxApertureSize (const vec2s aptertureSize);
+
+		/// Specify the maximum transmit aperture to be used for beamforming [channels x/y] 
+		void setTxMaxApertureSize (const vec2s txApertureSize);
+
+		/// Activate transmit focusing
+		void setTxFocusActive(const bool txFocusActive);
+
+		/// Set transmit focus depth [mm] 
+		void setTxFocusDepth(const double txFocusDepth);
+
+		/// Set transmit focus width [mm]
+		void setTxFocusWidth(const double txFocusWidth);
+
+		/// Activate correction for speed of sound in matching layers
+        void setTxCorrectMatchingLayers(const bool txCorrectMatchingLayers);
+
+		/// Set receive focusing depth [mm]
 		void setRxFocusDepth(const double rxFocusDepth);
+
+		/// Set number or discrete receive focus steps to be calculated
 		void setNumDepths(const size_t numDepths);
 
 
@@ -92,13 +126,13 @@ namespace supra
 		vec2s getNumRxScanlines() const;
 		vec2s getMaxActiveElements() const;
 		vec2s getMaxTxElements() const;
-		vec2 getFov() const;
 		vec2s getApertureSize () const;
 		vec2s getTxApertureSize () const;
 		bool getTxFocusActive() const;
 		double getTxFocusDepth() const;
 		double getTxFocusWidth() const;
         bool getTxCorrectMatchingLayers() const;
+		vec2 getTxSectorAngle() const;
 		vec2 getTxSteeringAngle() const;
 		double getRxFocusDepth() const;
 		size_t getNumDepths() const;
@@ -133,6 +167,9 @@ namespace supra
 			vec2 interp);
 		static rect2s computeAperture(vec2s layout, vec2s apertureSize, vec2 relativePosition);
 
+		/// compute steering angles for given tx sector angle and beam steering
+		void computeSteeringAngles(vec2s numAngles);
+
 		std::vector<ScanlineTxParameters3D> m_txParameters;
 		std::shared_ptr<std::vector<std::vector<ScanlineRxParameters3D> > > m_rxParameters;
 		std::shared_ptr<const RxBeamformerParameters> m_pRxBeamformerParameters;
@@ -152,14 +189,16 @@ namespace supra
 		WindowType m_txWindow;
 		WindowFunction::ElementType m_txWindowParameter;
 		double m_depth;
-		vec2 m_fov;
 		bool m_txFocusActive;
 		double m_txFocusDepth;
 		double m_txFocusWidth;
 		double m_rxFocusDepth;
 		double m_speedOfSound;
 		double m_speedOfSoundMMperS; 	// updated internally
-		vec2 m_txSteeringAngle;
+
+		vec2 m_txSectorAngle;			// opening angle of sector (rad)
+		vec2 m_txSteeringAngle;			// steering angle for sector (rad)
+		std::vector<vec2> m_txFiringAngles; // all firing angles (updated internally)
 		
 		//double m_fNumber;
 		uint32_t m_numSamplesRecon;

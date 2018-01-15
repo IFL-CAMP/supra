@@ -154,6 +154,10 @@ namespace supra
 		, m_systemRxClock(40)
 		, m_mockDataWritten(false)
 		, m_numBeamSequences(0) // TODO replace hardcoded sequence number (move to config/gui)
+		, m_numReceivedFrames(0)
+		, m_numDroppedFrames(0)
+		, m_lastFrameNumber(1)
+		, m_sequenceNumFrames(0)
 	{
 		m_callFrequency.setName("CepUS");
 
@@ -262,8 +266,10 @@ namespace supra
 				m_valueRangeDictionary.remove(idApp+"numScanlinesY");
 				m_valueRangeDictionary.remove(idApp+"rxScanlineSubdivisionX");
 				m_valueRangeDictionary.remove(idApp+"rxScanlineSubdivisionY");
-				m_valueRangeDictionary.remove(idApp+"fovX");
-				m_valueRangeDictionary.remove(idApp+"fovY");
+				m_valueRangeDictionary.remove(idApp+"txSectorAngleX");
+				m_valueRangeDictionary.remove(idApp+"txSectorAngleY");
+				m_valueRangeDictionary.remove(idApp+"txSteeringAngleX");
+				m_valueRangeDictionary.remove(idApp+"txSteeringAngleY");
 				m_valueRangeDictionary.remove(idApp+"apertureSizeX");
 				m_valueRangeDictionary.remove(idApp+"apertureSizeY");
 				m_valueRangeDictionary.remove(idApp+"txApertureSizeX");
@@ -273,9 +279,6 @@ namespace supra
 				m_valueRangeDictionary.remove(idApp+"txFocusWidth");
 				m_valueRangeDictionary.remove(idApp+"txCorrectMatchingLayers");
 				m_valueRangeDictionary.remove(idApp+"numSamplesRecon");
-				m_valueRangeDictionary.remove(idApp+"steerNumAnglesX");
-				m_valueRangeDictionary.remove(idApp+"steerAngleStartX");
-				m_valueRangeDictionary.remove(idApp+"steerAngleEndX");
 		}
 
 
@@ -312,8 +315,10 @@ namespace supra
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numScanlinesY", 1, 512, 1, descApp+"Number of scanlines Y");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"rxScanlineSubdivisionX", 1, 512, 256, descApp+"Rx scanline supersampling X");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"rxScanlineSubdivisionY", 1, 512, 1, descApp+"Rx scanline supersampling Y");
-			m_valueRangeDictionary.set<double>(idApp+"fovX", -178, 178, 60, descApp+"FOV X [degree]");
-			m_valueRangeDictionary.set<double>(idApp+"fovY", -178, 178, 60, descApp+"FOV Y [degree]");
+			m_valueRangeDictionary.set<double>(idApp+"txSectorAngleX", -178, 178, 60, descApp+"Opening angle X [deg]");
+			m_valueRangeDictionary.set<double>(idApp+"txSectorAngleY", -178, 178, 60, descApp+"Opening angle Y [deg]");
+			m_valueRangeDictionary.set<double>(idApp+"txSteeringAngleX", -90.0, 90.0, 0.0, descApp+"Angle of image X [deg]");
+			m_valueRangeDictionary.set<double>(idApp+"txSteeringAngleY", -90.0, 90.0, 0.0, descApp+"Angle of image Y [deg]");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"apertureSizeX", 0, 384, 0, descApp+"Aperture X");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"apertureSizeY", 0, 384, 0, descApp+"Aperture Y");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txApertureSizeX", 0, 384, 0, descApp+"TX Aperture X");
@@ -325,9 +330,7 @@ namespace supra
 			m_valueRangeDictionary.set<double>(idApp+"txFocusWidth", 0.0, 20.0, 0.0, descApp+"Focus width [mm]");
 			m_valueRangeDictionary.set<bool>(idApp+"txCorrectMatchingLayers", {true, false}, false, descApp+"TX matching layer correction");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numSamplesRecon", 10, 4096, 1000, descApp+"Number of samples Recon");
-			m_valueRangeDictionary.set<uint32_t>(idApp+"steerNumAnglesX", 1, 256, 1, descApp+"Number of steered beam angles X");
-			m_valueRangeDictionary.set<double>(idApp+"steerAngleStartX", -90.0, 90.0, 0.0, descApp+"Angle of first steered beam X [deg]");
-			m_valueRangeDictionary.set<double>(idApp+"steerAngleEndX", -90.0, 90.0, 0.0, descApp+"Angle of last steered beam X [deg]");
+
 		}
 	}
 
@@ -505,36 +508,31 @@ namespace supra
 		// TODO: currently all beamformers share same aperture
 		for (auto numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			// TODO: support steering also in y
-			size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
 			
-			for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
+			std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
+
+			vec2s bfTxApertureSize = bf->getTxApertureSize();
+			vec2s bfApertureSize = bf->getApertureSize();
+
+			if(bfTxApertureSize.x == 0 || bfTxApertureSize.y == 0)
 			{
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq,angleSeq);
+				bfTxApertureSize = maxAperture;
+			}
+			if(bfApertureSize.x == 0 || bfApertureSize.y == 0)
+			{
+				bfApertureSize = maxAperture;
+			}
+			bfApertureSize = min(bfApertureSize, maxAperture);
+			bfTxApertureSize = min(bfTxApertureSize, maxAperture);
 
-				vec2s bfTxApertureSize = bf->getTxApertureSize();
-				vec2s bfApertureSize = bf->getApertureSize();
-
-				if(bfTxApertureSize.x == 0 || bfTxApertureSize.y == 0)
-				{
-					bfTxApertureSize = maxAperture;
-				}
-				if(bfApertureSize.x == 0 || bfApertureSize.y == 0)
-				{
-					bfApertureSize = maxAperture;
-				}
-				bfApertureSize = min(bfApertureSize, maxAperture);
-				bfTxApertureSize = min(bfTxApertureSize, maxAperture);
-
-				bf->setTxMaxApertureSize(bfTxApertureSize);
-				bf->setMaxApertureSize(bfApertureSize);
+			bf->setTxMaxApertureSize(bfTxApertureSize);
+			bf->setMaxApertureSize(bfApertureSize);
 
 
-				// (re)compute the internal TX parameters for a beamformer if any parameter changed
-				if (!bf->isReady())
-				{
-					bf->computeTxParameters();
-				}
+			// (re)compute the internal TX parameters for a beamformer if any parameter changed
+			if (!bf->isReady())
+			{
+				bf->computeTxParameters();
 			}
 		}
 	}
@@ -544,102 +542,100 @@ namespace supra
 		// iterate over all defined beam sequences, each beam-sequ defines one USImageProperties object
 		for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
-			for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
-			{
+			
 
-				std::shared_ptr<const Beamformer> bf = m_pSequencer->getBeamformer(numSeq,angleSeq);
-				std::shared_ptr<const USImageProperties> imageProps = m_pSequencer->getUSImgProperties(numSeq,angleSeq);
+			std::shared_ptr<const Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
+			std::shared_ptr<const USImageProperties> imageProps = m_pSequencer->getUSImgProperties(numSeq);
 
-				vec2s numScanlines = bf->getNumScanlines();
-				size_t numDepths = bf->getNumDepths();
-				vec2s rxScanlines = bf->getNumRxScanlines();
-				vec2 fov = bf->getFov();
-				vec2s apertureSize = bf->getApertureSize();
-				vec2s txApertureSize = bf->getTxApertureSize();
-
-
-				auto newProps = make_shared<USImageProperties>(
-					numScanlines,
-					numDepths,
-					USImageProperties::ImageType::BMode,
-					USImageProperties::ImageState::Raw,
-					USImageProperties::TransducerType::Linear,
-					m_endDepth );
-
-				newProps->setImageType(USImageProperties::ImageType::BMode);				// Defines the type of information contained in the image
-				newProps->setImageState(USImageProperties::ImageState::Raw);				// Describes the state the image is currently in
-				newProps->setScanlineLayout(numScanlines);					// number of scanlines acquired
-				newProps->setDepth(m_endDepth);								// depth covered
-
-				/* imageProps->setNumSamples(m_num);								// number of samples acquired on each scanline */
-				/* imageProps->setImageResolution(double resolution);  			// the resolution of the scanConverted image */
-
-				// Defines the type of transducer
-				if (m_probeName == "Linear" || m_probeName == "CPLA12875" || m_probeName == "CPLA06475") {
-					newProps->setTransducerType(USImageProperties::TransducerType::Linear);	
-				} else if (m_probeName == "2D") {
-					newProps->setTransducerType(USImageProperties::TransducerType::Bicurved);
-				}
+			vec2s numScanlines = bf->getNumScanlines();
+			size_t numDepths = bf->getNumDepths();
+			vec2s rxScanlines = bf->getNumRxScanlines();
+			vec2 steeringAngle = bf->getTxSteeringAngle();
+			vec2 sectorAngle = bf->getTxSectorAngle();
+			vec2s apertureSize = bf->getApertureSize();
+			vec2s txApertureSize = bf->getTxApertureSize();
 
 
-				// publish Rx Scanline parameters together with the RawData
-				if(imageProps && imageProps->getScanlineInfo())
-				{
-					newProps->setScanlineInfo(imageProps->getScanlineInfo());
-				}
+			auto newProps = make_shared<USImageProperties>(
+				numScanlines,
+				numDepths,
+				USImageProperties::ImageType::BMode,
+				USImageProperties::ImageState::Raw,
+				USImageProperties::TransducerType::Linear,
+				m_endDepth );
 
-				// geometrical beamformer-related settings
-				newProps->setSpecificParameter("UsIntCepCc.numScanlines.x", numScanlines.x);
-				newProps->setSpecificParameter("UsIntCepCc.numScanlines.y", numScanlines.y);
-				newProps->setSpecificParameter("UsIntCepCc.rxScanlines.x", rxScanlines.x);
-				newProps->setSpecificParameter("UsIntCepCc.rxScanlines.y", rxScanlines.y);
-				newProps->setSpecificParameter("UsIntCepCc.fov.x", fov.x);
-				newProps->setSpecificParameter("UsIntCepCc.fov.y", fov.y);
-				newProps->setSpecificParameter("UsIntCepCc.apertureSize.x", apertureSize.x);
-				newProps->setSpecificParameter("UsIntCepCc.apertureSize.y", apertureSize.y);
-				newProps->setSpecificParameter("UsIntCepCc.txApertureSize.x", txApertureSize.x);
-				newProps->setSpecificParameter("UsIntCepCc.txApertureSize.y", txApertureSize.y);
-				newProps->setSpecificParameter("UsIntCepCc.txFocusActive", bf->getTxFocusActive());
-				newProps->setSpecificParameter("UsIntCepCc.txFocusDepth", bf->getTxFocusDepth());
-				newProps->setSpecificParameter("UsIntCepCc.txFocusWidth", bf->getTxFocusWidth());
-				newProps->setSpecificParameter("UsIntCepCc.txCorrectMatchingLayers", bf->getTxCorrectMatchingLayers());
-				newProps->setSpecificParameter("UsIntCepCc.numSamplesRecon", bf->getNumDepths());
-				newProps->setSpecificParameter("UsIntCepCc.scanType", bf->getScanType());
-				newProps->setSpecificParameter("UsIntCepCc.steerNumAnglesX", m_pSequencer->getNumAngles(numSeq).x);
-				newProps->setSpecificParameter("UsIntCepCc.steerAngleStartX", m_pSequencer->getStartAngle(numSeq).x);
-				newProps->setSpecificParameter("UsIntCepCc.steerAngleEndX", m_pSequencer->getEndAngle(numSeq).x);
+			newProps->setImageType(USImageProperties::ImageType::BMode);				// Defines the type of information contained in the image
+			newProps->setImageState(USImageProperties::ImageState::Raw);				// Describes the state the image is currently in
+			newProps->setScanlineLayout(numScanlines);					// number of scanlines acquired
+			newProps->setDepth(m_endDepth);								// depth covered
 
-				// setting specific for beam ensemble transmit, not handled not within beamformer
-				newProps->setSpecificParameter("UsIntCepCc.txFrequency",m_beamEnsembleTxParameters.at(numSeq).txFrequency);
-				newProps->setSpecificParameter("UsIntCepCc.txPrf", m_beamEnsembleTxParameters.at(numSeq).txPrf);
-				newProps->setSpecificParameter("UsIntCepCc.txVoltage", m_beamEnsembleTxParameters.at(numSeq).txVoltage);
+			/* imageProps->setNumSamples(m_num);								// number of samples acquired on each scanline */
+			/* imageProps->setImageResolution(double resolution);  			// the resolution of the scanConverted image */
 
-
-				newProps->setSpecificParameter("UsIntCepCc.txNumCyclesCephasonics",  m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics);
-				newProps->setSpecificParameter("UsIntCepCc.txNumCyclesManual", m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual);
-
-
-				//publish system-wide parameter settings to properties object
-				newProps->setSpecificParameter("UsIntCepCc.systemTxClock", m_systemTxClock);
-				newProps->setSpecificParameter("UsIntCepCc.probeName", m_probeName);
-				newProps->setSpecificParameter("UsIntCepCc.startDepth", m_startDepth);
-				newProps->setSpecificParameter("UsIntCepCc.endDepth", m_endDepth);
-				newProps->setSpecificParameter("UsIntCepCc.processorMeasureThroughput", m_processorMeasureThroughput);
-				newProps->setSpecificParameter("UsIntCepCc.speedOfSound", m_speedOfSound);
-
-				newProps->setSpecificParameter("UsIntCepCc.tgc", m_vgaGain);
-				newProps->setSpecificParameter("UsIntCepCc.decimation", m_decimation);
-				newProps->setSpecificParameter("UsIntCepCc.decimationFilterBypass", m_decimationFilterBypass);
-				newProps->setSpecificParameter("UsIntCepCc.antiAliasingFilterFrequency", m_antiAliasingFilterFrequency);
-				newProps->setSpecificParameter("UsIntCepCc.highPassFilterBypass", m_highPassFilterBypass);
-				newProps->setSpecificParameter("UsIntCepCc.highPassFilterFrequency", m_highPassFilterFrequency);
-				newProps->setSpecificParameter("UsIntCepCc.lowNoiseAmplifierGain", m_lowNoiseAmplifierGain);
-				newProps->setSpecificParameter("UsIntCepCc.inputImpedance", m_inputImpedance);
-
-
-				m_pSequencer->setUSImgProperties(numSeq, angleSeq, newProps);
+			// Defines the type of transducer
+			if (m_probeName == "Linear" || m_probeName == "CPLA12875" || m_probeName == "CPLA06475") {
+				newProps->setTransducerType(USImageProperties::TransducerType::Linear);	
+			} else if (m_probeName == "2D") {
+				newProps->setTransducerType(USImageProperties::TransducerType::Bicurved);
 			}
+
+
+			// publish Rx Scanline parameters together with the RawData
+			if(imageProps && imageProps->getScanlineInfo())
+			{
+				newProps->setScanlineInfo(imageProps->getScanlineInfo());
+			}
+
+			// geometrical beamformer-related settings
+			newProps->setSpecificParameter("UsIntCepCc.numScanlines.x", numScanlines.x);
+			newProps->setSpecificParameter("UsIntCepCc.numScanlines.y", numScanlines.y);
+			newProps->setSpecificParameter("UsIntCepCc.rxScanlines.x", rxScanlines.x);
+			newProps->setSpecificParameter("UsIntCepCc.rxScanlines.y", rxScanlines.y);
+			newProps->setSpecificParameter("UsIntCepCc.txSteeringAngle.x", steeringAngle.x);
+			newProps->setSpecificParameter("UsIntCepCc.txSteeringAngle.y", steeringAngle.y);
+			newProps->setSpecificParameter("UsIntCepCc.txSectorAngle.x", sectorAngle.x);
+			newProps->setSpecificParameter("UsIntCepCc.txSectorAngle.y", sectorAngle.y);
+
+			newProps->setSpecificParameter("UsIntCepCc.apertureSize.x", apertureSize.x);
+			newProps->setSpecificParameter("UsIntCepCc.apertureSize.y", apertureSize.y);
+			newProps->setSpecificParameter("UsIntCepCc.txApertureSize.x", txApertureSize.x);
+			newProps->setSpecificParameter("UsIntCepCc.txApertureSize.y", txApertureSize.y);
+			newProps->setSpecificParameter("UsIntCepCc.txFocusActive", bf->getTxFocusActive());
+			newProps->setSpecificParameter("UsIntCepCc.txFocusDepth", bf->getTxFocusDepth());
+			newProps->setSpecificParameter("UsIntCepCc.txFocusWidth", bf->getTxFocusWidth());
+			newProps->setSpecificParameter("UsIntCepCc.txCorrectMatchingLayers", bf->getTxCorrectMatchingLayers());
+			newProps->setSpecificParameter("UsIntCepCc.numSamplesRecon", bf->getNumDepths());
+			newProps->setSpecificParameter("UsIntCepCc.scanType", bf->getScanType());
+
+
+			// setting specific for beam ensemble transmit, not handled not within beamformer
+			newProps->setSpecificParameter("UsIntCepCc.txFrequency",m_beamEnsembleTxParameters.at(numSeq).txFrequency);
+			newProps->setSpecificParameter("UsIntCepCc.txPrf", m_beamEnsembleTxParameters.at(numSeq).txPrf);
+			newProps->setSpecificParameter("UsIntCepCc.txVoltage", m_beamEnsembleTxParameters.at(numSeq).txVoltage);
+
+
+			newProps->setSpecificParameter("UsIntCepCc.txNumCyclesCephasonics",  m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics);
+			newProps->setSpecificParameter("UsIntCepCc.txNumCyclesManual", m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual);
+
+
+			//publish system-wide parameter settings to properties object
+			newProps->setSpecificParameter("UsIntCepCc.systemTxClock", m_systemTxClock);
+			newProps->setSpecificParameter("UsIntCepCc.probeName", m_probeName);
+			newProps->setSpecificParameter("UsIntCepCc.startDepth", m_startDepth);
+			newProps->setSpecificParameter("UsIntCepCc.endDepth", m_endDepth);
+			newProps->setSpecificParameter("UsIntCepCc.processorMeasureThroughput", m_processorMeasureThroughput);
+			newProps->setSpecificParameter("UsIntCepCc.speedOfSound", m_speedOfSound);
+
+			newProps->setSpecificParameter("UsIntCepCc.tgc", m_vgaGain);
+			newProps->setSpecificParameter("UsIntCepCc.decimation", m_decimation);
+			newProps->setSpecificParameter("UsIntCepCc.decimationFilterBypass", m_decimationFilterBypass);
+			newProps->setSpecificParameter("UsIntCepCc.antiAliasingFilterFrequency", m_antiAliasingFilterFrequency);
+			newProps->setSpecificParameter("UsIntCepCc.highPassFilterBypass", m_highPassFilterBypass);
+			newProps->setSpecificParameter("UsIntCepCc.highPassFilterFrequency", m_highPassFilterFrequency);
+			newProps->setSpecificParameter("UsIntCepCc.lowNoiseAmplifierGain", m_lowNoiseAmplifierGain);
+			newProps->setSpecificParameter("UsIntCepCc.inputImpedance", m_inputImpedance);
+
+			m_pSequencer->setUSImgProperties(numSeq, newProps);
 		}
 	}
 
@@ -656,7 +652,7 @@ namespace supra
 	
 		m_cUSEngine = unique_ptr<USEngine>(new USEngine(*m_cPlatformHandle));
 		m_cUSEngine->stop();
-		m_cUSEngine->setBlocking(true);
+		m_cUSEngine->setBlocking(false);
 
 		//Step 2 ----------------- "Create Scan Definition"
 		setupScan();
@@ -791,73 +787,66 @@ namespace supra
 		// iterate over all defined beam sequences, each beam-sequ defines one USImageProperties object
 		for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
-			for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
-			{
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq, angleSeq);
-				std::string seqIdApp = getBeamSequenceApp(m_numBeamSequences,numSeq);
-				
-				// scan or image-specific configuration values
-				std::string scanType = m_configurationDictionary.get<std::string>(seqIdApp+"scanType");
-				bf->setScanType(scanType);
+			std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
+			std::string seqIdApp = getBeamSequenceApp(m_numBeamSequences,numSeq);
+			
+			// scan or image-specific configuration values
+			std::string scanType = m_configurationDictionary.get<std::string>(seqIdApp+"scanType");
+			bf->setScanType(scanType);
 
-				bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
-				bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
-				bf->setRxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth")); // currently rx and tx focus are the same
-				bf->setTxFocusWidth(m_configurationDictionary.get<double>(seqIdApp+"txFocusWidth"));
-				bf->setTxCorrectMatchingLayers(m_configurationDictionary.get<bool>(seqIdApp+"txCorrectMatchingLayers"));
-				bf->setNumDepths(m_configurationDictionary.get<uint32_t>(seqIdApp+"numSamplesRecon"));
+			bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
+			bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
+			bf->setRxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth")); // currently rx and tx focus are the same
+			bf->setTxFocusWidth(m_configurationDictionary.get<double>(seqIdApp+"txFocusWidth"));
+			bf->setTxCorrectMatchingLayers(m_configurationDictionary.get<bool>(seqIdApp+"txCorrectMatchingLayers"));
+			bf->setNumDepths(m_configurationDictionary.get<uint32_t>(seqIdApp+"numSamplesRecon"));
 
-				bf->setSpeedOfSound(m_speedOfSound);
-				bf->setDepth(m_endDepth);
+			bf->setSpeedOfSound(m_speedOfSound);
+			bf->setDepth(m_endDepth);
 
-				vec2s numScanlines;
-				numScanlines.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"numScanlinesX");
-				numScanlines.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"numScanlinesY");
-				bf->setNumScanlines(numScanlines);
+			vec2s numScanlines;
+			numScanlines.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"numScanlinesX");
+			numScanlines.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"numScanlinesY");
+			bf->setNumTxScanlines(numScanlines);
 
-				vec2s rxScanlinesSubdivision;
-				rxScanlinesSubdivision.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionX");
-				rxScanlinesSubdivision.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionY");
-				bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
+			vec2s rxScanlinesSubdivision;
+			rxScanlinesSubdivision.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionX");
+			rxScanlinesSubdivision.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionY");
+			bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
 
-				vec2 fov;
-				fov.x = m_configurationDictionary.get<double>(seqIdApp+"fovX");
-				fov.y = m_configurationDictionary.get<double>(seqIdApp+"fovY");
-				bf->setFov(fov);
+			vec2 sectorAngle;
+			sectorAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleX");
+			sectorAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleY");
+			bf->setTxSectorAngle(sectorAngle);
 
-				vec2s apertureSize;
-				apertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeX");
-				apertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeY");
-				bf->setMaxApertureSize(apertureSize);
+			vec2 steeringAngle;
+			steeringAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleX");
+			steeringAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleY");
+			bf->setTxSteeringAngle(steeringAngle);
 
-				vec2s txApertureSize;
-				txApertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeX");
-				txApertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeY");
-				bf->setTxMaxApertureSize(txApertureSize);
-				
-				string windowType = m_configurationDictionary.get<string>(seqIdApp+"txWindowType");
-				bf->setTxWindowType(windowType);
+			vec2s apertureSize;
+			apertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeX");
+			apertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeY");
+			bf->setMaxApertureSize(apertureSize);
 
-				double winParam = m_configurationDictionary.get<double>("txWindowParameter");
-				bf->setWindowParameter(winParam);
-				
-				
-				
-				// Todo: support steering also in y
-				m_pSequencer->setNumAngles(numSeq, {m_configurationDictionary.get<uint32_t>(seqIdApp+"steerNumAnglesX"), 1});
-				m_pSequencer->setStartAngle(numSeq, { m_configurationDictionary.get<double>(seqIdApp+"steerAngleStartX"), 0.0 });
-				m_pSequencer->setEndAngle(numSeq, { m_configurationDictionary.get<double>(seqIdApp+"steerAngleEndX"), 0.0 });
+			vec2s txApertureSize;
+			txApertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeX");
+			txApertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeY");
+			bf->setTxMaxApertureSize(txApertureSize);
+			
+			string windowType = m_configurationDictionary.get<string>(seqIdApp+"txWindowType");
+			bf->setTxWindowType(windowType);
 
+			double winParam = m_configurationDictionary.get<double>("txWindowParameter");
+			bf->setWindowParameter(winParam);
 
-				// ensemble-specific parameters (valid for a whole image irrespective of whether it is linear, phased, planewave, or push)
-				m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
-				m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
-				m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
-				m_beamEnsembleTxParameters.at(numSeq).txDutyCycle = m_configurationDictionary.get<double>(seqIdApp+"txDutyCycle");
-				m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
-				m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
-			}
+			// ensemble-specific parameters (valid for a whole image irrespective of whether it is linear, phased, planewave, or push)
+			m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
+			m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
+			m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
+			m_beamEnsembleTxParameters.at(numSeq).txDutyCycle = m_configurationDictionary.get<double>(seqIdApp+"txDutyCycle");
+			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
+			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
 		}
 		
 		readVgaSettings();
@@ -873,16 +862,13 @@ namespace supra
 
 		for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
-			for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
-			{
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq, angleSeq);
+			
+			std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
 
-				// (re)compute the internal TX parameters for a beamformer if any parameter changed
-				if (!bf->isReady())
-				{
-					bf->computeTxParameters();
-				}
+			// (re)compute the internal TX parameters for a beamformer if any parameter changed
+			if (!bf->isReady())
+			{
+				bf->computeTxParameters();
 			}
 		}
 
@@ -954,114 +940,105 @@ namespace supra
 			// local settings (per firing)
 			for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 			{
-				size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
 				std::string seqIdApp = getBeamSequenceApp(m_numBeamSequences,numSeq);
+				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
 
-				for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
+				if(configKey == seqIdApp+"numScanlinesX" || configKey == seqIdApp+"numScanlinesY")
 				{
-					std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq, angleSeq);
+					vec2s numScanlines;
+					numScanlines.x = m_configurationDictionary.get<size_t>(seqIdApp+"numScanlinesX");
+					numScanlines.y = m_configurationDictionary.get<size_t>(seqIdApp+"numScanlinesY");
+					bf->setNumTxScanlines( numScanlines );
+				}
+				if(configKey == seqIdApp+"rxScanlineSubdivisionX" || configKey == seqIdApp+"rxScanlineSubdivisionY")
+				{
+					vec2s rxScanlinesSubdivision;
+					rxScanlinesSubdivision.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionX");
+					rxScanlinesSubdivision.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionY");
+					bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
+				}
 
-					if(configKey == seqIdApp+"numScanlinesX" || configKey == seqIdApp+"numScanlinesY")
-					{
-						vec2s numScanlines;
-						numScanlines.x = m_configurationDictionary.get<size_t>(seqIdApp+"numScanlinesX");
-						numScanlines.y = m_configurationDictionary.get<size_t>(seqIdApp+"numScanlinesY");
-						bf->setNumScanlines( numScanlines );
-					}
-					if(configKey == seqIdApp+"rxScanlineSubdivisionX" || configKey == seqIdApp+"rxScanlineSubdivisionY")
-					{
-						vec2s rxScanlinesSubdivision;
-						rxScanlinesSubdivision.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionX");
-						rxScanlinesSubdivision.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"rxScanlineSubdivisionY");
-						bf->setRxScanlineSubdivision( rxScanlinesSubdivision );
-					}
+				if(configKey == seqIdApp+"txSectorAngleX" || configKey == seqIdApp+"txSectorAngleY")
+				{
+					vec2 sectorAngle;
+					sectorAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleX");
+					sectorAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSectorAngleY");
+					bf->setTxSectorAngle( sectorAngle );
+				}
+				if(configKey == seqIdApp+"txSteeringAngleX" || configKey == seqIdApp+"txSteeringAngleY")
+				{
+					vec2 steerAngle;
+					steerAngle.x = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleX");
+					steerAngle.y = m_configurationDictionary.get<double>(seqIdApp+"txSteeringAngleY");
+					bf->setTxSteeringAngle( steerAngle );
+				}
+				if(configKey == seqIdApp+"apertureSizeX" || configKey == seqIdApp+"apertureSizeY")
+				{
+					vec2s apertureSize;
+					apertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeX");
+					apertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeY");
+					bf->setMaxApertureSize( apertureSize );
+				}
+				if(configKey == seqIdApp+"txApertureSizeX" || configKey == seqIdApp+"txApertureSizeY")
+				{
+					vec2s txApertureSize;
+					txApertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeX");
+					txApertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeY");
+					bf->setTxMaxApertureSize( txApertureSize );
+				}
+				if(configKey == seqIdApp+"txFocusActive")
+				{
+					bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
+				}
+				if(configKey == seqIdApp+"txFocusDepth")
+				{
+					bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
+				}
+				if(configKey == seqIdApp+"txFocusWidth")
+				{
+					bf->setTxFocusWidth(m_configurationDictionary.get<double>(seqIdApp+"txFocusWidth"));
+				}
+				if(configKey == seqIdApp+"txCorrectMatchingLayers")
+				{
+					bf->setTxCorrectMatchingLayers(m_configurationDictionary.get<bool>(seqIdApp+"txCorrectMatchingLayers"));
+				}
+				if(configKey == seqIdApp+"numSamplesRecon")
+				{
+					bf->setNumDepths(m_configurationDictionary.get<uint32_t>(seqIdApp+"numSamplesRecon"));
+				}
+			
 
-					if(configKey == seqIdApp+"fovX" || configKey == seqIdApp+"fovY")
-					{
-						vec2 fov;
-						fov.x = m_configurationDictionary.get<double>(seqIdApp+"fovX");
-						fov.y = m_configurationDictionary.get<double>(seqIdApp+"fovY");
-						bf->setFov( fov );
-					}
-					if(configKey == seqIdApp+"apertureSizeX" || configKey == seqIdApp+"apertureSizeY")
-					{
-						vec2s apertureSize;
-						apertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeX");
-						apertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"apertureSizeY");
-						bf->setMaxApertureSize( apertureSize );
-					}
-					if(configKey == seqIdApp+"txApertureSizeX" || configKey == seqIdApp+"txApertureSizeY")
-					{
-						vec2s txApertureSize;
-						txApertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeX");
-						txApertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeY");
-						bf->setTxMaxApertureSize( txApertureSize );
-					}
-					if(configKey == seqIdApp+"txFocusActive")
-					{
-						bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
-					}
-					if(configKey == seqIdApp+"txFocusDepth")
-					{
-						bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
-					}
-					if(configKey == seqIdApp+"txFocusWidth")
-					{
-						bf->setTxFocusWidth(m_configurationDictionary.get<double>(seqIdApp+"txFocusWidth"));
-					}
-					if(configKey == seqIdApp+"txCorrectMatchingLayers")
-					{
-						bf->setTxCorrectMatchingLayers(m_configurationDictionary.get<bool>(seqIdApp+"txCorrectMatchingLayers"));
-					}
-					if(configKey == seqIdApp+"numSamplesRecon")
-					{
-						bf->setNumDepths(m_configurationDictionary.get<uint32_t>(seqIdApp+"numSamplesRecon"));
-					}
-					if(configKey == seqIdApp+"steerNumAnglesX")
-					{
-						m_pSequencer->setNumAngles(numSeq, {m_configurationDictionary.get<uint32_t>(seqIdApp+"steerNumAnglesX"), 1});
-					}
-					if(configKey == seqIdApp+"steerAngleStartX")
-					{
-						m_pSequencer->setStartAngle(numSeq, { m_configurationDictionary.get<double>(seqIdApp+"steerAngleStartX"),0 });
-					}
-					if(configKey == seqIdApp+"steerAngleEndX")
-					{
-						m_pSequencer->setEndAngle(numSeq, {m_configurationDictionary.get<double>(seqIdApp+"steerAngleEndX"),0 });
-					}
+				// beam ensemble specific transmit values
+				if (configKey == seqIdApp+"txVoltage")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
+					applyVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage);
+				}
+				if(configKey == seqIdApp+"txDutyCycle")
+				{
+					// TODO
+				}
+				if(configKey == seqIdApp+"txFrequency")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
+				}
+				if(configKey == seqIdApp+"txPulseRepetitionFrequency")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
+				}
+				if(configKey == seqIdApp+"txNumCyclesCephasonics")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
+				}
+				if(configKey == seqIdApp+"txNumCyclesManual")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
+				}
 
-					// beam ensemble specific transmit values
-					if (configKey == seqIdApp+"txVoltage")
-					{
-						m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
-						applyVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage);
-					}
-					if(configKey == seqIdApp+"txDutyCycle")
-					{
-						// TODO
-					}
-					if(configKey == seqIdApp+"txFrequency")
-					{
-						m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
-					}
-					if(configKey == seqIdApp+"txPulseRepetitionFrequency")
-					{
-						m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
-					}
-					if(configKey == seqIdApp+"txNumCyclesCephasonics")
-					{
-						m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
-					}
-					if(configKey == seqIdApp+"txNumCyclesManual")
-					{
-						m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
-					}
-
-					// update bf internal parameters if a relevant parameter has changed
-					if (!bf->isReady())
-					{
-						bf->computeTxParameters();
-					}
+				// update bf internal parameters if a relevant parameter has changed
+				if (!bf->isReady())
+				{
+					bf->computeTxParameters();
 				}
 			}
 
@@ -1266,26 +1243,25 @@ namespace supra
 		
 		for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			// TODO: support steering also in y
-			size_t numAnglesSeq = m_pSequencer->getNumAngles(numSeq).x;
-
-			for (size_t angleSeq = 0; angleSeq < numAnglesSeq; ++angleSeq)
-			{
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq,angleSeq);
-				std::shared_ptr<USImageProperties> props = m_pSequencer->getUSImgProperties(numSeq,angleSeq);
 	
-				// push rx parameters to US properties
-				props->setScanlineInfo(bf->getRxParameters());
+			std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(numSeq);
+			std::shared_ptr<USImageProperties> props = m_pSequencer->getUSImgProperties(numSeq);
 
-				// Get the Tx scanline parameters to program the Hardware with them
-				const std::vector<ScanlineTxParameters3D>* beamTxParams = bf->getTxParameters();
+			// push rx parameters to US properties
+			props->setScanlineInfo(bf->getRxParameters());
 
-				std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
-											
-				// store framedef and add it to Cephasonics interface
-				m_pFrameMap[fdef.first] = std::pair<size_t,size_t>(numSeq,angleSeq);
-				m_pFrameDefs.push_back(fdef.second);				
-			}
+			// Get the Tx scanline parameters to program the Hardware with them
+			const std::vector<ScanlineTxParameters3D>* beamTxParams = bf->getTxParameters();
+
+			std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
+										
+			// store framedef and add it to Cephasonics interface
+			m_pFrameMap[fdef.first] = m_sequenceNumFrames;
+			m_pFrameDefs.push_back(fdef.second);
+
+			// add entry to receive map, which will be used to identify complete sequences and/or dropped frames
+			m_sequenceFramesReceived.push_back(false);	
+			m_sequenceNumFrames++;
 		}
 	}
 
@@ -1517,9 +1493,42 @@ namespace supra
 	}
 
 
-	void UsIntCephasonicsCc::putData(uint16_t platformIndex, size_t frameIndex, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* dataScrambled)
+	void UsIntCephasonicsCc::putData(uint16_t platformIndex, size_t frameIndex, size_t frameNumber, uint32_t numChannels, size_t numSamples, size_t numBeams, uint8_t* dataScrambled)
 	{
 		double timestamp = getCurrentTime();
+
+		// if frameNumber changes, check whether all subframe data (data from each beamformer) has arrived, yet
+		if (m_lastFrameNumber != frameNumber)
+		{
+			bool allSequenceFramesReceived = true;
+			for (auto sequFrameReceived : m_sequenceFramesReceived)
+			{
+				if (!sequFrameReceived)
+				{
+					allSequenceFramesReceived = false;
+					m_numDroppedFrames++;
+				}
+				else
+				{
+					m_numReceivedFrames++;
+				}
+			}
+
+			m_numDroppedFrames++;
+			m_lastFrameNumber = frameNumber;
+			m_sequenceFramesReceived.assign(m_sequenceNumFrames, false);
+
+
+			if (!allSequenceFramesReceived)
+			{
+				log_error("UsIntCephasonicsCc: frame dropped. Total number of dropped frames: " + std::to_string(m_numDroppedFrames));
+			}
+		}
+		
+		// mark sequence frame triggered
+		m_sequenceFramesReceived[m_pFrameMap[frameIndex]] = true;	
+
+		//return;
 
 		static vector<bool> platformsReceived;
 		static size_t sNumBeams = 0;
@@ -1630,8 +1639,8 @@ namespace supra
 				filename << "/mnt/data/ascii_test/rawData_copiedtogether.txt";
 				writeAscii(filename.str(), pData.get(), sArraySize);*/
 
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(m_pFrameMap[frameIndex].first,m_pFrameMap[frameIndex].second);
-				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(m_pFrameMap[frameIndex].first,m_pFrameMap[frameIndex].second);
+				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(m_pFrameMap[frameIndex]);
+				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(m_pFrameMap[frameIndex]);
 
 				// we received the data from all necessary platforms, now we can start the beamforming
 				shared_ptr<USRawData<int16_t> > rawData = make_shared<USRawData<int16_t> >
@@ -1659,6 +1668,9 @@ namespace supra
 				addData<0>(rawData);
 			}
 		}
+
+		// double timeDiff = getCurrentTime() - timestamp;
+		// printf("time: %lf\n", timeDiff);
 	}
 
 	bool UsIntCephasonicsCc::ready()

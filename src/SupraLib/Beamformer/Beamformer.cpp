@@ -3,6 +3,9 @@
 // If not explicitly stated: Copyright (C) 2016, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
+// 	and
+//		Christoph Hennersperger
+//		c.hennersperger@tum.de
 //      Chair for Computer Aided Medical Procedures
 //      Technische Universität München
 //      Boltzmannstr. 3, 85748 Garching b. München, Germany
@@ -40,14 +43,14 @@ namespace supra
 		, m_txMaxApertureSize{ 0, 0 }
 		, m_txWindow(WindowRectangular)
 		, m_depth(0.0)
-		, m_fov{ 0.0, 0.0 }
+		, m_txSteeringAngle{0,0}
+		, m_txSectorAngle{ 0.0, 0.0 }
 		, m_txFocusActive(false)
 		, m_txFocusDepth(0.0)
 		, m_txFocusWidth(0.0)
 		, m_rxFocusDepth(0.0)
 		, m_speedOfSound(1540.0)
 		, m_speedOfSoundMMperS(m_speedOfSound * 1000.0)
-		, m_txSteeringAngle{0,0}
 		, m_numSamplesRecon(0)
 		, m_ready(false)
 	{
@@ -68,14 +71,14 @@ namespace supra
 		, m_txWindow(bf->m_txWindow)
 		, m_txWindowParameter(bf->m_txWindowParameter)
 		, m_depth(bf->m_depth)
-		, m_fov(bf->m_fov)
+		, m_txSteeringAngle(bf->m_txSteeringAngle)
+		, m_txSectorAngle(bf->m_txSectorAngle)
 		, m_txFocusActive(bf->m_txFocusActive)
 		, m_txFocusDepth(bf->m_txFocusDepth)
 		, m_txFocusWidth(bf->m_txFocusWidth)
 		, m_rxFocusDepth(bf->m_rxFocusDepth)
 		, m_speedOfSound(bf->m_speedOfSound)
 		, m_speedOfSoundMMperS(bf->m_speedOfSoundMMperS)
-		, m_txSteeringAngle(bf->m_txSteeringAngle)
 		, m_numSamplesRecon(bf->m_numSamplesRecon)
 		, m_ready(false)	
 	{
@@ -133,7 +136,7 @@ namespace supra
 		m_depth = depth;
 	}
 
-	void Beamformer::setNumScanlines(const vec2s numScanlines)
+	void Beamformer::setNumTxScanlines(const vec2s numScanlines)
 	{
 		if (numScanlines != m_numScanlines)
 		{
@@ -153,8 +156,8 @@ namespace supra
 		if (m_type == ScanType::Planewave)
 		{
 			m_numRxScanlines = {
-				m_numScanlines.x + (m_rxScanlineSubdivision.x - 1)*(m_numScanlines.x),
-				m_numScanlines.y + (m_rxScanlineSubdivision.y - 1)*(m_numScanlines.y) };
+				m_rxScanlineSubdivision.x,
+				m_rxScanlineSubdivision.y };
 		}
 		else
 		{
@@ -164,16 +167,6 @@ namespace supra
 		}
 	}
 
-
-	void Beamformer::setFov(const vec2 fov)
-	{
-		auto fovRad = fov / 180.0 * M_PI;
-		if (fovRad != m_fov)
-		{
-			m_ready = false;
-		}
-		m_fov = fovRad;
-	}
 
 	void Beamformer::setMaxApertureSize (const vec2s apertureSize)
 	{
@@ -270,11 +263,22 @@ namespace supra
 
 	void Beamformer::setTxSteeringAngle(const vec2 txSteeringAngle)
 	{
-		if (txSteeringAngle != m_txSteeringAngle)
+		auto steerRad = txSteeringAngle * M_PI / 180.0;	
+		if (steerRad != m_txSteeringAngle)
 		{
 			m_ready = false;
 		}
-		m_txSteeringAngle = txSteeringAngle;
+		m_txSteeringAngle = steerRad;
+	}
+
+	void Beamformer::setTxSectorAngle(const vec2 sector)
+	{
+		auto sectorRad = sector * M_PI / 180.0;
+		if (sectorRad != m_txSectorAngle)
+		{
+			m_ready = false;
+		}
+		m_txSectorAngle = sectorRad;
 	}
 
 	void Beamformer::setRxFocusDepth(const double rxFocusDepth)
@@ -335,11 +339,6 @@ namespace supra
 		return m_numRxScanlines;
 	}
 
-	vec2 Beamformer::getFov() const
-	{
-		return m_fov / M_PI * 180.0;
-	}
-
 	vec2s Beamformer::getApertureSize () const
 	{
 		return m_maxApertureSize;
@@ -372,7 +371,12 @@ namespace supra
 
 	vec2 Beamformer::getTxSteeringAngle() const
 	{
-		return m_txSteeringAngle;
+		return m_txSteeringAngle / M_PI * 180.0;
+	}
+
+	vec2 Beamformer::getTxSectorAngle() const
+	{
+		return m_txSectorAngle / M_PI * 180.0;
 	}
 
 	double Beamformer::getRxFocusDepth() const
@@ -411,14 +415,22 @@ namespace supra
 
 			if (m_type == Linear)
 			{
+				if (m_pTransducer->getType() != USTransducer::Linear)
+				{
+					// only linear supported for now
+					logging::log_error("Beamformer: Linear imaging only supported for linear arrays.");
+					throw std::invalid_argument("Imaging type not implemented yet");
+				}
+
+				// use steering angle to derive scanline (sector angle n/a in linear scanning)
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
+				auto sectorAngle = m_txSectorAngle.x;
 				size_t numScanlines = m_numScanlines.x;
+
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
-
-
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
-
 				
 				//evenly space the scanlines between the first and last element
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
@@ -433,7 +445,8 @@ namespace supra
 					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ angleRad, 0 });
+					double scanlineAngle = steerAngle - (sectorAngle / 2) + (scanlineIdx / (numScanlines - 1) * sectorAngle);
+					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ scanlineAngle, 0 });
 				}
 		
 			}
@@ -442,8 +455,11 @@ namespace supra
 				//TODO right now full aperture
 				assert(m_pTransducer->getNumElements() == m_maxApertureSize.x);
 
+				// use sector angles and steering angles to derive scanline
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
+				auto sectorAngle = m_txSectorAngle.x;
 				size_t numScanlines = m_numScanlines.x;
-				double fov = m_fov.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 
@@ -466,7 +482,7 @@ namespace supra
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 				{
 					// the angle of the scanline
-					double scanlineAngle = -fov / 2 + scanlineIdx / (numScanlines - 1) * fov;
+					double scanlineAngle = steerAngle - (sectorAngle / 2) + (scanlineIdx / (numScanlines - 1) * sectorAngle);
 					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2{ scanlineStartX, 0 }, vec2{ scanlineAngle, 0 });
 				}
 			}
@@ -502,7 +518,7 @@ namespace supra
 							elementCenterpoints->at(activeAperture.end.y   *elementLayout.x).y) / 2;
 
 						// the angle of the scanline
-						vec2 scanlineAngle = (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_fov;
+						vec2 scanlineAngle = m_txSteeringAngle + (vec2{ (double)scanlineIdxX, (double)scanlineIdxY } / (m_numScanlines - 1) - 0.5) * m_txSectorAngle;
 						m_txParameters[scanlinesDone] = getTxScanline3D(activeAperture, txAperture, scanlineStart, scanlineAngle);
 						scanlinesDone++;
 					}
@@ -517,15 +533,19 @@ namespace supra
 					throw std::invalid_argument("Imaging type not implemented yet");
 				}
 
+				// use sector angles and steering angles to derive scanline
+				// number of scanlines equals to number of firings
+				auto steerAngle = m_txSteeringAngle.x;
+				auto sectorAngle = m_txSectorAngle.x;
+				size_t numPlanewaves = m_numScanlines.x;
+
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
 				vec firstElement = elementCenterpoints->at(0);
 				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
 				
 				// the position of the scanline on the x axis is by default at center for planwave imaging
-				double scanlinePosition = firstElement.x +
-					0.5 * (lastElement.x - firstElement.x);
+				double scanlinePosition = firstElement.x + 0.5 * (lastElement.x - firstElement.x);
 				
 				// the scanline position in terms of elementIndices at center of array
 				double scanlinePositionRelative = 0.5 * (m_pTransducer->getNumElements() - 1);
@@ -533,7 +553,13 @@ namespace supra
 				rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 				rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-				m_txParameters[0] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ angleRad, 0 });
+
+				for (size_t planewaveIdx=0; planewaveIdx<numPlanewaves; planewaveIdx++)
+				{
+					// angle of current plane wave emission
+					auto planewaveAngle = steerAngle - (sectorAngle/2) + planewaveIdx * sectorAngle / (numPlanewaves-1);
+					m_txParameters[planewaveIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ planewaveAngle, 0 });
+				}
 			}
 			else {
 				logging::log_error("Beamformer: Imaging type not implemented yet");
@@ -541,221 +567,224 @@ namespace supra
 				m_ready = false;
 			}
 
-			/*for (size_t scanlineIdxY = 0; scanlineIdxY < m_numScanlines.y; scanlineIdxY++)
-			{
-				for (size_t scanlineIdxX = 0; scanlineIdxX < m_numScanlines.x; scanlineIdxX++)
-				{
-					size_t scanlineIdx = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
-					log_always("computeTxParameters: idx (", scanlineIdxX, ", ", scanlineIdxY, "), pos: (",
-						m_txParameters[scanlineIdx].position.x, ", ",
-						m_txParameters[scanlineIdx].position.y, ", ",
-						m_txParameters[scanlineIdx].position.z, "), dir (",
-						m_txParameters[scanlineIdx].direction.x, ", ",
-						m_txParameters[scanlineIdx].direction.y, ", ",
-						m_txParameters[scanlineIdx].direction.z, " firstActive (",
-						m_txParameters[scanlineIdx].firstActiveElementIndex.x, ", ",
-						m_txParameters[scanlineIdx].firstActiveElementIndex.y, ") lastactive (",
-						m_txParameters[scanlineIdx].lastActiveElementIndex.x, ", ",
-						m_txParameters[scanlineIdx].lastActiveElementIndex.y, ")");
-				}
-			}*/
 
 			//Compute the RX scanlines based on the TX scanlines, but include subdivision
 			//Subdivide the tx scanlines
 			m_rxParameters = make_shared<std::vector<std::vector<ScanlineRxParameters3D> > >();
-			m_rxParameters->resize(m_numRxScanlines.x, vector<ScanlineRxParameters3D>(m_numRxScanlines.y));
-			if (m_numScanlines.y > 1)
+			if (m_type != Planewave)
 			{
-				for (size_t scanlineIdxY = 0; scanlineIdxY < (m_numScanlines.y - 1); scanlineIdxY++)
+				m_rxParameters->resize(m_numRxScanlines.x, vector<ScanlineRxParameters3D>(m_numRxScanlines.y));
+				if (m_numScanlines.y > 1)
 				{
+					for (size_t scanlineIdxY = 0; scanlineIdxY < (m_numScanlines.y - 1); scanlineIdxY++)
+					{
+						for (size_t scanlineIdxX = 0; scanlineIdxX < (m_numScanlines.x - 1); scanlineIdxX++)
+						{
+							//subdivide between
+							//  (scanlineIdxX,   scanlineIdxY),
+							//  (scanlineIdxX+1, scanlineIdxY),
+							//  (scanlineIdxX,   scanlineIdxY+1),
+							//  (scanlineIdxX+1, scanlineIdxY+1)
+							size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
+							size_t txScanlineIdx2 = (scanlineIdxX + 1) + scanlineIdxY      * m_numScanlines.x;
+							size_t txScanlineIdx3 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
+							size_t txScanlineIdx4 = (scanlineIdxX + 1) + (scanlineIdxY + 1) * m_numScanlines.x;
+							auto txScanline1 = m_txParameters[txScanlineIdx1];
+							auto txScanline2 = m_txParameters[txScanlineIdx2];
+							auto txScanline3 = m_txParameters[txScanlineIdx3];
+							auto txScanline4 = m_txParameters[txScanlineIdx4];
+							for (size_t rxScanIdxY = 0; rxScanIdxY < m_rxScanlineSubdivision.y; rxScanIdxY++)
+							{
+								for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
+								{
+									vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
+									/ static_cast<vec2>(m_rxScanlineSubdivision);
+
+									//interpolate...
+									ScanlineRxParameters3D interpolated =
+										getRxScanline3DInterpolated(
+											txScanlineIdx1, txScanline1,
+											txScanlineIdx2, txScanline2,
+											txScanlineIdx3, txScanline3,
+											txScanlineIdx4, txScanline4,
+											interp);
+									//and store
+									(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
+										interpolated;
+								}
+							}
+						}
+						// now only interpolate within the last Y-plane (between the current two X-Planes)
+						size_t scanlineIdxX = (m_numScanlines.x - 1);
+						//subdivide between
+						//  (scanlineIdxX,   scanlineIdxY),
+						//  (scanlineIdxX,   scanlineIdxY),
+						//  (scanlineIdxX,   scanlineIdxY+1),
+						//  (scanlineIdxX,   scanlineIdxY+1)
+						size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
+						size_t txScanlineIdx2 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
+						size_t txScanlineIdx3 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
+						size_t txScanlineIdx4 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
+						auto txScanline1 = m_txParameters[txScanlineIdx1];
+						auto txScanline2 = m_txParameters[txScanlineIdx2];
+						auto txScanline3 = m_txParameters[txScanlineIdx3];
+						auto txScanline4 = m_txParameters[txScanlineIdx4];
+						size_t rxScanIdxX = 0;
+						for (size_t rxScanIdxY = 0; rxScanIdxY < m_rxScanlineSubdivision.y; rxScanIdxY++)
+						{
+							vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
+							/ static_cast<vec2>(m_rxScanlineSubdivision);
+
+							//interpolate...
+							ScanlineRxParameters3D interpolated =
+								getRxScanline3DInterpolated(
+									txScanlineIdx1, txScanline1,
+									txScanlineIdx2, txScanline2,
+									txScanlineIdx3, txScanline3,
+									txScanlineIdx4, txScanline4,
+									interp);
+							//and store
+							(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
+								interpolated;
+						}
+						//Add the last scanline in x from this plane
+						size_t txScanlineIdx = (m_numScanlines.x - 1) + scanlineIdxY * m_numScanlines.x;
+						(*m_rxParameters)[(m_numScanlines.x - 1) * m_rxScanlineSubdivision.x][scanlineIdxY * m_rxScanlineSubdivision.y] =
+							getRxScanline3D(txScanlineIdx, m_txParameters[txScanlineIdx]);
+					}
+					// now only interpolate within the last X-plane
+					size_t scanlineIdxY = m_numScanlines.y - 1;
 					for (size_t scanlineIdxX = 0; scanlineIdxX < (m_numScanlines.x - 1); scanlineIdxX++)
 					{
 						//subdivide between
 						//  (scanlineIdxX,   scanlineIdxY),
 						//  (scanlineIdxX+1, scanlineIdxY),
-						//  (scanlineIdxX,   scanlineIdxY+1),
-						//  (scanlineIdxX+1, scanlineIdxY+1)
-						size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
-						size_t txScanlineIdx2 = (scanlineIdxX + 1) + scanlineIdxY      * m_numScanlines.x;
-						size_t txScanlineIdx3 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
-						size_t txScanlineIdx4 = (scanlineIdxX + 1) + (scanlineIdxY + 1) * m_numScanlines.x;
+						//  (scanlineIdxX,   scanlineIdxY),
+						//  (scanlineIdxX+1, scanlineIdxY)
+						size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
+						size_t txScanlineIdx2 = (scanlineIdxX + 1) + scanlineIdxY * m_numScanlines.x;
+						size_t txScanlineIdx3 = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
+						size_t txScanlineIdx4 = (scanlineIdxX + 1) + scanlineIdxY * m_numScanlines.x;
 						auto txScanline1 = m_txParameters[txScanlineIdx1];
 						auto txScanline2 = m_txParameters[txScanlineIdx2];
 						auto txScanline3 = m_txParameters[txScanlineIdx3];
 						auto txScanline4 = m_txParameters[txScanlineIdx4];
-						for (size_t rxScanIdxY = 0; rxScanIdxY < m_rxScanlineSubdivision.y; rxScanIdxY++)
+						size_t rxScanIdxY = 0;
+						for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
 						{
-							for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
-							{
-								vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
-								/ static_cast<vec2>(m_rxScanlineSubdivision);
+							vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
+							/ static_cast<vec2>(m_rxScanlineSubdivision);
 
-								//interpolate...
-								ScanlineRxParameters3D interpolated =
-									getRxScanline3DInterpolated(
-										txScanlineIdx1, txScanline1,
-										txScanlineIdx2, txScanline2,
-										txScanlineIdx3, txScanline3,
-										txScanlineIdx4, txScanline4,
-										interp);
-								//and store
-								(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
-									interpolated;
-							}
+							//interpolate...
+							ScanlineRxParameters3D interpolated =
+								getRxScanline3DInterpolated(
+									txScanlineIdx1, txScanline1,
+									txScanlineIdx2, txScanline2,
+									txScanlineIdx3, txScanline3,
+									txScanlineIdx4, txScanline4,
+									interp);
+							//and store
+							(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
+								interpolated;
 						}
 					}
-					// now only interpolate within the last Y-plane (between the current two X-Planes)
-					size_t scanlineIdxX = (m_numScanlines.x - 1);
-					//subdivide between
-					//  (scanlineIdxX,   scanlineIdxY),
-					//  (scanlineIdxX,   scanlineIdxY),
-					//  (scanlineIdxX,   scanlineIdxY+1),
-					//  (scanlineIdxX,   scanlineIdxY+1)
-					size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
-					size_t txScanlineIdx2 = scanlineIdxX + scanlineIdxY      * m_numScanlines.x;
-					size_t txScanlineIdx3 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
-					size_t txScanlineIdx4 = scanlineIdxX + (scanlineIdxY + 1) * m_numScanlines.x;
-					auto txScanline1 = m_txParameters[txScanlineIdx1];
-					auto txScanline2 = m_txParameters[txScanlineIdx2];
-					auto txScanline3 = m_txParameters[txScanlineIdx3];
-					auto txScanline4 = m_txParameters[txScanlineIdx4];
-					size_t rxScanIdxX = 0;
-					for (size_t rxScanIdxY = 0; rxScanIdxY < m_rxScanlineSubdivision.y; rxScanIdxY++)
-					{
-						vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
-						/ static_cast<vec2>(m_rxScanlineSubdivision);
-
-						//interpolate...
-						ScanlineRxParameters3D interpolated =
-							getRxScanline3DInterpolated(
-								txScanlineIdx1, txScanline1,
-								txScanlineIdx2, txScanline2,
-								txScanlineIdx3, txScanline3,
-								txScanlineIdx4, txScanline4,
-								interp);
-						//and store
-						(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
-							interpolated;
-					}
-					//Add the last scanline in x from this plane
-					size_t txScanlineIdx = (m_numScanlines.x - 1) + scanlineIdxY * m_numScanlines.x;
-					(*m_rxParameters)[(m_numScanlines.x - 1) * m_rxScanlineSubdivision.x][scanlineIdxY * m_rxScanlineSubdivision.y] =
+					//add the very last scanline (in x and y)
+					size_t txScanlineIdx = (m_numScanlines.x - 1) + (m_numScanlines.y - 1) * m_numScanlines.x;
+					(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][(m_numScanlines.y - 1)*m_rxScanlineSubdivision.y] =
 						getRxScanline3D(txScanlineIdx, m_txParameters[txScanlineIdx]);
 				}
-				// now only interpolate within the last X-plane
-				size_t scanlineIdxY = m_numScanlines.y - 1;
-				for (size_t scanlineIdxX = 0; scanlineIdxX < (m_numScanlines.x - 1); scanlineIdxX++)
+				else if (m_numScanlines.x > 1) 
 				{
-					//subdivide between
-					//  (scanlineIdxX,   scanlineIdxY),
-					//  (scanlineIdxX+1, scanlineIdxY),
-					//  (scanlineIdxX,   scanlineIdxY),
-					//  (scanlineIdxX+1, scanlineIdxY)
-					size_t txScanlineIdx1 = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
-					size_t txScanlineIdx2 = (scanlineIdxX + 1) + scanlineIdxY * m_numScanlines.x;
-					size_t txScanlineIdx3 = scanlineIdxX + scanlineIdxY * m_numScanlines.x;
-					size_t txScanlineIdx4 = (scanlineIdxX + 1) + scanlineIdxY * m_numScanlines.x;
-					auto txScanline1 = m_txParameters[txScanlineIdx1];
-					auto txScanline2 = m_txParameters[txScanlineIdx2];
-					auto txScanline3 = m_txParameters[txScanlineIdx3];
-					auto txScanline4 = m_txParameters[txScanlineIdx4];
-					size_t rxScanIdxY = 0;
-					for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
+					// Normal 2D planar scanline imaging
+					for (size_t scanlineIdxX = 0; scanlineIdxX < (m_numScanlines.x - 1); scanlineIdxX++)
 					{
-						vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(rxScanIdxY) }
-						/ static_cast<vec2>(m_rxScanlineSubdivision);
+						//subdivide between
+						//  (scanlineIdxX,   0),
+						//  (scanlineIdxX+1, 0),
 
-						//interpolate...
-						ScanlineRxParameters3D interpolated =
-							getRxScanline3DInterpolated(
-								txScanlineIdx1, txScanline1,
-								txScanlineIdx2, txScanline2,
-								txScanlineIdx3, txScanline3,
-								txScanlineIdx4, txScanline4,
-								interp);
-						//and store
-						(*m_rxParameters)[scanlineIdxX*m_rxScanlineSubdivision.x + rxScanIdxX][scanlineIdxY*m_rxScanlineSubdivision.y + rxScanIdxY] =
-							interpolated;
+						size_t txScanlineIdx1 = scanlineIdxX;
+						size_t txScanlineIdx2 = (scanlineIdxX + 1);
+						size_t txScanlineIdx3 = scanlineIdxX;
+						size_t txScanlineIdx4 = (scanlineIdxX + 1);
+						auto txScanline1 = m_txParameters[txScanlineIdx1];
+						auto txScanline2 = m_txParameters[txScanlineIdx2];
+						auto txScanline3 = m_txParameters[txScanlineIdx3];
+						auto txScanline4 = m_txParameters[txScanlineIdx4];
+						for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
+						{
+							vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(0) }
+							/ static_cast<vec2>(m_rxScanlineSubdivision);
+
+							//interpolate...
+							ScanlineRxParameters3D interpolated =
+								getRxScanline3DInterpolated(
+									txScanlineIdx1, txScanline1,
+									txScanlineIdx2, txScanline2,
+									txScanlineIdx3, txScanline3,
+									txScanlineIdx4, txScanline4,
+									interp);
+							//and store
+							(*m_rxParameters)[rxScanIdxX + scanlineIdxX*m_rxScanlineSubdivision.x][0] = interpolated;
+						}
 					}
+					(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][0] = getRxScanline3D((m_numScanlines.x - 1), m_txParameters[(m_rxScanlineSubdivision.x - 1)]);
 				}
-				//add the very last scanline (in x and y)
-				size_t txScanlineIdx = (m_numScanlines.x - 1) + (m_numScanlines.y - 1) * m_numScanlines.x;
-				(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][(m_numScanlines.y - 1)*m_rxScanlineSubdivision.y] =
-					getRxScanline3D(txScanlineIdx, m_txParameters[txScanlineIdx]);
 			}
-			else if (m_numScanlines.x > 1) 
+			else if (m_type == Planewave)
 			{
-				// Normal 2D planar scanline imaging
-				for (size_t scanlineIdxX = 0; scanlineIdxX < (m_numScanlines.x - 1); scanlineIdxX++)
-				{
-					//subdivide between
-					//  (scanlineIdxX,   0),
-					//  (scanlineIdxX+1, 0),
+				m_rxParameters->resize(m_numRxScanlines.x*m_numScanlines.x, vector<ScanlineRxParameters3D>(m_numRxScanlines.y*m_numScanlines.y));
 
-					size_t txScanlineIdx1 = scanlineIdxX;
-					size_t txScanlineIdx2 = (scanlineIdxX + 1);
-					size_t txScanlineIdx3 = scanlineIdxX;
-					size_t txScanlineIdx4 = (scanlineIdxX + 1);
-					auto txScanline1 = m_txParameters[txScanlineIdx1];
-					auto txScanline2 = m_txParameters[txScanlineIdx2];
-					auto txScanline3 = m_txParameters[txScanlineIdx3];
-					auto txScanline4 = m_txParameters[txScanlineIdx4];
-					for (size_t rxScanIdxX = 0; rxScanIdxX < m_rxScanlineSubdivision.x; rxScanIdxX++)
+				if (m_numScanlines.x > 1) 
+				{
+					// Plane wave imaging
+					if (m_pTransducer->getType() != USTransducer::Linear)
 					{
-						vec2 interp = vec2{ static_cast<double>(rxScanIdxX), static_cast<double>(0) }
-						/ static_cast<vec2>(m_rxScanlineSubdivision);
-
-						//interpolate...
-						ScanlineRxParameters3D interpolated =
-							getRxScanline3DInterpolated(
-								txScanlineIdx1, txScanline1,
-								txScanlineIdx2, txScanline2,
-								txScanlineIdx3, txScanline3,
-								txScanlineIdx4, txScanline4,
-								interp);
-						//and store
-						(*m_rxParameters)[rxScanIdxX + scanlineIdxX*m_rxScanlineSubdivision.x][0] = interpolated;
+						logging::log_error("Beamformer: Planewave imaging supported for linear probes only.");
+						throw std::invalid_argument("Imaging type not implemented yet");
 					}
-				}
-				(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][0] = getRxScanline3D((m_numScanlines.x - 1), m_txParameters[(m_rxScanlineSubdivision.x - 1)]);
-			}
-			else
-			{
-				// Plane wave imaging
 
-				if (m_pTransducer->getType() != USTransducer::Linear)
-				{
-					logging::log_error("Beamformer: Planewave imaging supported for linear probes only.");
-					throw std::invalid_argument("Imaging type not implemented yet");
-				}
+					// based on setup tx-rx firings, create rx scanline from planewaves
+					size_t numScanlines = m_numRxScanlines.x;
 
-				// based on setup tx-rx scanline paradigm, we will create artificial tx scanlines for each rx scanline and simply take it
-				size_t numScanlines = m_numRxScanlines.x;
-				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
-				vec firstElement = elementCenterpoints->at(0);
-				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
-				double angleRad = m_txSteeringAngle.x * M_PI / 180.0;
-				
-				//evenly space the receive scanlines between the first and last element
-				for (size_t rxScanlineIdx = 0; rxScanlineIdx < numScanlines; rxScanlineIdx++)
-				{
-					// the position of the scanline on the x axis
-					double scanlinePosition = firstElement.x +
-						static_cast<double>(rxScanlineIdx) / (numScanlines - 1) * (lastElement.x - firstElement.x);
+					// number of plane waves emmited equals number of firings
+					auto steerAngle = m_txSteeringAngle.x;
+					auto sectorAngle = m_txSectorAngle.x;
+					size_t numPlanewaves = m_numScanlines.x;
+
+					// in the following generate two scanlines for each planewave angle
+					// and interpolate all RX scanlines in between to allow for direct 
+					// planewave reconstrutions from firings
+					auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
+					vec firstElement = elementCenterpoints->at(0);
+					vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 					
-					// the scanline position in terms of elementIndices
-					double scanlinePositionRelative = static_cast<double>(rxScanlineIdx) / (numScanlines - 1) * (m_pTransducer->getNumElements() - 1);
+					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { 0, 0 });
+					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { 0, 0 });
 
-					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
-					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
+					for (size_t planewaveIdx=0; planewaveIdx<numPlanewaves; planewaveIdx++)
+					{
+						auto planewaveAngle = steerAngle - (sectorAngle/2) + planewaveIdx * sectorAngle / (numPlanewaves-1);
+						auto txScanline1 = getTxScanline3D(activeAperture, txAperture, vec2d{ firstElement.x, 0 }, vec2d{ planewaveAngle, 0 });
+						auto txScanline2 = getTxScanline3D(activeAperture, txAperture, vec2d{ lastElement.x, 0 }, vec2d{ planewaveAngle, 0 });
 
-					ScanlineTxParameters3D tmpTxParameters = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ angleRad, 0 });
-				
-					// get copy of rx scanline
-					ScanlineRxParameters3D currentRxLine = getRxScanline3D(0, tmpTxParameters);
-				
-					//and store
-					(*m_rxParameters)[rxScanlineIdx][0] = currentRxLine;
+						//evenly space the receive scanlines between the first and last element
+						for (size_t rxScanlineIdx = 0; rxScanlineIdx < numScanlines; rxScanlineIdx++)
+						{
+							vec2 interp = vec2{ static_cast<double>(rxScanlineIdx), static_cast<double>(0) }
+								/ static_cast<vec2>(m_numRxScanlines);
+
+							//interpolate...
+							ScanlineRxParameters3D interpolated = getRxScanline3DInterpolated(
+										0, txScanline1,
+										1, txScanline2,
+										0, txScanline1,
+										1, txScanline2,
+										interp);
+
+							//and store
+							(*m_rxParameters)[rxScanlineIdx + planewaveIdx*numScanlines][0] = interpolated;
+						}
+					}
 				}
 		 	}
 

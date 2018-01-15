@@ -23,14 +23,6 @@
 
 namespace supra
 {
-	struct EnsembleTxSteeringParameters
-	{
-		vec2s numAngles;				// number of steered beams to be used for ensemble
-		vec2 startAngle;				// start angle definition (angles equally spaced) in degree
-		vec2 endAngle;					// end angle definition (angles equally spaed) in degree
-		std::vector<vec2d> beamAngles;	// beam steering angles calculated from parameters above
-	};
-
 	class Sequencer
 	{
 	public:
@@ -38,43 +30,16 @@ namespace supra
 		Sequencer(size_t numBeamformers);
 		~Sequencer();
 
-		std::shared_ptr<USImageProperties> getUSImgProperties(const size_t bfUID, const size_t angleID);
-		std::shared_ptr<Beamformer> getBeamformer(const size_t bfUID, const size_t angleID);
-		vec2s getNumAngles(const size_t bfUID) const;
-		vec2 getStartAngle(const size_t bfUID) const;
-		vec2 getEndAngle(const size_t bfUID) const;
+		std::shared_ptr<USImageProperties> getUSImgProperties(const size_t bfUID);
+		std::shared_ptr<Beamformer> getBeamformer(const size_t bfUID);
 
-		void setUSImgProperties(const size_t bfUID, const size_t angleID, std::shared_ptr<USImageProperties> usImgProperties);
+		void setUSImgProperties(const size_t bfUID, std::shared_ptr<USImageProperties> usImgProperties);
 		void setTransducer(const USTransducer* transducer);
-		void setNumAngles(const size_t bfUID, const vec2s numAngles);
-		void setStartAngle(const size_t bfUID, const vec2 startAngle);
-		void setEndAngle(const size_t bfUID, const vec2 endAngle);
-
-		/* void updateBeamformer(
-				size_t bfUID,
-				std::string scanType,
-				vec2s numScanlines,
-				vec2s rxScanlineSubdivision,
-				vec2s maxActiveElements,
-				vec2s maxTxElements,
-				double depth,
-				bool txFocusActive,
-				double txFocusDepth,
-				double txFocusWidth,
-				double rxFocusDepth,
-				double speedOfSound,
-				double prf,
-				vec2 fov);
-
- */
-	protected: 
-		void computeSteeringAngles(const size_t bfUID);
 
 	private:
 
-		std::vector<std::vector<std::shared_ptr<Beamformer>>> m_beamformers; // <sequenId<angleId>>
-		std::vector<std::vector<std::shared_ptr<USImageProperties>>> m_imageProperties;
-		std::vector<EnsembleTxSteeringParameters> 		m_steeringProperties;
+		std::vector<std::shared_ptr<Beamformer>> m_beamformers; // <sequenId>
+		std::vector<std::shared_ptr<USImageProperties>> m_imageProperties;
 		size_t m_numBeamformers;
 
 		const USTransducer* m_pTransducer;

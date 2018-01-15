@@ -15,10 +15,10 @@
 				<param name="txFocusDepth" type="double">
 					40
 				</param>
-				<param name="fovX" type="double">
+				<param name="txSectorAngleX" type="double">
 					0
 				</param>
-				<param name="fovY" type="double">
+				<param name="txSectorAngleY" type="double">
 					0
 				</param>
 				<param name="numScanlinesX" type="uint32_t">
