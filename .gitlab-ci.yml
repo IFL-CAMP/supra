@@ -8,7 +8,7 @@ build_ubuntu_1604_cuda9_ros:
     - g++
   image: supra-builder:ros-kinetic-cuda-9.0-ubuntu-16.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
     - mkdir -p build
@@ -30,7 +30,7 @@ build_ubuntu_1604_cuda8_nohw:
     - g++
   image: supra-builder:cuda-8.0-ubuntu-16.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
     - mkdir -p build
@@ -52,7 +52,7 @@ build_ubuntu_1704_cuda_ros:
     - g++
   image: supra-builder:ros-lunar-cuda-9.0-ubuntu-17.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
     - mkdir -p build
@@ -74,7 +74,7 @@ build_ubuntu_1404_cuda_cephasonics:
     - g++
   image: supra-builder:ros-indigo-cuda-8.0-ubuntu-14.04-cephasonics
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/latest | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
     - mv openigtlink* OpenIGTLink
     - cd OpenIGTLink
     - mkdir -p build
@@ -87,6 +87,28 @@ build_ubuntu_1404_cuda_cephasonics:
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON
+    - make    
+    
+build_ubuntu_nocuda:
+  stage: build
+  tags:
+    - linux
+    - g++
+  image: supra-builder:nocuda-ubuntu
+  script:
+    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
+    - mv openigtlink* OpenIGTLink
+    - cd OpenIGTLink
+    - mkdir -p build
+    - cd build
+    - cmake .. -DBUILD_TESTING=OFF
+    - make
+    - make install
+    - cd ../..
+    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
+    - mkdir -p build_gcc
+    - cd build_gcc
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_BEAMFORMER=OFF -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=OFF
     - make    
 
 build_windows:

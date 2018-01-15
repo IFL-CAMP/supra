@@ -37,6 +37,7 @@ namespace supra
 	shared_ptr<RecordObject> StreamSyncNode::checkTypeAndSynchronize(shared_ptr<RecordObject> inObj)
 	{
 		m_callFrequency.measure();
+#ifdef HAVE_CUDA
 		if (inObj && (inObj->getType() == TypeUSImage || inObj->getType() == TypeUSRawData))
 		{
 			shared_ptr<USImage<int16_t> >   pInImageInt16 = dynamic_pointer_cast<USImage<int16_t>>(inObj);
@@ -55,6 +56,7 @@ namespace supra
 				cudaSafeCall(cudaStreamSynchronize(pInImageRaw->getData()->getStream()));
 			}
 		}
+#endif
 		m_callFrequency.measureEnd();
 		return inObj;
 	}

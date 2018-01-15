@@ -82,7 +82,7 @@ namespace supra
 				waitCreationFinished();
 			}
 #else
-			std::copy(data.begin(), data.end(), this->get());
+			std::copy(dataBegin, dataEnd, this->get());
 #endif
 		};
 		Container(ContainerLocation location, const Container<T>& source, bool waitFinished = true)
@@ -92,6 +92,7 @@ namespace supra
 			{
 				std::copy(source.get(), source.get() + source.size(), this->get());
 			}
+#ifdef HAVE_CUDA
 			else if (source.m_location == LocationHost && location == LocationGpu)
 			{
 				cudaSafeCall(cudaMemcpyAsync(this->get(), source.get(), source.size() * sizeof(T), cudaMemcpyDefault, source.getStream()));
@@ -116,9 +117,13 @@ namespace supra
 			{
 				waitCreationFinished();
 			}
+#else
+			std::copy(source.get(), source.get() + source.size(), this->get());
+#endif
 		};
 		~Container()
 		{
+#ifdef HAVE_CUDA
 			auto ret = cudaStreamQuery(m_associatedStream);
 			if (ret != cudaSuccess && ret != cudaErrorNotReady && ret != cudaErrorCudartUnloading)
 			{
@@ -141,6 +146,9 @@ namespace supra
 					});
 				}
 			}
+#else
+			ContainerFactoryContainerInterface::returnMemory(reinterpret_cast<uint8_t*>(m_buffer), m_numel * sizeof(T), m_location);
+#endif
 		};
 
 		const T* get() const { return m_buffer; };
@@ -204,20 +212,25 @@ namespace supra
 	private:
 		void createAndRecordEvent()
 		{
+#ifdef HAVE_CUDA
 			if (!m_creationEvent)
 			{
 				//cudaSafeCall(cudaEventCreateWithFlags(&m_creationEvent, cudaEventBlockingSync | cudaEventDisableTiming));
 				cudaSafeCall(cudaEventCreateWithFlags(&m_creationEvent, cudaEventDisableTiming));
 			}
 			cudaSafeCall(cudaEventRecord(m_creationEvent, m_associatedStream));
+#endif
 		}
 
+#ifdef HAVE_CUDA
 		void addCallbackStream(std::function<void(cudaStream_t, cudaError_t)> func)
 		{
 			auto funcPointer = new std::function<void(cudaStream_t, cudaError_t)>(func);
 			cudaSafeCall(cudaStreamAddCallback(m_associatedStream, &(Container<T>::cudaDeleteCallback), funcPointer, 0));
 		}
+#endif
 
+#ifdef HAVE_CUDA
 		static void CUDART_CB cudaDeleteCallback(cudaStream_t stream, cudaError_t status, void* userData)
 		{
 			std::unique_ptr<std::function<void(cudaStream_t, cudaError_t)> > func =
@@ -225,7 +238,7 @@ namespace supra
 					reinterpret_cast<std::function<void(cudaStream_t, cudaError_t)>*>(userData));
 			(*func)(stream, status);
 		}
-
+#endif
 		// The number of elements this container can store
 		size_t m_numel;
 		ContainerLocation m_location;

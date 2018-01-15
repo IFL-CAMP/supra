@@ -12,7 +12,9 @@
 #ifndef __CUDAUTILITY_H__
 #define __CUDAUTILITY_H__
 
+#ifdef HAVE_CUDA
 #include <cuda_runtime_api.h>
+#endif
 #include <cstdio>
 #include "utilities/Logging.h"
 #include <algorithm>
@@ -34,6 +36,7 @@ namespace supra
 	using std::ceil;
 #endif
 
+#ifdef HAVE_CUDA
 	//define for portable function name resolution
 	#if defined(__GNUC__)
 	//GCC
@@ -72,6 +75,10 @@ namespace supra
 	{
 		return x*x;
 	}
+#else
+	#define __host__
+	#define __device__
+#endif
 }
 
 #endif // !__CUDAUTILITY_H__
