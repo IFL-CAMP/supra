@@ -58,7 +58,7 @@ IF (SUPRA_DEVICE_CEPHASONICS)
 	INCLUDE(supraIncludeCephasonics)
 ENDIF()
 
-IF(SUPRA_BEAMFORMER)
+IF(SUPRA_CUDA)
 	include(supraIncludeCuda)
 	set(CUDA_SEPARABLE_COMPILATION ON)
 	MESSAGE(STATUS "Found Cuda Version " ${CUDA_VERSION_STRING})
@@ -76,7 +76,7 @@ IF(SUPRA_BEAMFORMER)
 		HAVE_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
-ENDIF(SUPRA_BEAMFORMER)
+ENDIF(SUPRA_CUDA)
 
 #find IGTL Interface
 IF(SUPRA_DEVICE_IGTL_OUTPUT OR SUPRA_DEVICE_TRACKING_IGTL)
@@ -294,18 +294,22 @@ IF(SUPRA_DEVICE_CEPHASONICS)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		InputOutput/UsIntCephasonicsBmode.cpp
 		InputOutput/UsIntCephasonicsBmodeProc.cpp
-		InputOutput/UsIntCephasonicsCcProc.cpp
 		InputOutput/UsIntCephasonicsBtcc.cpp
 		InputOutput/UsIntCephasonicsBtccProc.cpp)
-	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
-		InputOutput/UsIntCephasonicsCc.cu)
 	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
 		InputOutput/UsIntCephasonicsBmode.h
 		InputOutput/UsIntCephasonicsBmodeProc.h
-		InputOutput/UsIntCephasonicsCc.h
-		InputOutput/UsIntCephasonicsCcProc.h
 		InputOutput/UsIntCephasonicsBtcc.h
 		InputOutput/UsIntCephasonicsBtccProc.h)
+
+	IF(HAVE_CUDA)
+		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
+			InputOutput/UsIntCephasonicsCc.cu
+			InputOutput/UsIntCephasonicsCcProc.cpp)
+		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+			InputOutput/UsIntCephasonicsCc.h
+			InputOutput/UsIntCephasonicsCcProc.h)
+	ENDIF(HAVE_CUDA)
 
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CEPHASONICS_INCLUDE})
