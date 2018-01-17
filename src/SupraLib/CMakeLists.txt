@@ -302,14 +302,14 @@ IF(SUPRA_DEVICE_CEPHASONICS)
 		InputOutput/UsIntCephasonicsBtcc.h
 		InputOutput/UsIntCephasonicsBtccProc.h)
 
-	IF(HAVE_CUDA)
+	IF(SUPRA_CUDA)
 		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 			InputOutput/UsIntCephasonicsCc.cu
 			InputOutput/UsIntCephasonicsCcProc.cpp)
 		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
 			InputOutput/UsIntCephasonicsCc.h
 			InputOutput/UsIntCephasonicsCcProc.h)
-	ENDIF(HAVE_CUDA)
+	ENDIF(SUPRA_CUDA)
 
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CEPHASONICS_INCLUDE})
