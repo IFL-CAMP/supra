@@ -18,6 +18,7 @@
 #define __USINTCEPHASONICSCC_H__
 
 #ifdef HAVE_DEVICE_CEPHASONICS
+#ifdef HAVE_CUDA
 
 #include <atomic>
 #include <memory>
@@ -215,6 +216,7 @@ namespace supra
 	};
 }
 
+#endif //HAVE_CUDA
 #endif //!HAVE_DEVICE_CEPHASONICS
 
 #endif //!__USINTCEPHASONICSCC_H__

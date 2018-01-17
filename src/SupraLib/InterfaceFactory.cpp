@@ -87,10 +87,12 @@ namespace supra
 		{
 			retVal = make_shared<UsIntCephasonicsBtcc>(*pG, nodeID);
 		}
+#ifdef HAVE_CUDA
 		if (deviceType == "UltrasoundInterfaceCephasonicsCC")
 		{
 			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID);
 		}
+#endif //HAVE_CUDA
 #endif //HAVE_DEVICE_CEPHASONICS
 #ifdef HAVE_BEAMFORMER
 		if (deviceType == "UltrasoundInterfaceRawDataMock")
