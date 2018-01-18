@@ -10,40 +10,24 @@
 		</inputs>
 		<outputs>
 			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
-			<output type="MetaImageOutputDevice" id="MHD_Raw">
+			<output type="MetaImageOutputDevice" id="MHD">
 				<param name="createSequences" type="bool">
 					1
 				</param>
 				<param name="filename" type="string">
-					rawData
-				</param>
-			</output>
-			<output type="MetaImageOutputDevice" id="MHD_Beam">
-				<param name="createSequences" type="bool">
-					1
-				</param>
-				<param name="filename" type="string">
-					beamformed
+					cephasonics
 				</param>
 			</output>
 		</outputs>
-		<nodes>
-			<node type="BeamformingNode" id="BEAM">
-			</node>
-		</nodes>
 	</devices>
 	<connections>
 		<connection>
 			<from id="US-Cep" port="0" />
-			<to id="BEAM" port="0" />
+			<to id="MHD" port="0" />
 		</connection>
 		<connection>
 			<from id="US-Cep" port="0" />
-			<to id="MHD_Raw" port="0" />
+			<to id="IGTL" port="0" />
 		</connection>
-		<!--<connection>
-			<from id="BEAM" port="0" />
-			<to id="MHD_Beam" port="0" />
-		</connection>-->
 	</connections>
 </supra_config>

@@ -28,6 +28,7 @@ namespace cs
 	class PlatformHandle;
 	class ScanDef;
 	class USEngine;
+	class ScanData;
 	class FrameBuffer;
 	class ImageLayout;
 }
@@ -71,6 +72,8 @@ namespace supra
 		std::mutex m_objectMutex;
 
 		std::string m_xmlFileName;
+		int m_processingStage;
+		bool m_rfStreaming;
 
 		bool m_ready;
 
@@ -88,6 +91,7 @@ namespace supra
 
 		void layoutChanged(cs::ImageLayout& layout);
 		void putData(cs::FrameBuffer * frameBuffer);
+		void putData(cs::ScanData * scanData);
 	};
 }
 

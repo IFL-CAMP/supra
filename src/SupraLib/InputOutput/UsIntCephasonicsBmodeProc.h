@@ -14,6 +14,7 @@
 #define __USINTCEPHASONICSBMODEPROC_H__
 
 #include <DataProcessor.h>
+#include <atomic>
 
 namespace supra
 {
@@ -28,10 +29,11 @@ namespace supra
 
 		virtual int process(ScanData* data);
 		int layoutChanged(ImageLayout& layout);
-
+		void setActiveStage(int activeStage);
 	private:
 		ImageLayout m_imageLayout;
 		UsIntCephasonicsBmode* m_pInputNode;
+		std::atomic<int> m_activeStage;
 	};
 }
 
