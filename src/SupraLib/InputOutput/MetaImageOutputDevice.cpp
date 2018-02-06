@@ -52,6 +52,8 @@ namespace supra
 	MetaImageOutputDevice::~MetaImageOutputDevice()
 	{
 		m_isReady = false;
+
+		m_pWriter->closeWhenEverthingWritten();
 	}
 
 	void MetaImageOutputDevice::initializeOutput()
@@ -96,7 +98,7 @@ namespace supra
 		{
 			lock_guard<mutex> l(m_writerMutex);
 			m_isRecording = false;
-			m_pWriter->close();
+			m_pWriter->closeWhenEverthingWritten();
 			m_pWriter = nullptr;
 
 			m_sequencesWritten++;
@@ -132,7 +134,7 @@ namespace supra
 
 		if (m_pWriter)
 		{
-			m_pWriter->close();
+			m_pWriter->closeWhenEverthingWritten();
 		}
 		m_pWriter = new MhdSequenceWriter();
 		m_pWriter->open(filename);
