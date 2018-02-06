@@ -41,7 +41,7 @@ namespace supra
 			std::function<void(const uint8_t*, size_t)> deleteCallback = std::function<void(const uint8_t*, size_t)>());
 
 		void addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName);
-		void close();
+		void closeWhenEverythingWritten();
 	private:
 		~MhdSequenceWriter();
 

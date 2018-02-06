@@ -169,9 +169,10 @@ namespace supra
 		}
 	}
 
-	void MhdSequenceWriter::close()
+	void MhdSequenceWriter::closeWhenEverythingWritten()
 	{
 		m_closing = true;
+		m_queueConditionVariable.notify_one();
 		m_writerThread.detach();
 	}
 
