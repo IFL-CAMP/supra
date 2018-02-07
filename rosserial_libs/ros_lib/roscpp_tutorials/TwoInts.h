@@ -13,10 +13,8 @@ static const char TWOINTS[] = "roscpp_tutorials/TwoInts";
   class TwoIntsRequest : public ros::Msg
   {
     public:
-      typedef int64_t _a_type;
-      _a_type a;
-      typedef int64_t _b_type;
-      _b_type b;
+      int64_t a;
+      int64_t b;
 
     TwoIntsRequest():
       a(0),
@@ -102,8 +100,7 @@ static const char TWOINTS[] = "roscpp_tutorials/TwoInts";
   class TwoIntsResponse : public ros::Msg
   {
     public:
-      typedef int64_t _sum_type;
-      _sum_type sum;
+      int64_t sum;
 
     TwoIntsResponse():
       sum(0)

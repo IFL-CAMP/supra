@@ -14,12 +14,9 @@ namespace sensor_msgs
   class TimeReference : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef ros::Time _time_ref_type;
-      _time_ref_type time_ref;
-      typedef const char* _source_type;
-      _source_type source;
+      std_msgs::Header header;
+      ros::Time time_ref;
+      const char* source;
 
     TimeReference():
       header(),
@@ -43,7 +40,7 @@ namespace sensor_msgs
       *(outbuffer + offset + 3) = (this->time_ref.nsec >> (8 * 3)) & 0xFF;
       offset += sizeof(this->time_ref.nsec);
       uint32_t length_source = strlen(this->source);
-      varToArr(outbuffer + offset, length_source);
+      memcpy(outbuffer + offset, &length_source, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->source, length_source);
       offset += length_source;
@@ -65,7 +62,7 @@ namespace sensor_msgs
       this->time_ref.nsec |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       offset += sizeof(this->time_ref.nsec);
       uint32_t length_source;
-      arrToVar(length_source, (inbuffer + offset));
+      memcpy(&length_source, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_source; ++k){
           inbuffer[k-1]=inbuffer[k];

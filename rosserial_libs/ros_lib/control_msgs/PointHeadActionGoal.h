@@ -15,12 +15,9 @@ namespace control_msgs
   class PointHeadActionGoal : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef actionlib_msgs::GoalID _goal_id_type;
-      _goal_id_type goal_id;
-      typedef control_msgs::PointHeadGoal _goal_type;
-      _goal_type goal;
+      std_msgs::Header header;
+      actionlib_msgs::GoalID goal_id;
+      control_msgs::PointHeadGoal goal;
 
     PointHeadActionGoal():
       header(),

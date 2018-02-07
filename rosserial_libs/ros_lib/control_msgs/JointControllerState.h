@@ -13,30 +13,17 @@ namespace control_msgs
   class JointControllerState : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef double _set_point_type;
-      _set_point_type set_point;
-      typedef double _process_value_type;
-      _process_value_type process_value;
-      typedef double _process_value_dot_type;
-      _process_value_dot_type process_value_dot;
-      typedef double _error_type;
-      _error_type error;
-      typedef double _time_step_type;
-      _time_step_type time_step;
-      typedef double _command_type;
-      _command_type command;
-      typedef double _p_type;
-      _p_type p;
-      typedef double _i_type;
-      _i_type i;
-      typedef double _d_type;
-      _d_type d;
-      typedef double _i_clamp_type;
-      _i_clamp_type i_clamp;
-      typedef bool _antiwindup_type;
-      _antiwindup_type antiwindup;
+      std_msgs::Header header;
+      double set_point;
+      double process_value;
+      double process_value_dot;
+      double error;
+      double time_step;
+      double command;
+      double p;
+      double i;
+      double d;
+      double i_clamp;
 
     JointControllerState():
       header(),
@@ -49,8 +36,7 @@ namespace control_msgs
       p(0),
       i(0),
       d(0),
-      i_clamp(0),
-      antiwindup(0)
+      i_clamp(0)
     {
     }
 
@@ -198,13 +184,6 @@ namespace control_msgs
       *(outbuffer + offset + 6) = (u_i_clamp.base >> (8 * 6)) & 0xFF;
       *(outbuffer + offset + 7) = (u_i_clamp.base >> (8 * 7)) & 0xFF;
       offset += sizeof(this->i_clamp);
-      union {
-        bool real;
-        uint8_t base;
-      } u_antiwindup;
-      u_antiwindup.real = this->antiwindup;
-      *(outbuffer + offset + 0) = (u_antiwindup.base >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->antiwindup);
       return offset;
     }
 
@@ -362,19 +341,11 @@ namespace control_msgs
       u_i_clamp.base |= ((uint64_t) (*(inbuffer + offset + 7))) << (8 * 7);
       this->i_clamp = u_i_clamp.real;
       offset += sizeof(this->i_clamp);
-      union {
-        bool real;
-        uint8_t base;
-      } u_antiwindup;
-      u_antiwindup.base = 0;
-      u_antiwindup.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      this->antiwindup = u_antiwindup.real;
-      offset += sizeof(this->antiwindup);
      return offset;
     }
 
     const char * getType(){ return "control_msgs/JointControllerState"; };
-    const char * getMD5(){ return "987ad85e4756f3aef7f1e5e7fe0595d1"; };
+    const char * getMD5(){ return "c0d034a7bf20aeb1c37f3eccb7992b69"; };
 
   };
 

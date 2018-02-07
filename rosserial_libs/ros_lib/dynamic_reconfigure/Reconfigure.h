@@ -14,8 +14,7 @@ static const char RECONFIGURE[] = "dynamic_reconfigure/Reconfigure";
   class ReconfigureRequest : public ros::Msg
   {
     public:
-      typedef dynamic_reconfigure::Config _config_type;
-      _config_type config;
+      dynamic_reconfigure::Config config;
 
     ReconfigureRequest():
       config()
@@ -44,8 +43,7 @@ static const char RECONFIGURE[] = "dynamic_reconfigure/Reconfigure";
   class ReconfigureResponse : public ros::Msg
   {
     public:
-      typedef dynamic_reconfigure::Config _config_type;
-      _config_type config;
+      dynamic_reconfigure::Config config;
 
     ReconfigureResponse():
       config()

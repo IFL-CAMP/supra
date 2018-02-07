@@ -12,8 +12,7 @@ namespace actionlib_tutorials
   class AveragingGoal : public ros::Msg
   {
     public:
-      typedef int32_t _samples_type;
-      _samples_type samples;
+      int32_t samples;
 
     AveragingGoal():
       samples(0)

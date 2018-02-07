@@ -12,10 +12,8 @@ namespace dynamic_reconfigure
   class StrParameter : public ros::Msg
   {
     public:
-      typedef const char* _name_type;
-      _name_type name;
-      typedef const char* _value_type;
-      _value_type value;
+      const char* name;
+      const char* value;
 
     StrParameter():
       name(""),
@@ -27,12 +25,12 @@ namespace dynamic_reconfigure
     {
       int offset = 0;
       uint32_t length_name = strlen(this->name);
-      varToArr(outbuffer + offset, length_name);
+      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->name, length_name);
       offset += length_name;
       uint32_t length_value = strlen(this->value);
-      varToArr(outbuffer + offset, length_value);
+      memcpy(outbuffer + offset, &length_value, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->value, length_value);
       offset += length_value;
@@ -43,7 +41,7 @@ namespace dynamic_reconfigure
     {
       int offset = 0;
       uint32_t length_name;
-      arrToVar(length_name, (inbuffer + offset));
+      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -52,7 +50,7 @@ namespace dynamic_reconfigure
       this->name = (char *)(inbuffer + offset-1);
       offset += length_name;
       uint32_t length_value;
-      arrToVar(length_value, (inbuffer + offset));
+      memcpy(&length_value, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_value; ++k){
           inbuffer[k-1]=inbuffer[k];

@@ -12,10 +12,8 @@ namespace actionlib
   class TestRequestResult : public ros::Msg
   {
     public:
-      typedef int32_t _the_result_type;
-      _the_result_type the_result;
-      typedef bool _is_simple_server_type;
-      _is_simple_server_type is_simple_server;
+      int32_t the_result;
+      bool is_simple_server;
 
     TestRequestResult():
       the_result(0),

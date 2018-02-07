@@ -12,8 +12,7 @@ namespace std_msgs
   class Char : public ros::Msg
   {
     public:
-      typedef uint8_t _data_type;
-      _data_type data;
+      uint8_t data;
 
     Char():
       data(0)

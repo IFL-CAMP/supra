@@ -13,22 +13,14 @@ namespace geometry_msgs
   class Inertia : public ros::Msg
   {
     public:
-      typedef double _m_type;
-      _m_type m;
-      typedef geometry_msgs::Vector3 _com_type;
-      _com_type com;
-      typedef double _ixx_type;
-      _ixx_type ixx;
-      typedef double _ixy_type;
-      _ixy_type ixy;
-      typedef double _ixz_type;
-      _ixz_type ixz;
-      typedef double _iyy_type;
-      _iyy_type iyy;
-      typedef double _iyz_type;
-      _iyz_type iyz;
-      typedef double _izz_type;
-      _izz_type izz;
+      double m;
+      geometry_msgs::Vector3 com;
+      double ixx;
+      double ixy;
+      double ixz;
+      double iyy;
+      double iyz;
+      double izz;
 
     Inertia():
       m(0),

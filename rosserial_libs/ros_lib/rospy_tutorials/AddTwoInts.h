@@ -13,10 +13,8 @@ static const char ADDTWOINTS[] = "rospy_tutorials/AddTwoInts";
   class AddTwoIntsRequest : public ros::Msg
   {
     public:
-      typedef int64_t _a_type;
-      _a_type a;
-      typedef int64_t _b_type;
-      _b_type b;
+      int64_t a;
+      int64_t b;
 
     AddTwoIntsRequest():
       a(0),
@@ -102,8 +100,7 @@ static const char ADDTWOINTS[] = "rospy_tutorials/AddTwoInts";
   class AddTwoIntsResponse : public ros::Msg
   {
     public:
-      typedef int64_t _sum_type;
-      _sum_type sum;
+      int64_t sum;
 
     AddTwoIntsResponse():
       sum(0)

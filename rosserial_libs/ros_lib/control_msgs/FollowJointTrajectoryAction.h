@@ -15,12 +15,9 @@ namespace control_msgs
   class FollowJointTrajectoryAction : public ros::Msg
   {
     public:
-      typedef control_msgs::FollowJointTrajectoryActionGoal _action_goal_type;
-      _action_goal_type action_goal;
-      typedef control_msgs::FollowJointTrajectoryActionResult _action_result_type;
-      _action_result_type action_result;
-      typedef control_msgs::FollowJointTrajectoryActionFeedback _action_feedback_type;
-      _action_feedback_type action_feedback;
+      control_msgs::FollowJointTrajectoryActionGoal action_goal;
+      control_msgs::FollowJointTrajectoryActionResult action_result;
+      control_msgs::FollowJointTrajectoryActionFeedback action_feedback;
 
     FollowJointTrajectoryAction():
       action_goal(),

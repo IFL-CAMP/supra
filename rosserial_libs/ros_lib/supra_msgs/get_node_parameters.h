@@ -14,8 +14,7 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
   class get_node_parametersRequest : public ros::Msg
   {
     public:
-      typedef const char* _nodeId_type;
-      _nodeId_type nodeId;
+      const char* nodeId;
 
     get_node_parametersRequest():
       nodeId("")
@@ -26,7 +25,7 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
     {
       int offset = 0;
       uint32_t length_nodeId = strlen(this->nodeId);
-      varToArr(outbuffer + offset, length_nodeId);
+      memcpy(outbuffer + offset, &length_nodeId, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->nodeId, length_nodeId);
       offset += length_nodeId;
@@ -37,7 +36,7 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
     {
       int offset = 0;
       uint32_t length_nodeId;
-      arrToVar(length_nodeId, (inbuffer + offset));
+      memcpy(&length_nodeId, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_nodeId; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -56,10 +55,9 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
   class get_node_parametersResponse : public ros::Msg
   {
     public:
-      uint32_t parameters_length;
-      typedef supra_msgs::parameter _parameters_type;
-      _parameters_type st_parameters;
-      _parameters_type * parameters;
+      uint8_t parameters_length;
+      supra_msgs::parameter st_parameters;
+      supra_msgs::parameter * parameters;
 
     get_node_parametersResponse():
       parameters_length(0), parameters(NULL)
@@ -69,12 +67,11 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->parameters_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->parameters_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->parameters_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->parameters_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->parameters_length);
-      for( uint32_t i = 0; i < parameters_length; i++){
+      *(outbuffer + offset++) = parameters_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < parameters_length; i++){
       offset += this->parameters[i].serialize(outbuffer + offset);
       }
       return offset;
@@ -83,15 +80,12 @@ static const char GET_NODE_PARAMETERS[] = "supra_msgs/get_node_parameters";
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t parameters_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      parameters_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      parameters_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      parameters_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->parameters_length);
+      uint8_t parameters_lengthT = *(inbuffer + offset++);
       if(parameters_lengthT > parameters_length)
         this->parameters = (supra_msgs::parameter*)realloc(this->parameters, parameters_lengthT * sizeof(supra_msgs::parameter));
+      offset += 3;
       parameters_length = parameters_lengthT;
-      for( uint32_t i = 0; i < parameters_length; i++){
+      for( uint8_t i = 0; i < parameters_length; i++){
       offset += this->st_parameters.deserialize(inbuffer + offset);
         memcpy( &(this->parameters[i]), &(this->st_parameters), sizeof(supra_msgs::parameter));
       }

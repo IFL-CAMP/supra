@@ -14,10 +14,8 @@ namespace geometry_msgs
   class AccelStamped : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Accel _accel_type;
-      _accel_type accel;
+      std_msgs::Header header;
+      geometry_msgs::Accel accel;
 
     AccelStamped():
       header(),

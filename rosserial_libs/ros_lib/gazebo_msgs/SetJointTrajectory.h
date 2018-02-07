@@ -15,16 +15,11 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
   class SetJointTrajectoryRequest : public ros::Msg
   {
     public:
-      typedef const char* _model_name_type;
-      _model_name_type model_name;
-      typedef trajectory_msgs::JointTrajectory _joint_trajectory_type;
-      _joint_trajectory_type joint_trajectory;
-      typedef geometry_msgs::Pose _model_pose_type;
-      _model_pose_type model_pose;
-      typedef bool _set_model_pose_type;
-      _set_model_pose_type set_model_pose;
-      typedef bool _disable_physics_updates_type;
-      _disable_physics_updates_type disable_physics_updates;
+      const char* model_name;
+      trajectory_msgs::JointTrajectory joint_trajectory;
+      geometry_msgs::Pose model_pose;
+      bool set_model_pose;
+      bool disable_physics_updates;
 
     SetJointTrajectoryRequest():
       model_name(""),
@@ -39,7 +34,7 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
     {
       int offset = 0;
       uint32_t length_model_name = strlen(this->model_name);
-      varToArr(outbuffer + offset, length_model_name);
+      memcpy(outbuffer + offset, &length_model_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->model_name, length_model_name);
       offset += length_model_name;
@@ -66,7 +61,7 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
     {
       int offset = 0;
       uint32_t length_model_name;
-      arrToVar(length_model_name, (inbuffer + offset));
+      memcpy(&length_model_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_model_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -103,10 +98,8 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
   class SetJointTrajectoryResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _status_message_type;
-      _status_message_type status_message;
+      bool success;
+      const char* status_message;
 
     SetJointTrajectoryResponse():
       success(0),
@@ -125,7 +118,7 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_status_message = strlen(this->status_message);
-      varToArr(outbuffer + offset, length_status_message);
+      memcpy(outbuffer + offset, &length_status_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->status_message, length_status_message);
       offset += length_status_message;
@@ -144,7 +137,7 @@ static const char SETJOINTTRAJECTORY[] = "gazebo_msgs/SetJointTrajectory";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_status_message;
-      arrToVar(length_status_message, (inbuffer + offset));
+      memcpy(&length_status_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_status_message; ++k){
           inbuffer[k-1]=inbuffer[k];

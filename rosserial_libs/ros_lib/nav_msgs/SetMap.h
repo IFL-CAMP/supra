@@ -15,10 +15,8 @@ static const char SETMAP[] = "nav_msgs/SetMap";
   class SetMapRequest : public ros::Msg
   {
     public:
-      typedef nav_msgs::OccupancyGrid _map_type;
-      _map_type map;
-      typedef geometry_msgs::PoseWithCovarianceStamped _initial_pose_type;
-      _initial_pose_type initial_pose;
+      nav_msgs::OccupancyGrid map;
+      geometry_msgs::PoseWithCovarianceStamped initial_pose;
 
     SetMapRequest():
       map(),
@@ -50,8 +48,7 @@ static const char SETMAP[] = "nav_msgs/SetMap";
   class SetMapResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
+      bool success;
 
     SetMapResponse():
       success(0)

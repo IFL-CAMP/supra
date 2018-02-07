@@ -12,8 +12,7 @@ namespace std_msgs
   class Bool : public ros::Msg
   {
     public:
-      typedef bool _data_type;
-      _data_type data;
+      bool data;
 
     Bool():
       data(0)

@@ -14,16 +14,11 @@ namespace nav_msgs
   class MapMetaData : public ros::Msg
   {
     public:
-      typedef ros::Time _map_load_time_type;
-      _map_load_time_type map_load_time;
-      typedef float _resolution_type;
-      _resolution_type resolution;
-      typedef uint32_t _width_type;
-      _width_type width;
-      typedef uint32_t _height_type;
-      _height_type height;
-      typedef geometry_msgs::Pose _origin_type;
-      _origin_type origin;
+      ros::Time map_load_time;
+      float resolution;
+      uint32_t width;
+      uint32_t height;
+      geometry_msgs::Pose origin;
 
     MapMetaData():
       map_load_time(),

@@ -12,10 +12,9 @@ namespace sensor_msgs
   class LaserEcho : public ros::Msg
   {
     public:
-      uint32_t echoes_length;
-      typedef float _echoes_type;
-      _echoes_type st_echoes;
-      _echoes_type * echoes;
+      uint8_t echoes_length;
+      float st_echoes;
+      float * echoes;
 
     LaserEcho():
       echoes_length(0), echoes(NULL)
@@ -25,12 +24,11 @@ namespace sensor_msgs
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->echoes_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->echoes_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->echoes_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->echoes_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->echoes_length);
-      for( uint32_t i = 0; i < echoes_length; i++){
+      *(outbuffer + offset++) = echoes_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < echoes_length; i++){
       union {
         float real;
         uint32_t base;
@@ -48,15 +46,12 @@ namespace sensor_msgs
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t echoes_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      echoes_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      echoes_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      echoes_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->echoes_length);
+      uint8_t echoes_lengthT = *(inbuffer + offset++);
       if(echoes_lengthT > echoes_length)
         this->echoes = (float*)realloc(this->echoes, echoes_lengthT * sizeof(float));
+      offset += 3;
       echoes_length = echoes_lengthT;
-      for( uint32_t i = 0; i < echoes_length; i++){
+      for( uint8_t i = 0; i < echoes_length; i++){
       union {
         float real;
         uint32_t base;

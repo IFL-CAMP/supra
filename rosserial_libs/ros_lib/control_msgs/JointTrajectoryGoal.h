@@ -13,8 +13,7 @@ namespace control_msgs
   class JointTrajectoryGoal : public ros::Msg
   {
     public:
-      typedef trajectory_msgs::JointTrajectory _trajectory_type;
-      _trajectory_type trajectory;
+      trajectory_msgs::JointTrajectory trajectory;
 
     JointTrajectoryGoal():
       trajectory()

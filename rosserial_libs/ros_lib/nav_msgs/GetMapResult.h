@@ -13,8 +13,7 @@ namespace nav_msgs
   class GetMapResult : public ros::Msg
   {
     public:
-      typedef nav_msgs::OccupancyGrid _map_type;
-      _map_type map;
+      nav_msgs::OccupancyGrid map;
 
     GetMapResult():
       map()

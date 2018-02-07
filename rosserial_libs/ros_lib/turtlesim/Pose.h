@@ -12,16 +12,11 @@ namespace turtlesim
   class Pose : public ros::Msg
   {
     public:
-      typedef float _x_type;
-      _x_type x;
-      typedef float _y_type;
-      _y_type y;
-      typedef float _theta_type;
-      _theta_type theta;
-      typedef float _linear_velocity_type;
-      _linear_velocity_type linear_velocity;
-      typedef float _angular_velocity_type;
-      _angular_velocity_type angular_velocity;
+      float x;
+      float y;
+      float theta;
+      float linear_velocity;
+      float angular_velocity;
 
     Pose():
       x(0),

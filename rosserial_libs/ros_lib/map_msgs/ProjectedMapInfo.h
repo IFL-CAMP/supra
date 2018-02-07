@@ -12,20 +12,13 @@ namespace map_msgs
   class ProjectedMapInfo : public ros::Msg
   {
     public:
-      typedef const char* _frame_id_type;
-      _frame_id_type frame_id;
-      typedef double _x_type;
-      _x_type x;
-      typedef double _y_type;
-      _y_type y;
-      typedef double _width_type;
-      _width_type width;
-      typedef double _height_type;
-      _height_type height;
-      typedef double _min_z_type;
-      _min_z_type min_z;
-      typedef double _max_z_type;
-      _max_z_type max_z;
+      const char* frame_id;
+      double x;
+      double y;
+      double width;
+      double height;
+      double min_z;
+      double max_z;
 
     ProjectedMapInfo():
       frame_id(""),
@@ -42,7 +35,7 @@ namespace map_msgs
     {
       int offset = 0;
       uint32_t length_frame_id = strlen(this->frame_id);
-      varToArr(outbuffer + offset, length_frame_id);
+      memcpy(outbuffer + offset, &length_frame_id, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->frame_id, length_frame_id);
       offset += length_frame_id;
@@ -137,7 +130,7 @@ namespace map_msgs
     {
       int offset = 0;
       uint32_t length_frame_id;
-      arrToVar(length_frame_id, (inbuffer + offset));
+      memcpy(&length_frame_id, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_frame_id; ++k){
           inbuffer[k-1]=inbuffer[k];

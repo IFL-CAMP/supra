@@ -14,28 +14,18 @@ namespace supra_msgs
   class UInt8Image : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef const char* _modality_type;
-      _modality_type modality;
-      typedef uint32_t _width_type;
-      _width_type width;
-      typedef uint32_t _height_type;
-      _height_type height;
-      typedef uint32_t _depth_type;
-      _depth_type depth;
-      typedef geometry_msgs::PoseStamped _origin_type;
-      _origin_type origin;
-      typedef float _resX_type;
-      _resX_type resX;
-      typedef float _resY_type;
-      _resY_type resY;
-      typedef float _resZ_type;
-      _resZ_type resZ;
-      uint32_t volume_length;
-      typedef uint8_t _volume_type;
-      _volume_type st_volume;
-      _volume_type * volume;
+      std_msgs::Header header;
+      const char* modality;
+      uint32_t width;
+      uint32_t height;
+      uint32_t depth;
+      geometry_msgs::PoseStamped origin;
+      float resX;
+      float resY;
+      float resZ;
+      uint8_t volume_length;
+      uint8_t st_volume;
+      uint8_t * volume;
 
     UInt8Image():
       header(),
@@ -56,7 +46,7 @@ namespace supra_msgs
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       uint32_t length_modality = strlen(this->modality);
-      varToArr(outbuffer + offset, length_modality);
+      memcpy(outbuffer + offset, &length_modality, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->modality, length_modality);
       offset += length_modality;
@@ -106,12 +96,11 @@ namespace supra_msgs
       *(outbuffer + offset + 2) = (u_resZ.base >> (8 * 2)) & 0xFF;
       *(outbuffer + offset + 3) = (u_resZ.base >> (8 * 3)) & 0xFF;
       offset += sizeof(this->resZ);
-      *(outbuffer + offset + 0) = (this->volume_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->volume_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->volume_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->volume_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->volume_length);
-      for( uint32_t i = 0; i < volume_length; i++){
+      *(outbuffer + offset++) = volume_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < volume_length; i++){
       *(outbuffer + offset + 0) = (this->volume[i] >> (8 * 0)) & 0xFF;
       offset += sizeof(this->volume[i]);
       }
@@ -123,7 +112,7 @@ namespace supra_msgs
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       uint32_t length_modality;
-      arrToVar(length_modality, (inbuffer + offset));
+      memcpy(&length_modality, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_modality; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -180,15 +169,12 @@ namespace supra_msgs
       u_resZ.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       this->resZ = u_resZ.real;
       offset += sizeof(this->resZ);
-      uint32_t volume_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      volume_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      volume_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      volume_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->volume_length);
+      uint8_t volume_lengthT = *(inbuffer + offset++);
       if(volume_lengthT > volume_length)
         this->volume = (uint8_t*)realloc(this->volume, volume_lengthT * sizeof(uint8_t));
+      offset += 3;
       volume_length = volume_lengthT;
-      for( uint32_t i = 0; i < volume_length; i++){
+      for( uint8_t i = 0; i < volume_length; i++){
       this->st_volume =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->st_volume);
         memcpy( &(this->volume[i]), &(this->st_volume), sizeof(uint8_t));

@@ -15,12 +15,9 @@ namespace actionlib
   class TwoIntsAction : public ros::Msg
   {
     public:
-      typedef actionlib::TwoIntsActionGoal _action_goal_type;
-      _action_goal_type action_goal;
-      typedef actionlib::TwoIntsActionResult _action_result_type;
-      _action_result_type action_result;
-      typedef actionlib::TwoIntsActionFeedback _action_feedback_type;
-      _action_feedback_type action_feedback;
+      actionlib::TwoIntsActionGoal action_goal;
+      actionlib::TwoIntsActionResult action_result;
+      actionlib::TwoIntsActionFeedback action_feedback;
 
     TwoIntsAction():
       action_goal(),

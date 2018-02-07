@@ -14,19 +14,13 @@ namespace sensor_msgs
   class NavSatFix : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef sensor_msgs::NavSatStatus _status_type;
-      _status_type status;
-      typedef double _latitude_type;
-      _latitude_type latitude;
-      typedef double _longitude_type;
-      _longitude_type longitude;
-      typedef double _altitude_type;
-      _altitude_type altitude;
+      std_msgs::Header header;
+      sensor_msgs::NavSatStatus status;
+      double latitude;
+      double longitude;
+      double altitude;
       double position_covariance[9];
-      typedef uint8_t _position_covariance_type_type;
-      _position_covariance_type_type position_covariance_type;
+      uint8_t position_covariance_type;
       enum { COVARIANCE_TYPE_UNKNOWN =  0 };
       enum { COVARIANCE_TYPE_APPROXIMATED =  1 };
       enum { COVARIANCE_TYPE_DIAGONAL_KNOWN =  2 };
@@ -90,7 +84,7 @@ namespace sensor_msgs
       *(outbuffer + offset + 6) = (u_altitude.base >> (8 * 6)) & 0xFF;
       *(outbuffer + offset + 7) = (u_altitude.base >> (8 * 7)) & 0xFF;
       offset += sizeof(this->altitude);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -161,7 +155,7 @@ namespace sensor_msgs
       u_altitude.base |= ((uint64_t) (*(inbuffer + offset + 7))) << (8 * 7);
       this->altitude = u_altitude.real;
       offset += sizeof(this->altitude);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;

@@ -13,14 +13,11 @@ namespace sensor_msgs
   class CompressedImage : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef const char* _format_type;
-      _format_type format;
-      uint32_t data_length;
-      typedef uint8_t _data_type;
-      _data_type st_data;
-      _data_type * data;
+      std_msgs::Header header;
+      const char* format;
+      uint8_t data_length;
+      uint8_t st_data;
+      uint8_t * data;
 
     CompressedImage():
       header(),
@@ -34,16 +31,15 @@ namespace sensor_msgs
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       uint32_t length_format = strlen(this->format);
-      varToArr(outbuffer + offset, length_format);
+      memcpy(outbuffer + offset, &length_format, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->format, length_format);
       offset += length_format;
-      *(outbuffer + offset + 0) = (this->data_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->data_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->data_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->data_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->data_length);
-      for( uint32_t i = 0; i < data_length; i++){
+      *(outbuffer + offset++) = data_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < data_length; i++){
       *(outbuffer + offset + 0) = (this->data[i] >> (8 * 0)) & 0xFF;
       offset += sizeof(this->data[i]);
       }
@@ -55,7 +51,7 @@ namespace sensor_msgs
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       uint32_t length_format;
-      arrToVar(length_format, (inbuffer + offset));
+      memcpy(&length_format, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_format; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -63,15 +59,12 @@ namespace sensor_msgs
       inbuffer[offset+length_format-1]=0;
       this->format = (char *)(inbuffer + offset-1);
       offset += length_format;
-      uint32_t data_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      data_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      data_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      data_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->data_length);
+      uint8_t data_lengthT = *(inbuffer + offset++);
       if(data_lengthT > data_length)
         this->data = (uint8_t*)realloc(this->data, data_lengthT * sizeof(uint8_t));
+      offset += 3;
       data_length = data_lengthT;
-      for( uint32_t i = 0; i < data_length; i++){
+      for( uint8_t i = 0; i < data_length; i++){
       this->st_data =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->st_data);
         memcpy( &(this->data[i]), &(this->st_data), sizeof(uint8_t));

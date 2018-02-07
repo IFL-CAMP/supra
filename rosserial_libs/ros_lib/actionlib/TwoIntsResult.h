@@ -12,8 +12,7 @@ namespace actionlib
   class TwoIntsResult : public ros::Msg
   {
     public:
-      typedef int64_t _sum_type;
-      _sum_type sum;
+      int64_t sum;
 
     TwoIntsResult():
       sum(0)

@@ -15,16 +15,11 @@ namespace control_msgs
   class PointHeadGoal : public ros::Msg
   {
     public:
-      typedef geometry_msgs::PointStamped _target_type;
-      _target_type target;
-      typedef geometry_msgs::Vector3 _pointing_axis_type;
-      _pointing_axis_type pointing_axis;
-      typedef const char* _pointing_frame_type;
-      _pointing_frame_type pointing_frame;
-      typedef ros::Duration _min_duration_type;
-      _min_duration_type min_duration;
-      typedef double _max_velocity_type;
-      _max_velocity_type max_velocity;
+      geometry_msgs::PointStamped target;
+      geometry_msgs::Vector3 pointing_axis;
+      const char* pointing_frame;
+      ros::Duration min_duration;
+      double max_velocity;
 
     PointHeadGoal():
       target(),
@@ -41,7 +36,7 @@ namespace control_msgs
       offset += this->target.serialize(outbuffer + offset);
       offset += this->pointing_axis.serialize(outbuffer + offset);
       uint32_t length_pointing_frame = strlen(this->pointing_frame);
-      varToArr(outbuffer + offset, length_pointing_frame);
+      memcpy(outbuffer + offset, &length_pointing_frame, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->pointing_frame, length_pointing_frame);
       offset += length_pointing_frame;
@@ -78,7 +73,7 @@ namespace control_msgs
       offset += this->target.deserialize(inbuffer + offset);
       offset += this->pointing_axis.deserialize(inbuffer + offset);
       uint32_t length_pointing_frame;
-      arrToVar(length_pointing_frame, (inbuffer + offset));
+      memcpy(&length_pointing_frame, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_pointing_frame; ++k){
           inbuffer[k-1]=inbuffer[k];

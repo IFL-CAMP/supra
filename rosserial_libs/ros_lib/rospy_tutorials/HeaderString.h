@@ -13,10 +13,8 @@ namespace rospy_tutorials
   class HeaderString : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef const char* _data_type;
-      _data_type data;
+      std_msgs::Header header;
+      const char* data;
 
     HeaderString():
       header(),
@@ -29,7 +27,7 @@ namespace rospy_tutorials
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       uint32_t length_data = strlen(this->data);
-      varToArr(outbuffer + offset, length_data);
+      memcpy(outbuffer + offset, &length_data, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->data, length_data);
       offset += length_data;
@@ -41,7 +39,7 @@ namespace rospy_tutorials
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       uint32_t length_data;
-      arrToVar(length_data, (inbuffer + offset));
+      memcpy(&length_data, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_data; ++k){
           inbuffer[k-1]=inbuffer[k];

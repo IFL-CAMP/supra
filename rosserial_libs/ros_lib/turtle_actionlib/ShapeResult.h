@@ -12,10 +12,8 @@ namespace turtle_actionlib
   class ShapeResult : public ros::Msg
   {
     public:
-      typedef float _interior_angle_type;
-      _interior_angle_type interior_angle;
-      typedef float _apothem_type;
-      _apothem_type apothem;
+      float interior_angle;
+      float apothem;
 
     ShapeResult():
       interior_angle(0),

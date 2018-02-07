@@ -12,8 +12,7 @@ namespace std_msgs
   class Byte : public ros::Msg
   {
     public:
-      typedef int8_t _data_type;
-      _data_type data;
+      int8_t data;
 
     Byte():
       data(0)

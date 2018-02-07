@@ -12,16 +12,11 @@ namespace visualization_msgs
   class MenuEntry : public ros::Msg
   {
     public:
-      typedef uint32_t _id_type;
-      _id_type id;
-      typedef uint32_t _parent_id_type;
-      _parent_id_type parent_id;
-      typedef const char* _title_type;
-      _title_type title;
-      typedef const char* _command_type;
-      _command_type command;
-      typedef uint8_t _command_type_type;
-      _command_type_type command_type;
+      uint32_t id;
+      uint32_t parent_id;
+      const char* title;
+      const char* command;
+      uint8_t command_type;
       enum { FEEDBACK = 0 };
       enum { ROSRUN = 1 };
       enum { ROSLAUNCH = 2 };
@@ -49,12 +44,12 @@ namespace visualization_msgs
       *(outbuffer + offset + 3) = (this->parent_id >> (8 * 3)) & 0xFF;
       offset += sizeof(this->parent_id);
       uint32_t length_title = strlen(this->title);
-      varToArr(outbuffer + offset, length_title);
+      memcpy(outbuffer + offset, &length_title, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->title, length_title);
       offset += length_title;
       uint32_t length_command = strlen(this->command);
-      varToArr(outbuffer + offset, length_command);
+      memcpy(outbuffer + offset, &length_command, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->command, length_command);
       offset += length_command;
@@ -77,7 +72,7 @@ namespace visualization_msgs
       this->parent_id |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       offset += sizeof(this->parent_id);
       uint32_t length_title;
-      arrToVar(length_title, (inbuffer + offset));
+      memcpy(&length_title, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_title; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -86,7 +81,7 @@ namespace visualization_msgs
       this->title = (char *)(inbuffer + offset-1);
       offset += length_title;
       uint32_t length_command;
-      arrToVar(length_command, (inbuffer + offset));
+      memcpy(&length_command, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_command; ++k){
           inbuffer[k-1]=inbuffer[k];

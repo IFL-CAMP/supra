@@ -14,24 +14,15 @@ namespace controller_manager_msgs
   class ControllerStatistics : public ros::Msg
   {
     public:
-      typedef const char* _name_type;
-      _name_type name;
-      typedef const char* _type_type;
-      _type_type type;
-      typedef ros::Time _timestamp_type;
-      _timestamp_type timestamp;
-      typedef bool _running_type;
-      _running_type running;
-      typedef ros::Duration _max_time_type;
-      _max_time_type max_time;
-      typedef ros::Duration _mean_time_type;
-      _mean_time_type mean_time;
-      typedef ros::Duration _variance_time_type;
-      _variance_time_type variance_time;
-      typedef int32_t _num_control_loop_overruns_type;
-      _num_control_loop_overruns_type num_control_loop_overruns;
-      typedef ros::Time _time_last_control_loop_overrun_type;
-      _time_last_control_loop_overrun_type time_last_control_loop_overrun;
+      const char* name;
+      const char* type;
+      ros::Time timestamp;
+      bool running;
+      ros::Duration max_time;
+      ros::Duration mean_time;
+      ros::Duration variance_time;
+      int32_t num_control_loop_overruns;
+      ros::Time time_last_control_loop_overrun;
 
     ControllerStatistics():
       name(""),
@@ -50,12 +41,12 @@ namespace controller_manager_msgs
     {
       int offset = 0;
       uint32_t length_name = strlen(this->name);
-      varToArr(outbuffer + offset, length_name);
+      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->name, length_name);
       offset += length_name;
       uint32_t length_type = strlen(this->type);
-      varToArr(outbuffer + offset, length_type);
+      memcpy(outbuffer + offset, &length_type, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->type, length_type);
       offset += length_type;
@@ -133,7 +124,7 @@ namespace controller_manager_msgs
     {
       int offset = 0;
       uint32_t length_name;
-      arrToVar(length_name, (inbuffer + offset));
+      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -142,7 +133,7 @@ namespace controller_manager_msgs
       this->name = (char *)(inbuffer + offset-1);
       offset += length_name;
       uint32_t length_type;
-      arrToVar(length_type, (inbuffer + offset));
+      memcpy(&length_type, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_type; ++k){
           inbuffer[k-1]=inbuffer[k];

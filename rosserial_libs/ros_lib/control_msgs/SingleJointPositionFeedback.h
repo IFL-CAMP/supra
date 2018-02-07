@@ -13,14 +13,10 @@ namespace control_msgs
   class SingleJointPositionFeedback : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef double _position_type;
-      _position_type position;
-      typedef double _velocity_type;
-      _velocity_type velocity;
-      typedef double _error_type;
-      _error_type error;
+      std_msgs::Header header;
+      double position;
+      double velocity;
+      double error;
 
     SingleJointPositionFeedback():
       header(),

@@ -1,62 +1,63 @@
-#ifndef _ROS_SERVICE_NodeletUnload_h
-#define _ROS_SERVICE_NodeletUnload_h
+#ifndef _ROS_SERVICE_sequence_h
+#define _ROS_SERVICE_sequence_h
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include "ros/msg.h"
 
-namespace nodelet
+namespace supra_msgs
 {
 
-static const char NODELETUNLOAD[] = "nodelet/NodeletUnload";
+static const char SEQUENCE[] = "supra_msgs/sequence";
 
-  class NodeletUnloadRequest : public ros::Msg
+  class sequenceRequest : public ros::Msg
   {
     public:
-      const char* name;
+      bool sequenceActive;
 
-    NodeletUnloadRequest():
-      name("")
+    sequenceRequest():
+      sequenceActive(0)
     {
     }
 
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      uint32_t length_name = strlen(this->name);
-      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
-      offset += 4;
-      memcpy(outbuffer + offset, this->name, length_name);
-      offset += length_name;
+      union {
+        bool real;
+        uint8_t base;
+      } u_sequenceActive;
+      u_sequenceActive.real = this->sequenceActive;
+      *(outbuffer + offset + 0) = (u_sequenceActive.base >> (8 * 0)) & 0xFF;
+      offset += sizeof(this->sequenceActive);
       return offset;
     }
 
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t length_name;
-      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
-      offset += 4;
-      for(unsigned int k= offset; k< offset+length_name; ++k){
-          inbuffer[k-1]=inbuffer[k];
-      }
-      inbuffer[offset+length_name-1]=0;
-      this->name = (char *)(inbuffer + offset-1);
-      offset += length_name;
+      union {
+        bool real;
+        uint8_t base;
+      } u_sequenceActive;
+      u_sequenceActive.base = 0;
+      u_sequenceActive.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      this->sequenceActive = u_sequenceActive.real;
+      offset += sizeof(this->sequenceActive);
      return offset;
     }
 
-    const char * getType(){ return NODELETUNLOAD; };
-    const char * getMD5(){ return "c1f3d28f1b044c871e6eff2e9fc3c667"; };
+    const char * getType(){ return SEQUENCE; };
+    const char * getMD5(){ return "ddad3ed71117be7431f196de74ee955b"; };
 
   };
 
-  class NodeletUnloadResponse : public ros::Msg
+  class sequenceResponse : public ros::Msg
   {
     public:
       bool success;
 
-    NodeletUnloadResponse():
+    sequenceResponse():
       success(0)
     {
     }
@@ -88,15 +89,15 @@ static const char NODELETUNLOAD[] = "nodelet/NodeletUnload";
      return offset;
     }
 
-    const char * getType(){ return NODELETUNLOAD; };
+    const char * getType(){ return SEQUENCE; };
     const char * getMD5(){ return "358e233cde0c8a8bcfea4ce193f8fc15"; };
 
   };
 
-  class NodeletUnload {
+  class sequence {
     public:
-    typedef NodeletUnloadRequest Request;
-    typedef NodeletUnloadResponse Response;
+    typedef sequenceRequest Request;
+    typedef sequenceResponse Response;
   };
 
 }

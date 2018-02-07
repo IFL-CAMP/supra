@@ -15,12 +15,9 @@ namespace actionlib
   class TestRequestActionResult : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef actionlib_msgs::GoalStatus _status_type;
-      _status_type status;
-      typedef actionlib::TestRequestResult _result_type;
-      _result_type result;
+      std_msgs::Header header;
+      actionlib_msgs::GoalStatus status;
+      actionlib::TestRequestResult result;
 
     TestRequestActionResult():
       header(),

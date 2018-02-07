@@ -12,10 +12,8 @@ namespace sensor_msgs
   class NavSatStatus : public ros::Msg
   {
     public:
-      typedef int8_t _status_type;
-      _status_type status;
-      typedef uint16_t _service_type;
-      _service_type service;
+      int8_t status;
+      uint16_t service;
       enum { STATUS_NO_FIX =   -1         };
       enum { STATUS_FIX =       0         };
       enum { STATUS_SBAS_FIX =  1         };

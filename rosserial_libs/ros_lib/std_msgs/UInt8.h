@@ -12,8 +12,7 @@ namespace std_msgs
   class UInt8 : public ros::Msg
   {
     public:
-      typedef uint8_t _data_type;
-      _data_type data;
+      uint8_t data;
 
     UInt8():
       data(0)

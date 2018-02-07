@@ -12,10 +12,8 @@ namespace actionlib_tutorials
   class AveragingResult : public ros::Msg
   {
     public:
-      typedef float _mean_type;
-      _mean_type mean;
-      typedef float _std_dev_type;
-      _std_dev_type std_dev;
+      float mean;
+      float std_dev;
 
     AveragingResult():
       mean(0),

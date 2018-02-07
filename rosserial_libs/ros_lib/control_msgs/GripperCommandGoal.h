@@ -13,8 +13,7 @@ namespace control_msgs
   class GripperCommandGoal : public ros::Msg
   {
     public:
-      typedef control_msgs::GripperCommand _command_type;
-      _command_type command;
+      control_msgs::GripperCommand command;
 
     GripperCommandGoal():
       command()

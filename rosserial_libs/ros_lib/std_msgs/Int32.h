@@ -12,8 +12,7 @@ namespace std_msgs
   class Int32 : public ros::Msg
   {
     public:
-      typedef int32_t _data_type;
-      _data_type data;
+      int32_t data;
 
     Int32():
       data(0)

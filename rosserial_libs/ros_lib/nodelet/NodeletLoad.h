@@ -13,24 +13,18 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
   class NodeletLoadRequest : public ros::Msg
   {
     public:
-      typedef const char* _name_type;
-      _name_type name;
-      typedef const char* _type_type;
-      _type_type type;
-      uint32_t remap_source_args_length;
-      typedef char* _remap_source_args_type;
-      _remap_source_args_type st_remap_source_args;
-      _remap_source_args_type * remap_source_args;
-      uint32_t remap_target_args_length;
-      typedef char* _remap_target_args_type;
-      _remap_target_args_type st_remap_target_args;
-      _remap_target_args_type * remap_target_args;
-      uint32_t my_argv_length;
-      typedef char* _my_argv_type;
-      _my_argv_type st_my_argv;
-      _my_argv_type * my_argv;
-      typedef const char* _bond_id_type;
-      _bond_id_type bond_id;
+      const char* name;
+      const char* type;
+      uint8_t remap_source_args_length;
+      char* st_remap_source_args;
+      char* * remap_source_args;
+      uint8_t remap_target_args_length;
+      char* st_remap_target_args;
+      char* * remap_target_args;
+      uint8_t my_argv_length;
+      char* st_my_argv;
+      char* * my_argv;
+      const char* bond_id;
 
     NodeletLoadRequest():
       name(""),
@@ -46,53 +40,50 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
     {
       int offset = 0;
       uint32_t length_name = strlen(this->name);
-      varToArr(outbuffer + offset, length_name);
+      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->name, length_name);
       offset += length_name;
       uint32_t length_type = strlen(this->type);
-      varToArr(outbuffer + offset, length_type);
+      memcpy(outbuffer + offset, &length_type, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->type, length_type);
       offset += length_type;
-      *(outbuffer + offset + 0) = (this->remap_source_args_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->remap_source_args_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->remap_source_args_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->remap_source_args_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->remap_source_args_length);
-      for( uint32_t i = 0; i < remap_source_args_length; i++){
+      *(outbuffer + offset++) = remap_source_args_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < remap_source_args_length; i++){
       uint32_t length_remap_source_argsi = strlen(this->remap_source_args[i]);
-      varToArr(outbuffer + offset, length_remap_source_argsi);
+      memcpy(outbuffer + offset, &length_remap_source_argsi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->remap_source_args[i], length_remap_source_argsi);
       offset += length_remap_source_argsi;
       }
-      *(outbuffer + offset + 0) = (this->remap_target_args_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->remap_target_args_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->remap_target_args_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->remap_target_args_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->remap_target_args_length);
-      for( uint32_t i = 0; i < remap_target_args_length; i++){
+      *(outbuffer + offset++) = remap_target_args_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < remap_target_args_length; i++){
       uint32_t length_remap_target_argsi = strlen(this->remap_target_args[i]);
-      varToArr(outbuffer + offset, length_remap_target_argsi);
+      memcpy(outbuffer + offset, &length_remap_target_argsi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->remap_target_args[i], length_remap_target_argsi);
       offset += length_remap_target_argsi;
       }
-      *(outbuffer + offset + 0) = (this->my_argv_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->my_argv_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->my_argv_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->my_argv_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->my_argv_length);
-      for( uint32_t i = 0; i < my_argv_length; i++){
+      *(outbuffer + offset++) = my_argv_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < my_argv_length; i++){
       uint32_t length_my_argvi = strlen(this->my_argv[i]);
-      varToArr(outbuffer + offset, length_my_argvi);
+      memcpy(outbuffer + offset, &length_my_argvi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->my_argv[i], length_my_argvi);
       offset += length_my_argvi;
       }
       uint32_t length_bond_id = strlen(this->bond_id);
-      varToArr(outbuffer + offset, length_bond_id);
+      memcpy(outbuffer + offset, &length_bond_id, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->bond_id, length_bond_id);
       offset += length_bond_id;
@@ -103,7 +94,7 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
     {
       int offset = 0;
       uint32_t length_name;
-      arrToVar(length_name, (inbuffer + offset));
+      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -112,7 +103,7 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
       this->name = (char *)(inbuffer + offset-1);
       offset += length_name;
       uint32_t length_type;
-      arrToVar(length_type, (inbuffer + offset));
+      memcpy(&length_type, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_type; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -120,17 +111,14 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
       inbuffer[offset+length_type-1]=0;
       this->type = (char *)(inbuffer + offset-1);
       offset += length_type;
-      uint32_t remap_source_args_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      remap_source_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      remap_source_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      remap_source_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->remap_source_args_length);
+      uint8_t remap_source_args_lengthT = *(inbuffer + offset++);
       if(remap_source_args_lengthT > remap_source_args_length)
         this->remap_source_args = (char**)realloc(this->remap_source_args, remap_source_args_lengthT * sizeof(char*));
+      offset += 3;
       remap_source_args_length = remap_source_args_lengthT;
-      for( uint32_t i = 0; i < remap_source_args_length; i++){
+      for( uint8_t i = 0; i < remap_source_args_length; i++){
       uint32_t length_st_remap_source_args;
-      arrToVar(length_st_remap_source_args, (inbuffer + offset));
+      memcpy(&length_st_remap_source_args, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_remap_source_args; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -140,17 +128,14 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
       offset += length_st_remap_source_args;
         memcpy( &(this->remap_source_args[i]), &(this->st_remap_source_args), sizeof(char*));
       }
-      uint32_t remap_target_args_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      remap_target_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      remap_target_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      remap_target_args_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->remap_target_args_length);
+      uint8_t remap_target_args_lengthT = *(inbuffer + offset++);
       if(remap_target_args_lengthT > remap_target_args_length)
         this->remap_target_args = (char**)realloc(this->remap_target_args, remap_target_args_lengthT * sizeof(char*));
+      offset += 3;
       remap_target_args_length = remap_target_args_lengthT;
-      for( uint32_t i = 0; i < remap_target_args_length; i++){
+      for( uint8_t i = 0; i < remap_target_args_length; i++){
       uint32_t length_st_remap_target_args;
-      arrToVar(length_st_remap_target_args, (inbuffer + offset));
+      memcpy(&length_st_remap_target_args, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_remap_target_args; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -160,17 +145,14 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
       offset += length_st_remap_target_args;
         memcpy( &(this->remap_target_args[i]), &(this->st_remap_target_args), sizeof(char*));
       }
-      uint32_t my_argv_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      my_argv_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      my_argv_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      my_argv_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->my_argv_length);
+      uint8_t my_argv_lengthT = *(inbuffer + offset++);
       if(my_argv_lengthT > my_argv_length)
         this->my_argv = (char**)realloc(this->my_argv, my_argv_lengthT * sizeof(char*));
+      offset += 3;
       my_argv_length = my_argv_lengthT;
-      for( uint32_t i = 0; i < my_argv_length; i++){
+      for( uint8_t i = 0; i < my_argv_length; i++){
       uint32_t length_st_my_argv;
-      arrToVar(length_st_my_argv, (inbuffer + offset));
+      memcpy(&length_st_my_argv, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_my_argv; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -181,7 +163,7 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
         memcpy( &(this->my_argv[i]), &(this->st_my_argv), sizeof(char*));
       }
       uint32_t length_bond_id;
-      arrToVar(length_bond_id, (inbuffer + offset));
+      memcpy(&length_bond_id, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_bond_id; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -200,8 +182,7 @@ static const char NODELETLOAD[] = "nodelet/NodeletLoad";
   class NodeletLoadResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
+      bool success;
 
     NodeletLoadResponse():
       success(0)

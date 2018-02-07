@@ -12,14 +12,10 @@ namespace std_msgs
   class ColorRGBA : public ros::Msg
   {
     public:
-      typedef float _r_type;
-      _r_type r;
-      typedef float _g_type;
-      _g_type g;
-      typedef float _b_type;
-      _b_type b;
-      typedef float _a_type;
-      _a_type a;
+      float r;
+      float g;
+      float b;
+      float a;
 
     ColorRGBA():
       r(0),

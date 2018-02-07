@@ -14,12 +14,10 @@ namespace controller_manager_msgs
   class ControllersStatistics : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      uint32_t controller_length;
-      typedef controller_manager_msgs::ControllerStatistics _controller_type;
-      _controller_type st_controller;
-      _controller_type * controller;
+      std_msgs::Header header;
+      uint8_t controller_length;
+      controller_manager_msgs::ControllerStatistics st_controller;
+      controller_manager_msgs::ControllerStatistics * controller;
 
     ControllersStatistics():
       header(),
@@ -31,12 +29,11 @@ namespace controller_manager_msgs
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
-      *(outbuffer + offset + 0) = (this->controller_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->controller_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->controller_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->controller_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->controller_length);
-      for( uint32_t i = 0; i < controller_length; i++){
+      *(outbuffer + offset++) = controller_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < controller_length; i++){
       offset += this->controller[i].serialize(outbuffer + offset);
       }
       return offset;
@@ -46,15 +43,12 @@ namespace controller_manager_msgs
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
-      uint32_t controller_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      controller_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      controller_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      controller_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->controller_length);
+      uint8_t controller_lengthT = *(inbuffer + offset++);
       if(controller_lengthT > controller_length)
         this->controller = (controller_manager_msgs::ControllerStatistics*)realloc(this->controller, controller_lengthT * sizeof(controller_manager_msgs::ControllerStatistics));
+      offset += 3;
       controller_length = controller_lengthT;
-      for( uint32_t i = 0; i < controller_length; i++){
+      for( uint8_t i = 0; i < controller_length; i++){
       offset += this->st_controller.deserialize(inbuffer + offset);
         memcpy( &(this->controller[i]), &(this->st_controller), sizeof(controller_manager_msgs::ControllerStatistics));
       }
