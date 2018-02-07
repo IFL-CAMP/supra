@@ -172,6 +172,7 @@ namespace supra
 	void MhdSequenceWriter::closeWhenEverythingWritten()
 	{
 		m_closing = true;
+		std::unique_lock<std::mutex> l(m_queueMutex);
 		m_queueConditionVariable.notify_one();
 		m_writerThread.detach();
 	}

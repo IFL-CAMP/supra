@@ -53,7 +53,10 @@ namespace supra
 	{
 		m_isReady = false;
 
-		m_pWriter->closeWhenEverythingWritten();
+		if (m_pWriter)
+		{
+			m_pWriter->closeWhenEverythingWritten();
+		}
 	}
 
 	void MetaImageOutputDevice::initializeOutput()
