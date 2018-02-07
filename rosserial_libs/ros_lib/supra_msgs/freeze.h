@@ -12,10 +12,10 @@ namespace supra_msgs
   class freeze : public ros::Msg
   {
     public:
-      bool freeze;
+      bool freezeActive;
 
     freeze():
-      freeze(0)
+      freezeActive(0)
     {
     }
 
@@ -25,10 +25,10 @@ namespace supra_msgs
       union {
         bool real;
         uint8_t base;
-      } u_freeze;
-      u_freeze.real = this->freeze;
-      *(outbuffer + offset + 0) = (u_freeze.base >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->freeze);
+      } u_freezeActive;
+      u_freezeActive.real = this->freezeActive;
+      *(outbuffer + offset + 0) = (u_freezeActive.base >> (8 * 0)) & 0xFF;
+      offset += sizeof(this->freezeActive);
       return offset;
     }
 
@@ -38,16 +38,16 @@ namespace supra_msgs
       union {
         bool real;
         uint8_t base;
-      } u_freeze;
-      u_freeze.base = 0;
-      u_freeze.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      this->freeze = u_freeze.real;
-      offset += sizeof(this->freeze);
+      } u_freezeActive;
+      u_freezeActive.base = 0;
+      u_freezeActive.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      this->freezeActive = u_freezeActive.real;
+      offset += sizeof(this->freezeActive);
      return offset;
     }
 
     const char * getType(){ return "supra_msgs/freeze"; };
-    const char * getMD5(){ return "4b161df344835f6e0ad165e599379cd6"; };
+    const char * getMD5(){ return "19c19546444bfbd4049fb289740c4ae3"; };
 
   };
 
