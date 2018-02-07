@@ -11,10 +11,12 @@
 
 #include "RosInterface.h"
 
-#include <utilities/RosWrapper.h>
-#include <supra_msgs/get_nodes.h>
-#include <supra_msgs/get_node_parameters.h>
-#include <supra_msgs/set_node_parameter.h>
+//#include <utilities/RosWrapper.h>
+//#include <supra_msgs/get_nodes.h>
+//#include <supra_msgs/get_node_parameters.h>
+//#include <supra_msgs/set_node_parameter.h>
+//#include <supra_msgs/freeze.h>
+//#include <supra_msgs/sequence.h>
 
 #include <iostream>
 #include <memory>
@@ -96,9 +98,12 @@ namespace supra
 	};
 #endif
 
+	bool supra::RosInterface::m_sequenceActive = false;
+
 	void RosInterface::mainLoop(string masterHost)
 	{
 		RosWrapper wr(masterHost);
+		m_sequenceActive = false;
 
 #ifdef ROS_ROSSERIAL
 		GetNodesServer servGetNodes(supra_msgs::GET_NODES, RosInterface::get_nodesCallback);
@@ -114,10 +119,18 @@ namespace supra
 		(supra_msgs::SET_NODE_PARAMETER, (RosInterface::set_node_parameterCallback));
 		bool setNodeParameterAdvertisement = wr.getNodeHandle()->advertiseService(servSetNodeParameter);
 		logging::log_error_if(!setNodeParameterAdvertisement, "Error advertising service ", "set_node_parameter");
+
+		ros::ServiceServer<supra_msgs::sequenceRequest, supra_msgs::sequenceResponse> servSequence
+		(supra_msgs::SEQUENCE, (RosInterface::sequenceCallback));
+		bool sequenceAdvertisement = wr.getNodeHandle()->advertiseService(servSequence);
+		logging::log_error_if(!sequenceAdvertisement, "Error advertising service ", "sequence");
+		wr.subscribe<supra_msgs::freeze, RosInterface>("supra_freeze", RosInterface::freezeCallback);
 #else
 		auto serviceGetNodes = wr.getNodeHandle()->advertiseService("get_nodes", RosInterface::get_nodesCallback);
 		auto serviceGetNodeParameters = wr.getNodeHandle()->advertiseService("get_node_parameters", RosInterface::get_node_parametersCallback);
 		auto serviceSetNodeParameters = wr.getNodeHandle()->advertiseService("set_node_parameter", RosInterface::set_node_parameterCallback);
+		auto serviceSequence = wr.getNodeHandle()->advertiseService("sequence", RosInterface::sequenceCallback);
+		wr.subscribe<supra_msgs::freeze>("supra_freeze", RosInterface::freezeCallback);
 #endif
 
 		wr.spinEndless();
@@ -184,6 +197,19 @@ namespace supra
 #ifdef ROS_REAL
 		return res.wasValid;
 #endif
+	}
+
+	ServiceReturnType RosInterface::sequenceCallback(ROSSERIAL_REQUESTTYPECONST supra_msgs::sequence::Request & req, supra_msgs::sequence::Response& res)
+	{
+		res.success = sequence(req.sequenceActive);
+#ifdef ROS_REAL
+		return res.success;
+#endif
+	}
+
+	void RosInterface::freezeCallback(const supra_msgs::freeze & freezeMsg)
+	{
+		freeze(freezeMsg.freezeActive);
 	}
 
 	void RosInterface::fillParameterMessage(const ConfigurationDictionary* confDict, const ValueRangeDictionary * rangeDict, std::string paramName, supra_msgs::parameter* pParam)
@@ -425,5 +451,37 @@ namespace supra
 			}
 		}
 		return retVal;
+	}
+
+	bool RosInterface::sequence(bool active)
+	{
+		bool ret = false;
+		if(m_sequenceActive && !active)
+		{
+			SupraManager::Get()->stopOutputsSequence();
+			m_sequenceActive = false;
+			ret = true;
+		}
+		else if(!m_sequenceActive && active)
+		{
+			SupraManager::Get()->startOutputsSequence();
+			m_sequenceActive = true;
+			ret = true;
+		}
+		return ret;
+	}
+
+	void RosInterface::freeze(bool freezeActive)
+	{
+		if(freezeActive)
+		{
+			SupraManager::Get()->freezeInputs();
+			log_info("RosInterface: Freezing inputs");
+		}
+		else if(!freezeActive)
+		{
+			SupraManager::Get()->unfreezeInputs();
+			log_info("RosInterface: Unfreezing inputs");
+		}
 	}
 }

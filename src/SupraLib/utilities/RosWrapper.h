@@ -75,6 +75,30 @@ namespace supra
 			return m_rosNode;
 		}
 
+#ifdef ROS_ROSSERIAL
+		/// Subscribe to a topic. Follows ROS conventions
+		template <class M, class T>
+		void subscribe(
+			const std::string & topic,
+			void(*fp)(const M &))
+		{
+			m_subscriber = std::unique_ptr<ros::Subscriber < M, void> >(
+				new ros::Subscriber <M, void>(topic.c_str(), fp)
+				);
+			m_rosNode->subscribe(*m_subscriber);
+		}
+#else
+		/// Subscribe to a topic. Follows ROS conventions
+		template <class M>
+		void subscribe(
+			const std::string & topic,
+			void(*fp)(const M &))
+		{
+			m_subscriber = std::unique_ptr<ros::Subscriber>(new ros::Subscriber());
+			*m_subscriber = m_rosNode->subscribe(topic, 1, fp);
+		}
+#endif
+
 		/// Subscribe to a topic. Follows ROS conventions
 		template <class M, class T>
 		void subscribe(

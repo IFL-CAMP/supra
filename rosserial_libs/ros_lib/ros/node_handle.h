@@ -348,8 +348,8 @@ namespace ros {
       }
 
       /* Register a new subscriber */
-      template<typename MsgT>
-      bool subscribe(Subscriber< MsgT> & s){
+      template<typename SubscriberT>
+      bool subscribe(SubscriberT & s){
         for(int i = 0; i < MAX_SUBSCRIBERS; i++){
           if(subscribers[i] == 0){ // empty slot
             subscribers[i] = (Subscriber_*) &s;

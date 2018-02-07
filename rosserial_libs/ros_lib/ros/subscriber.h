@@ -54,10 +54,43 @@ namespace ros {
       const char * topic_;
   };
 
+  /* Bound function subscriber. */
+  template<typename MsgT, typename ObjT = void>
+  class Subscriber : public Subscriber_
+  {
+  public:
+	  typedef void(ObjT::*CallbackT)(const MsgT&);
+	  MsgT msg;
 
+	  Subscriber(const char * topic_name, CallbackT cb, ObjT* obj, int endpoint = rosserial_msgs::TopicInfo::ID_SUBSCRIBER) :
+		  cb_(cb),
+		  obj_(obj),
+		  endpoint_(endpoint)
+	  {
+		  topic_ = topic_name;
+	  };
+
+	  virtual void callback(unsigned char* data)
+	  {
+		  msg.deserialize(data);
+		  (obj_->*cb_)(msg);
+	  }
+
+	  virtual const char * getMsgType() { return this->msg.getType(); }
+	  virtual const char * getMsgMD5() { return this->msg.getMD5(); }
+	  virtual int getEndpointType() { return endpoint_; }
+
+  private:
+	  CallbackT cb_;
+	  ObjT* obj_;
+	  int endpoint_;
+  };
+
+  /* Standalone function subscriber. */
   /* Actual subscriber, templated on message type. */
   template<typename MsgT>
-  class Subscriber: public Subscriber_{
+  class Subscriber<MsgT, void> : public Subscriber_
+  {
     public:
       typedef void(*CallbackT)(const MsgT&);
       MsgT msg;
