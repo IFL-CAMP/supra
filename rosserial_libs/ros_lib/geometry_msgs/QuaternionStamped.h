@@ -14,10 +14,8 @@ namespace geometry_msgs
   class QuaternionStamped : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Quaternion _quaternion_type;
-      _quaternion_type quaternion;
+      std_msgs::Header header;
+      geometry_msgs::Quaternion quaternion;
 
     QuaternionStamped():
       header(),

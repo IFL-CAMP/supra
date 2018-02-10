@@ -15,24 +15,15 @@ namespace visualization_msgs
   class InteractiveMarkerFeedback : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef const char* _client_id_type;
-      _client_id_type client_id;
-      typedef const char* _marker_name_type;
-      _marker_name_type marker_name;
-      typedef const char* _control_name_type;
-      _control_name_type control_name;
-      typedef uint8_t _event_type_type;
-      _event_type_type event_type;
-      typedef geometry_msgs::Pose _pose_type;
-      _pose_type pose;
-      typedef uint32_t _menu_entry_id_type;
-      _menu_entry_id_type menu_entry_id;
-      typedef geometry_msgs::Point _mouse_point_type;
-      _mouse_point_type mouse_point;
-      typedef bool _mouse_point_valid_type;
-      _mouse_point_valid_type mouse_point_valid;
+      std_msgs::Header header;
+      const char* client_id;
+      const char* marker_name;
+      const char* control_name;
+      uint8_t event_type;
+      geometry_msgs::Pose pose;
+      uint32_t menu_entry_id;
+      geometry_msgs::Point mouse_point;
+      bool mouse_point_valid;
       enum { KEEP_ALIVE =  0 };
       enum { POSE_UPDATE =  1 };
       enum { MENU_SELECT =  2 };
@@ -58,17 +49,17 @@ namespace visualization_msgs
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       uint32_t length_client_id = strlen(this->client_id);
-      varToArr(outbuffer + offset, length_client_id);
+      memcpy(outbuffer + offset, &length_client_id, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->client_id, length_client_id);
       offset += length_client_id;
       uint32_t length_marker_name = strlen(this->marker_name);
-      varToArr(outbuffer + offset, length_marker_name);
+      memcpy(outbuffer + offset, &length_marker_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->marker_name, length_marker_name);
       offset += length_marker_name;
       uint32_t length_control_name = strlen(this->control_name);
-      varToArr(outbuffer + offset, length_control_name);
+      memcpy(outbuffer + offset, &length_control_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->control_name, length_control_name);
       offset += length_control_name;
@@ -96,7 +87,7 @@ namespace visualization_msgs
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       uint32_t length_client_id;
-      arrToVar(length_client_id, (inbuffer + offset));
+      memcpy(&length_client_id, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_client_id; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -105,7 +96,7 @@ namespace visualization_msgs
       this->client_id = (char *)(inbuffer + offset-1);
       offset += length_client_id;
       uint32_t length_marker_name;
-      arrToVar(length_marker_name, (inbuffer + offset));
+      memcpy(&length_marker_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_marker_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -114,7 +105,7 @@ namespace visualization_msgs
       this->marker_name = (char *)(inbuffer + offset-1);
       offset += length_marker_name;
       uint32_t length_control_name;
-      arrToVar(length_control_name, (inbuffer + offset));
+      memcpy(&length_control_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_control_name; ++k){
           inbuffer[k-1]=inbuffer[k];

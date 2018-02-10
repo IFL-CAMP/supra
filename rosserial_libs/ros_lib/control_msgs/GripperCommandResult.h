@@ -12,14 +12,10 @@ namespace control_msgs
   class GripperCommandResult : public ros::Msg
   {
     public:
-      typedef double _position_type;
-      _position_type position;
-      typedef double _effort_type;
-      _effort_type effort;
-      typedef bool _stalled_type;
-      _stalled_type stalled;
-      typedef bool _reached_goal_type;
-      _reached_goal_type reached_goal;
+      double position;
+      double effort;
+      bool stalled;
+      bool reached_goal;
 
     GripperCommandResult():
       position(0),

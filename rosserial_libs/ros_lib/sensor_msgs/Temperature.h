@@ -13,12 +13,9 @@ namespace sensor_msgs
   class Temperature : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef double _temperature_type;
-      _temperature_type temperature;
-      typedef double _variance_type;
-      _variance_type variance;
+      std_msgs::Header header;
+      double temperature;
+      double variance;
 
     Temperature():
       header(),

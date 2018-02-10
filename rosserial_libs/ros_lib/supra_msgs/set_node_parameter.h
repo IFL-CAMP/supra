@@ -13,12 +13,9 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
   class set_node_parameterRequest : public ros::Msg
   {
     public:
-      typedef const char* _nodeId_type;
-      _nodeId_type nodeId;
-      typedef const char* _parameterId_type;
-      _parameterId_type parameterId;
-      typedef const char* _value_type;
-      _value_type value;
+      const char* nodeId;
+      const char* parameterId;
+      const char* value;
 
     set_node_parameterRequest():
       nodeId(""),
@@ -31,17 +28,17 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
     {
       int offset = 0;
       uint32_t length_nodeId = strlen(this->nodeId);
-      varToArr(outbuffer + offset, length_nodeId);
+      memcpy(outbuffer + offset, &length_nodeId, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->nodeId, length_nodeId);
       offset += length_nodeId;
       uint32_t length_parameterId = strlen(this->parameterId);
-      varToArr(outbuffer + offset, length_parameterId);
+      memcpy(outbuffer + offset, &length_parameterId, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->parameterId, length_parameterId);
       offset += length_parameterId;
       uint32_t length_value = strlen(this->value);
-      varToArr(outbuffer + offset, length_value);
+      memcpy(outbuffer + offset, &length_value, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->value, length_value);
       offset += length_value;
@@ -52,7 +49,7 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
     {
       int offset = 0;
       uint32_t length_nodeId;
-      arrToVar(length_nodeId, (inbuffer + offset));
+      memcpy(&length_nodeId, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_nodeId; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -61,7 +58,7 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
       this->nodeId = (char *)(inbuffer + offset-1);
       offset += length_nodeId;
       uint32_t length_parameterId;
-      arrToVar(length_parameterId, (inbuffer + offset));
+      memcpy(&length_parameterId, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_parameterId; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -70,7 +67,7 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
       this->parameterId = (char *)(inbuffer + offset-1);
       offset += length_parameterId;
       uint32_t length_value;
-      arrToVar(length_value, (inbuffer + offset));
+      memcpy(&length_value, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_value; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -89,8 +86,7 @@ static const char SET_NODE_PARAMETER[] = "supra_msgs/set_node_parameter";
   class set_node_parameterResponse : public ros::Msg
   {
     public:
-      typedef bool _wasValid_type;
-      _wasValid_type wasValid;
+      bool wasValid;
 
     set_node_parameterResponse():
       wasValid(0)

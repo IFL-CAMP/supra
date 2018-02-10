@@ -15,12 +15,9 @@ namespace actionlib
   class TestRequestActionGoal : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef actionlib_msgs::GoalID _goal_id_type;
-      _goal_id_type goal_id;
-      typedef actionlib::TestRequestGoal _goal_type;
-      _goal_type goal;
+      std_msgs::Header header;
+      actionlib_msgs::GoalID goal_id;
+      actionlib::TestRequestGoal goal;
 
     TestRequestActionGoal():
       header(),

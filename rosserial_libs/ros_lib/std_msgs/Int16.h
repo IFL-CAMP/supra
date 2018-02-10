@@ -12,8 +12,7 @@ namespace std_msgs
   class Int16 : public ros::Msg
   {
     public:
-      typedef int16_t _data_type;
-      _data_type data;
+      int16_t data;
 
     Int16():
       data(0)

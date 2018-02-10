@@ -12,8 +12,7 @@ namespace actionlib
   class TestResult : public ros::Msg
   {
     public:
-      typedef int32_t _result_type;
-      _result_type result;
+      int32_t result;
 
     TestResult():
       result(0)

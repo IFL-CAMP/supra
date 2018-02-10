@@ -38,8 +38,7 @@ static const char FRAMEGRAPH[] = "tf2_msgs/FrameGraph";
   class FrameGraphResponse : public ros::Msg
   {
     public:
-      typedef const char* _frame_yaml_type;
-      _frame_yaml_type frame_yaml;
+      const char* frame_yaml;
 
     FrameGraphResponse():
       frame_yaml("")
@@ -50,7 +49,7 @@ static const char FRAMEGRAPH[] = "tf2_msgs/FrameGraph";
     {
       int offset = 0;
       uint32_t length_frame_yaml = strlen(this->frame_yaml);
-      varToArr(outbuffer + offset, length_frame_yaml);
+      memcpy(outbuffer + offset, &length_frame_yaml, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->frame_yaml, length_frame_yaml);
       offset += length_frame_yaml;
@@ -61,7 +60,7 @@ static const char FRAMEGRAPH[] = "tf2_msgs/FrameGraph";
     {
       int offset = 0;
       uint32_t length_frame_yaml;
-      arrToVar(length_frame_yaml, (inbuffer + offset));
+      memcpy(&length_frame_yaml, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_frame_yaml; ++k){
           inbuffer[k-1]=inbuffer[k];

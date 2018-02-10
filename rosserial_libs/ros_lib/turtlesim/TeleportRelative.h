@@ -13,10 +13,8 @@ static const char TELEPORTRELATIVE[] = "turtlesim/TeleportRelative";
   class TeleportRelativeRequest : public ros::Msg
   {
     public:
-      typedef float _linear_type;
-      _linear_type linear;
-      typedef float _angular_type;
-      _angular_type angular;
+      float linear;
+      float angular;
 
     TeleportRelativeRequest():
       linear(0),

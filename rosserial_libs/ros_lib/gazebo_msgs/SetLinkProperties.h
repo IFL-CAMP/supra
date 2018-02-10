@@ -14,26 +14,16 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
   class SetLinkPropertiesRequest : public ros::Msg
   {
     public:
-      typedef const char* _link_name_type;
-      _link_name_type link_name;
-      typedef geometry_msgs::Pose _com_type;
-      _com_type com;
-      typedef bool _gravity_mode_type;
-      _gravity_mode_type gravity_mode;
-      typedef double _mass_type;
-      _mass_type mass;
-      typedef double _ixx_type;
-      _ixx_type ixx;
-      typedef double _ixy_type;
-      _ixy_type ixy;
-      typedef double _ixz_type;
-      _ixz_type ixz;
-      typedef double _iyy_type;
-      _iyy_type iyy;
-      typedef double _iyz_type;
-      _iyz_type iyz;
-      typedef double _izz_type;
-      _izz_type izz;
+      const char* link_name;
+      geometry_msgs::Pose com;
+      bool gravity_mode;
+      double mass;
+      double ixx;
+      double ixy;
+      double ixz;
+      double iyy;
+      double iyz;
+      double izz;
 
     SetLinkPropertiesRequest():
       link_name(""),
@@ -53,7 +43,7 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
     {
       int offset = 0;
       uint32_t length_link_name = strlen(this->link_name);
-      varToArr(outbuffer + offset, length_link_name);
+      memcpy(outbuffer + offset, &length_link_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->link_name, length_link_name);
       offset += length_link_name;
@@ -170,7 +160,7 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
     {
       int offset = 0;
       uint32_t length_link_name;
-      arrToVar(length_link_name, (inbuffer + offset));
+      memcpy(&length_link_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_link_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -303,10 +293,8 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
   class SetLinkPropertiesResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _status_message_type;
-      _status_message_type status_message;
+      bool success;
+      const char* status_message;
 
     SetLinkPropertiesResponse():
       success(0),
@@ -325,7 +313,7 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_status_message = strlen(this->status_message);
-      varToArr(outbuffer + offset, length_status_message);
+      memcpy(outbuffer + offset, &length_status_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->status_message, length_status_message);
       offset += length_status_message;
@@ -344,7 +332,7 @@ static const char SETLINKPROPERTIES[] = "gazebo_msgs/SetLinkProperties";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_status_message;
-      arrToVar(length_status_message, (inbuffer + offset));
+      memcpy(&length_status_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_status_message; ++k){
           inbuffer[k-1]=inbuffer[k];

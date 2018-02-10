@@ -14,12 +14,10 @@ namespace gazebo_msgs
   class ContactsState : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      uint32_t states_length;
-      typedef gazebo_msgs::ContactState _states_type;
-      _states_type st_states;
-      _states_type * states;
+      std_msgs::Header header;
+      uint8_t states_length;
+      gazebo_msgs::ContactState st_states;
+      gazebo_msgs::ContactState * states;
 
     ContactsState():
       header(),
@@ -31,12 +29,11 @@ namespace gazebo_msgs
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
-      *(outbuffer + offset + 0) = (this->states_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->states_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->states_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->states_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->states_length);
-      for( uint32_t i = 0; i < states_length; i++){
+      *(outbuffer + offset++) = states_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < states_length; i++){
       offset += this->states[i].serialize(outbuffer + offset);
       }
       return offset;
@@ -46,15 +43,12 @@ namespace gazebo_msgs
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
-      uint32_t states_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      states_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      states_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      states_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->states_length);
+      uint8_t states_lengthT = *(inbuffer + offset++);
       if(states_lengthT > states_length)
         this->states = (gazebo_msgs::ContactState*)realloc(this->states, states_lengthT * sizeof(gazebo_msgs::ContactState));
+      offset += 3;
       states_length = states_lengthT;
-      for( uint32_t i = 0; i < states_length; i++){
+      for( uint8_t i = 0; i < states_length; i++){
       offset += this->st_states.deserialize(inbuffer + offset);
         memcpy( &(this->states[i]), &(this->st_states), sizeof(gazebo_msgs::ContactState));
       }

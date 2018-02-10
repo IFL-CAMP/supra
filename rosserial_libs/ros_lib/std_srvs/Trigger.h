@@ -38,10 +38,8 @@ static const char TRIGGER[] = "std_srvs/Trigger";
   class TriggerResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _message_type;
-      _message_type message;
+      bool success;
+      const char* message;
 
     TriggerResponse():
       success(0),
@@ -60,7 +58,7 @@ static const char TRIGGER[] = "std_srvs/Trigger";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_message = strlen(this->message);
-      varToArr(outbuffer + offset, length_message);
+      memcpy(outbuffer + offset, &length_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->message, length_message);
       offset += length_message;
@@ -79,7 +77,7 @@ static const char TRIGGER[] = "std_srvs/Trigger";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_message;
-      arrToVar(length_message, (inbuffer + offset));
+      memcpy(&length_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_message; ++k){
           inbuffer[k-1]=inbuffer[k];

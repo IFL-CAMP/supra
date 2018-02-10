@@ -13,8 +13,7 @@ namespace std_msgs
   class Time : public ros::Msg
   {
     public:
-      typedef ros::Time _data_type;
-      _data_type data;
+      ros::Time data;
 
     Time():
       data()

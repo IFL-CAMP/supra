@@ -18,40 +18,25 @@ namespace visualization_msgs
   class Marker : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef const char* _ns_type;
-      _ns_type ns;
-      typedef int32_t _id_type;
-      _id_type id;
-      typedef int32_t _type_type;
-      _type_type type;
-      typedef int32_t _action_type;
-      _action_type action;
-      typedef geometry_msgs::Pose _pose_type;
-      _pose_type pose;
-      typedef geometry_msgs::Vector3 _scale_type;
-      _scale_type scale;
-      typedef std_msgs::ColorRGBA _color_type;
-      _color_type color;
-      typedef ros::Duration _lifetime_type;
-      _lifetime_type lifetime;
-      typedef bool _frame_locked_type;
-      _frame_locked_type frame_locked;
-      uint32_t points_length;
-      typedef geometry_msgs::Point _points_type;
-      _points_type st_points;
-      _points_type * points;
-      uint32_t colors_length;
-      typedef std_msgs::ColorRGBA _colors_type;
-      _colors_type st_colors;
-      _colors_type * colors;
-      typedef const char* _text_type;
-      _text_type text;
-      typedef const char* _mesh_resource_type;
-      _mesh_resource_type mesh_resource;
-      typedef bool _mesh_use_embedded_materials_type;
-      _mesh_use_embedded_materials_type mesh_use_embedded_materials;
+      std_msgs::Header header;
+      const char* ns;
+      int32_t id;
+      int32_t type;
+      int32_t action;
+      geometry_msgs::Pose pose;
+      geometry_msgs::Vector3 scale;
+      std_msgs::ColorRGBA color;
+      ros::Duration lifetime;
+      bool frame_locked;
+      uint8_t points_length;
+      geometry_msgs::Point st_points;
+      geometry_msgs::Point * points;
+      uint8_t colors_length;
+      std_msgs::ColorRGBA st_colors;
+      std_msgs::ColorRGBA * colors;
+      const char* text;
+      const char* mesh_resource;
+      bool mesh_use_embedded_materials;
       enum { ARROW = 0 };
       enum { CUBE = 1 };
       enum { SPHERE = 2 };
@@ -67,7 +52,6 @@ namespace visualization_msgs
       enum { ADD = 0 };
       enum { MODIFY = 0 };
       enum { DELETE = 2 };
-      enum { DELETEALL = 3 };
 
     Marker():
       header(),
@@ -93,7 +77,7 @@ namespace visualization_msgs
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       uint32_t length_ns = strlen(this->ns);
-      varToArr(outbuffer + offset, length_ns);
+      memcpy(outbuffer + offset, &length_ns, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->ns, length_ns);
       offset += length_ns;
@@ -147,29 +131,27 @@ namespace visualization_msgs
       u_frame_locked.real = this->frame_locked;
       *(outbuffer + offset + 0) = (u_frame_locked.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->frame_locked);
-      *(outbuffer + offset + 0) = (this->points_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->points_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->points_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->points_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->points_length);
-      for( uint32_t i = 0; i < points_length; i++){
+      *(outbuffer + offset++) = points_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < points_length; i++){
       offset += this->points[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->colors_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->colors_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->colors_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->colors_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->colors_length);
-      for( uint32_t i = 0; i < colors_length; i++){
+      *(outbuffer + offset++) = colors_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < colors_length; i++){
       offset += this->colors[i].serialize(outbuffer + offset);
       }
       uint32_t length_text = strlen(this->text);
-      varToArr(outbuffer + offset, length_text);
+      memcpy(outbuffer + offset, &length_text, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->text, length_text);
       offset += length_text;
       uint32_t length_mesh_resource = strlen(this->mesh_resource);
-      varToArr(outbuffer + offset, length_mesh_resource);
+      memcpy(outbuffer + offset, &length_mesh_resource, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->mesh_resource, length_mesh_resource);
       offset += length_mesh_resource;
@@ -188,7 +170,7 @@ namespace visualization_msgs
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       uint32_t length_ns;
-      arrToVar(length_ns, (inbuffer + offset));
+      memcpy(&length_ns, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_ns; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -250,32 +232,26 @@ namespace visualization_msgs
       u_frame_locked.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
       this->frame_locked = u_frame_locked.real;
       offset += sizeof(this->frame_locked);
-      uint32_t points_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      points_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      points_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      points_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->points_length);
+      uint8_t points_lengthT = *(inbuffer + offset++);
       if(points_lengthT > points_length)
         this->points = (geometry_msgs::Point*)realloc(this->points, points_lengthT * sizeof(geometry_msgs::Point));
+      offset += 3;
       points_length = points_lengthT;
-      for( uint32_t i = 0; i < points_length; i++){
+      for( uint8_t i = 0; i < points_length; i++){
       offset += this->st_points.deserialize(inbuffer + offset);
         memcpy( &(this->points[i]), &(this->st_points), sizeof(geometry_msgs::Point));
       }
-      uint32_t colors_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      colors_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      colors_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      colors_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->colors_length);
+      uint8_t colors_lengthT = *(inbuffer + offset++);
       if(colors_lengthT > colors_length)
         this->colors = (std_msgs::ColorRGBA*)realloc(this->colors, colors_lengthT * sizeof(std_msgs::ColorRGBA));
+      offset += 3;
       colors_length = colors_lengthT;
-      for( uint32_t i = 0; i < colors_length; i++){
+      for( uint8_t i = 0; i < colors_length; i++){
       offset += this->st_colors.deserialize(inbuffer + offset);
         memcpy( &(this->colors[i]), &(this->st_colors), sizeof(std_msgs::ColorRGBA));
       }
       uint32_t length_text;
-      arrToVar(length_text, (inbuffer + offset));
+      memcpy(&length_text, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_text; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -284,7 +260,7 @@ namespace visualization_msgs
       this->text = (char *)(inbuffer + offset-1);
       offset += length_text;
       uint32_t length_mesh_resource;
-      arrToVar(length_mesh_resource, (inbuffer + offset));
+      memcpy(&length_mesh_resource, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_mesh_resource; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -304,7 +280,7 @@ namespace visualization_msgs
     }
 
     const char * getType(){ return "visualization_msgs/Marker"; };
-    const char * getMD5(){ return "4048c9de2a16f4ae8e0538085ebf1b97"; };
+    const char * getMD5(){ return "18326976df9d29249efc939e00342cde"; };
 
   };
 

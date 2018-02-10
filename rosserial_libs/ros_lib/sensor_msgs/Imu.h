@@ -15,16 +15,12 @@ namespace sensor_msgs
   class Imu : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Quaternion _orientation_type;
-      _orientation_type orientation;
+      std_msgs::Header header;
+      geometry_msgs::Quaternion orientation;
       double orientation_covariance[9];
-      typedef geometry_msgs::Vector3 _angular_velocity_type;
-      _angular_velocity_type angular_velocity;
+      geometry_msgs::Vector3 angular_velocity;
       double angular_velocity_covariance[9];
-      typedef geometry_msgs::Vector3 _linear_acceleration_type;
-      _linear_acceleration_type linear_acceleration;
+      geometry_msgs::Vector3 linear_acceleration;
       double linear_acceleration_covariance[9];
 
     Imu():
@@ -43,7 +39,7 @@ namespace sensor_msgs
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
       offset += this->orientation.serialize(outbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -60,7 +56,7 @@ namespace sensor_msgs
       offset += sizeof(this->orientation_covariance[i]);
       }
       offset += this->angular_velocity.serialize(outbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -77,7 +73,7 @@ namespace sensor_msgs
       offset += sizeof(this->angular_velocity_covariance[i]);
       }
       offset += this->linear_acceleration.serialize(outbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -101,7 +97,7 @@ namespace sensor_msgs
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
       offset += this->orientation.deserialize(inbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -119,7 +115,7 @@ namespace sensor_msgs
       offset += sizeof(this->orientation_covariance[i]);
       }
       offset += this->angular_velocity.deserialize(inbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;
@@ -137,7 +133,7 @@ namespace sensor_msgs
       offset += sizeof(this->angular_velocity_covariance[i]);
       }
       offset += this->linear_acceleration.deserialize(inbuffer + offset);
-      for( uint32_t i = 0; i < 9; i++){
+      for( uint8_t i = 0; i < 9; i++){
       union {
         double real;
         uint64_t base;

@@ -12,10 +12,8 @@ namespace actionlib
   class TwoIntsGoal : public ros::Msg
   {
     public:
-      typedef int64_t _a_type;
-      _a_type a;
-      typedef int64_t _b_type;
-      _b_type b;
+      int64_t a;
+      int64_t b;
 
     TwoIntsGoal():
       a(0),

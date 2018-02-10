@@ -14,30 +14,22 @@ namespace gazebo_msgs
   class ContactState : public ros::Msg
   {
     public:
-      typedef const char* _info_type;
-      _info_type info;
-      typedef const char* _collision1_name_type;
-      _collision1_name_type collision1_name;
-      typedef const char* _collision2_name_type;
-      _collision2_name_type collision2_name;
-      uint32_t wrenches_length;
-      typedef geometry_msgs::Wrench _wrenches_type;
-      _wrenches_type st_wrenches;
-      _wrenches_type * wrenches;
-      typedef geometry_msgs::Wrench _total_wrench_type;
-      _total_wrench_type total_wrench;
-      uint32_t contact_positions_length;
-      typedef geometry_msgs::Vector3 _contact_positions_type;
-      _contact_positions_type st_contact_positions;
-      _contact_positions_type * contact_positions;
-      uint32_t contact_normals_length;
-      typedef geometry_msgs::Vector3 _contact_normals_type;
-      _contact_normals_type st_contact_normals;
-      _contact_normals_type * contact_normals;
-      uint32_t depths_length;
-      typedef double _depths_type;
-      _depths_type st_depths;
-      _depths_type * depths;
+      const char* info;
+      const char* collision1_name;
+      const char* collision2_name;
+      uint8_t wrenches_length;
+      geometry_msgs::Wrench st_wrenches;
+      geometry_msgs::Wrench * wrenches;
+      geometry_msgs::Wrench total_wrench;
+      uint8_t contact_positions_length;
+      geometry_msgs::Vector3 st_contact_positions;
+      geometry_msgs::Vector3 * contact_positions;
+      uint8_t contact_normals_length;
+      geometry_msgs::Vector3 st_contact_normals;
+      geometry_msgs::Vector3 * contact_normals;
+      uint8_t depths_length;
+      double st_depths;
+      double * depths;
 
     ContactState():
       info(""),
@@ -55,51 +47,47 @@ namespace gazebo_msgs
     {
       int offset = 0;
       uint32_t length_info = strlen(this->info);
-      varToArr(outbuffer + offset, length_info);
+      memcpy(outbuffer + offset, &length_info, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->info, length_info);
       offset += length_info;
       uint32_t length_collision1_name = strlen(this->collision1_name);
-      varToArr(outbuffer + offset, length_collision1_name);
+      memcpy(outbuffer + offset, &length_collision1_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->collision1_name, length_collision1_name);
       offset += length_collision1_name;
       uint32_t length_collision2_name = strlen(this->collision2_name);
-      varToArr(outbuffer + offset, length_collision2_name);
+      memcpy(outbuffer + offset, &length_collision2_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->collision2_name, length_collision2_name);
       offset += length_collision2_name;
-      *(outbuffer + offset + 0) = (this->wrenches_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->wrenches_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->wrenches_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->wrenches_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->wrenches_length);
-      for( uint32_t i = 0; i < wrenches_length; i++){
+      *(outbuffer + offset++) = wrenches_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < wrenches_length; i++){
       offset += this->wrenches[i].serialize(outbuffer + offset);
       }
       offset += this->total_wrench.serialize(outbuffer + offset);
-      *(outbuffer + offset + 0) = (this->contact_positions_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->contact_positions_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->contact_positions_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->contact_positions_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->contact_positions_length);
-      for( uint32_t i = 0; i < contact_positions_length; i++){
+      *(outbuffer + offset++) = contact_positions_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < contact_positions_length; i++){
       offset += this->contact_positions[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->contact_normals_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->contact_normals_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->contact_normals_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->contact_normals_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->contact_normals_length);
-      for( uint32_t i = 0; i < contact_normals_length; i++){
+      *(outbuffer + offset++) = contact_normals_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < contact_normals_length; i++){
       offset += this->contact_normals[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->depths_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->depths_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->depths_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->depths_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->depths_length);
-      for( uint32_t i = 0; i < depths_length; i++){
+      *(outbuffer + offset++) = depths_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < depths_length; i++){
       union {
         double real;
         uint64_t base;
@@ -122,7 +110,7 @@ namespace gazebo_msgs
     {
       int offset = 0;
       uint32_t length_info;
-      arrToVar(length_info, (inbuffer + offset));
+      memcpy(&length_info, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_info; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -131,7 +119,7 @@ namespace gazebo_msgs
       this->info = (char *)(inbuffer + offset-1);
       offset += length_info;
       uint32_t length_collision1_name;
-      arrToVar(length_collision1_name, (inbuffer + offset));
+      memcpy(&length_collision1_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_collision1_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -140,7 +128,7 @@ namespace gazebo_msgs
       this->collision1_name = (char *)(inbuffer + offset-1);
       offset += length_collision1_name;
       uint32_t length_collision2_name;
-      arrToVar(length_collision2_name, (inbuffer + offset));
+      memcpy(&length_collision2_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_collision2_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -148,52 +136,40 @@ namespace gazebo_msgs
       inbuffer[offset+length_collision2_name-1]=0;
       this->collision2_name = (char *)(inbuffer + offset-1);
       offset += length_collision2_name;
-      uint32_t wrenches_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      wrenches_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      wrenches_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      wrenches_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->wrenches_length);
+      uint8_t wrenches_lengthT = *(inbuffer + offset++);
       if(wrenches_lengthT > wrenches_length)
         this->wrenches = (geometry_msgs::Wrench*)realloc(this->wrenches, wrenches_lengthT * sizeof(geometry_msgs::Wrench));
+      offset += 3;
       wrenches_length = wrenches_lengthT;
-      for( uint32_t i = 0; i < wrenches_length; i++){
+      for( uint8_t i = 0; i < wrenches_length; i++){
       offset += this->st_wrenches.deserialize(inbuffer + offset);
         memcpy( &(this->wrenches[i]), &(this->st_wrenches), sizeof(geometry_msgs::Wrench));
       }
       offset += this->total_wrench.deserialize(inbuffer + offset);
-      uint32_t contact_positions_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      contact_positions_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      contact_positions_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      contact_positions_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->contact_positions_length);
+      uint8_t contact_positions_lengthT = *(inbuffer + offset++);
       if(contact_positions_lengthT > contact_positions_length)
         this->contact_positions = (geometry_msgs::Vector3*)realloc(this->contact_positions, contact_positions_lengthT * sizeof(geometry_msgs::Vector3));
+      offset += 3;
       contact_positions_length = contact_positions_lengthT;
-      for( uint32_t i = 0; i < contact_positions_length; i++){
+      for( uint8_t i = 0; i < contact_positions_length; i++){
       offset += this->st_contact_positions.deserialize(inbuffer + offset);
         memcpy( &(this->contact_positions[i]), &(this->st_contact_positions), sizeof(geometry_msgs::Vector3));
       }
-      uint32_t contact_normals_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      contact_normals_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      contact_normals_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      contact_normals_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->contact_normals_length);
+      uint8_t contact_normals_lengthT = *(inbuffer + offset++);
       if(contact_normals_lengthT > contact_normals_length)
         this->contact_normals = (geometry_msgs::Vector3*)realloc(this->contact_normals, contact_normals_lengthT * sizeof(geometry_msgs::Vector3));
+      offset += 3;
       contact_normals_length = contact_normals_lengthT;
-      for( uint32_t i = 0; i < contact_normals_length; i++){
+      for( uint8_t i = 0; i < contact_normals_length; i++){
       offset += this->st_contact_normals.deserialize(inbuffer + offset);
         memcpy( &(this->contact_normals[i]), &(this->st_contact_normals), sizeof(geometry_msgs::Vector3));
       }
-      uint32_t depths_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      depths_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      depths_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      depths_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->depths_length);
+      uint8_t depths_lengthT = *(inbuffer + offset++);
       if(depths_lengthT > depths_length)
         this->depths = (double*)realloc(this->depths, depths_lengthT * sizeof(double));
+      offset += 3;
       depths_length = depths_lengthT;
-      for( uint32_t i = 0; i < depths_length; i++){
+      for( uint8_t i = 0; i < depths_length; i++){
       union {
         double real;
         uint64_t base;

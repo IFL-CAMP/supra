@@ -15,12 +15,9 @@ namespace actionlib
   class TestAction : public ros::Msg
   {
     public:
-      typedef actionlib::TestActionGoal _action_goal_type;
-      _action_goal_type action_goal;
-      typedef actionlib::TestActionResult _action_result_type;
-      _action_result_type action_result;
-      typedef actionlib::TestActionFeedback _action_feedback_type;
-      _action_feedback_type action_feedback;
+      actionlib::TestActionGoal action_goal;
+      actionlib::TestActionResult action_result;
+      actionlib::TestActionFeedback action_feedback;
 
     TestAction():
       action_goal(),

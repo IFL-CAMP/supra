@@ -14,24 +14,18 @@ namespace visualization_msgs
   class InteractiveMarkerUpdate : public ros::Msg
   {
     public:
-      typedef const char* _server_id_type;
-      _server_id_type server_id;
-      typedef uint64_t _seq_num_type;
-      _seq_num_type seq_num;
-      typedef uint8_t _type_type;
-      _type_type type;
-      uint32_t markers_length;
-      typedef visualization_msgs::InteractiveMarker _markers_type;
-      _markers_type st_markers;
-      _markers_type * markers;
-      uint32_t poses_length;
-      typedef visualization_msgs::InteractiveMarkerPose _poses_type;
-      _poses_type st_poses;
-      _poses_type * poses;
-      uint32_t erases_length;
-      typedef char* _erases_type;
-      _erases_type st_erases;
-      _erases_type * erases;
+      const char* server_id;
+      uint64_t seq_num;
+      uint8_t type;
+      uint8_t markers_length;
+      visualization_msgs::InteractiveMarker st_markers;
+      visualization_msgs::InteractiveMarker * markers;
+      uint8_t poses_length;
+      visualization_msgs::InteractiveMarkerPose st_poses;
+      visualization_msgs::InteractiveMarkerPose * poses;
+      uint8_t erases_length;
+      char* st_erases;
+      char* * erases;
       enum { KEEP_ALIVE =  0 };
       enum { UPDATE =  1 };
 
@@ -49,7 +43,7 @@ namespace visualization_msgs
     {
       int offset = 0;
       uint32_t length_server_id = strlen(this->server_id);
-      varToArr(outbuffer + offset, length_server_id);
+      memcpy(outbuffer + offset, &length_server_id, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->server_id, length_server_id);
       offset += length_server_id;
@@ -65,30 +59,27 @@ namespace visualization_msgs
       offset += sizeof(this->seq_num);
       *(outbuffer + offset + 0) = (this->type >> (8 * 0)) & 0xFF;
       offset += sizeof(this->type);
-      *(outbuffer + offset + 0) = (this->markers_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->markers_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->markers_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->markers_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->markers_length);
-      for( uint32_t i = 0; i < markers_length; i++){
+      *(outbuffer + offset++) = markers_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < markers_length; i++){
       offset += this->markers[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->poses_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->poses_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->poses_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->poses_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->poses_length);
-      for( uint32_t i = 0; i < poses_length; i++){
+      *(outbuffer + offset++) = poses_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < poses_length; i++){
       offset += this->poses[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->erases_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->erases_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->erases_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->erases_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->erases_length);
-      for( uint32_t i = 0; i < erases_length; i++){
+      *(outbuffer + offset++) = erases_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < erases_length; i++){
       uint32_t length_erasesi = strlen(this->erases[i]);
-      varToArr(outbuffer + offset, length_erasesi);
+      memcpy(outbuffer + offset, &length_erasesi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->erases[i], length_erasesi);
       offset += length_erasesi;
@@ -100,7 +91,7 @@ namespace visualization_msgs
     {
       int offset = 0;
       uint32_t length_server_id;
-      arrToVar(length_server_id, (inbuffer + offset));
+      memcpy(&length_server_id, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_server_id; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -121,41 +112,32 @@ namespace visualization_msgs
       offset += sizeof(this->seq_num);
       this->type =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->type);
-      uint32_t markers_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      markers_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      markers_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      markers_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->markers_length);
+      uint8_t markers_lengthT = *(inbuffer + offset++);
       if(markers_lengthT > markers_length)
         this->markers = (visualization_msgs::InteractiveMarker*)realloc(this->markers, markers_lengthT * sizeof(visualization_msgs::InteractiveMarker));
+      offset += 3;
       markers_length = markers_lengthT;
-      for( uint32_t i = 0; i < markers_length; i++){
+      for( uint8_t i = 0; i < markers_length; i++){
       offset += this->st_markers.deserialize(inbuffer + offset);
         memcpy( &(this->markers[i]), &(this->st_markers), sizeof(visualization_msgs::InteractiveMarker));
       }
-      uint32_t poses_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      poses_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      poses_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      poses_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->poses_length);
+      uint8_t poses_lengthT = *(inbuffer + offset++);
       if(poses_lengthT > poses_length)
         this->poses = (visualization_msgs::InteractiveMarkerPose*)realloc(this->poses, poses_lengthT * sizeof(visualization_msgs::InteractiveMarkerPose));
+      offset += 3;
       poses_length = poses_lengthT;
-      for( uint32_t i = 0; i < poses_length; i++){
+      for( uint8_t i = 0; i < poses_length; i++){
       offset += this->st_poses.deserialize(inbuffer + offset);
         memcpy( &(this->poses[i]), &(this->st_poses), sizeof(visualization_msgs::InteractiveMarkerPose));
       }
-      uint32_t erases_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      erases_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      erases_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      erases_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->erases_length);
+      uint8_t erases_lengthT = *(inbuffer + offset++);
       if(erases_lengthT > erases_length)
         this->erases = (char**)realloc(this->erases, erases_lengthT * sizeof(char*));
+      offset += 3;
       erases_length = erases_lengthT;
-      for( uint32_t i = 0; i < erases_length; i++){
+      for( uint8_t i = 0; i < erases_length; i++){
       uint32_t length_st_erases;
-      arrToVar(length_st_erases, (inbuffer + offset));
+      memcpy(&length_st_erases, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_erases; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -169,7 +151,7 @@ namespace visualization_msgs
     }
 
     const char * getType(){ return "visualization_msgs/InteractiveMarkerUpdate"; };
-    const char * getMD5(){ return "710d308d0a9276d65945e92dd30b3946"; };
+    const char * getMD5(){ return "83e22f99d3b31fde725e0a338200e036"; };
 
   };
 

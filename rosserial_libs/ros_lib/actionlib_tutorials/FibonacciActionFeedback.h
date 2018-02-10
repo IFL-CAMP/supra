@@ -15,12 +15,9 @@ namespace actionlib_tutorials
   class FibonacciActionFeedback : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef actionlib_msgs::GoalStatus _status_type;
-      _status_type status;
-      typedef actionlib_tutorials::FibonacciFeedback _feedback_type;
-      _feedback_type feedback;
+      std_msgs::Header header;
+      actionlib_msgs::GoalStatus status;
+      actionlib_tutorials::FibonacciFeedback feedback;
 
     FibonacciActionFeedback():
       header(),

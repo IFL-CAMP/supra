@@ -37,8 +37,8 @@
 
 #include "rosserial_msgs/TopicInfo.h"
 
-#include "ros/publisher.h"
-#include "ros/subscriber.h"
+#include "publisher.h"
+#include "subscriber.h"
 
 namespace ros {
 

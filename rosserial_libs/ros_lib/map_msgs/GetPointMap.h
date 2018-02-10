@@ -39,8 +39,7 @@ static const char GETPOINTMAP[] = "map_msgs/GetPointMap";
   class GetPointMapResponse : public ros::Msg
   {
     public:
-      typedef sensor_msgs::PointCloud2 _map_type;
-      _map_type map;
+      sensor_msgs::PointCloud2 map;
 
     GetPointMapResponse():
       map()

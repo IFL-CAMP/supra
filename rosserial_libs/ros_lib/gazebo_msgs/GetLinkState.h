@@ -14,10 +14,8 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
   class GetLinkStateRequest : public ros::Msg
   {
     public:
-      typedef const char* _link_name_type;
-      _link_name_type link_name;
-      typedef const char* _reference_frame_type;
-      _reference_frame_type reference_frame;
+      const char* link_name;
+      const char* reference_frame;
 
     GetLinkStateRequest():
       link_name(""),
@@ -29,12 +27,12 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
     {
       int offset = 0;
       uint32_t length_link_name = strlen(this->link_name);
-      varToArr(outbuffer + offset, length_link_name);
+      memcpy(outbuffer + offset, &length_link_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->link_name, length_link_name);
       offset += length_link_name;
       uint32_t length_reference_frame = strlen(this->reference_frame);
-      varToArr(outbuffer + offset, length_reference_frame);
+      memcpy(outbuffer + offset, &length_reference_frame, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->reference_frame, length_reference_frame);
       offset += length_reference_frame;
@@ -45,7 +43,7 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
     {
       int offset = 0;
       uint32_t length_link_name;
-      arrToVar(length_link_name, (inbuffer + offset));
+      memcpy(&length_link_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_link_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -54,7 +52,7 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
       this->link_name = (char *)(inbuffer + offset-1);
       offset += length_link_name;
       uint32_t length_reference_frame;
-      arrToVar(length_reference_frame, (inbuffer + offset));
+      memcpy(&length_reference_frame, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_reference_frame; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -73,12 +71,9 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
   class GetLinkStateResponse : public ros::Msg
   {
     public:
-      typedef gazebo_msgs::LinkState _link_state_type;
-      _link_state_type link_state;
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _status_message_type;
-      _status_message_type status_message;
+      gazebo_msgs::LinkState link_state;
+      bool success;
+      const char* status_message;
 
     GetLinkStateResponse():
       link_state(),
@@ -99,7 +94,7 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_status_message = strlen(this->status_message);
-      varToArr(outbuffer + offset, length_status_message);
+      memcpy(outbuffer + offset, &length_status_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->status_message, length_status_message);
       offset += length_status_message;
@@ -119,7 +114,7 @@ static const char GETLINKSTATE[] = "gazebo_msgs/GetLinkState";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_status_message;
-      arrToVar(length_status_message, (inbuffer + offset));
+      memcpy(&length_status_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_status_message; ++k){
           inbuffer[k-1]=inbuffer[k];

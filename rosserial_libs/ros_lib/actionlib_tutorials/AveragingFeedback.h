@@ -12,14 +12,10 @@ namespace actionlib_tutorials
   class AveragingFeedback : public ros::Msg
   {
     public:
-      typedef int32_t _sample_type;
-      _sample_type sample;
-      typedef float _data_type;
-      _data_type data;
-      typedef float _mean_type;
-      _mean_type mean;
-      typedef float _std_dev_type;
-      _std_dev_type std_dev;
+      int32_t sample;
+      float data;
+      float mean;
+      float std_dev;
 
     AveragingFeedback():
       sample(0),

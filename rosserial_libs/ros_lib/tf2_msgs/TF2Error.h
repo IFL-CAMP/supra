@@ -12,10 +12,8 @@ namespace tf2_msgs
   class TF2Error : public ros::Msg
   {
     public:
-      typedef uint8_t _error_type;
-      _error_type error;
-      typedef const char* _error_string_type;
-      _error_string_type error_string;
+      uint8_t error;
+      const char* error_string;
       enum { NO_ERROR =  0 };
       enum { LOOKUP_ERROR =  1 };
       enum { CONNECTIVITY_ERROR =  2 };
@@ -36,7 +34,7 @@ namespace tf2_msgs
       *(outbuffer + offset + 0) = (this->error >> (8 * 0)) & 0xFF;
       offset += sizeof(this->error);
       uint32_t length_error_string = strlen(this->error_string);
-      varToArr(outbuffer + offset, length_error_string);
+      memcpy(outbuffer + offset, &length_error_string, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->error_string, length_error_string);
       offset += length_error_string;
@@ -49,7 +47,7 @@ namespace tf2_msgs
       this->error =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->error);
       uint32_t length_error_string;
-      arrToVar(length_error_string, (inbuffer + offset));
+      memcpy(&length_error_string, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_error_string; ++k){
           inbuffer[k-1]=inbuffer[k];

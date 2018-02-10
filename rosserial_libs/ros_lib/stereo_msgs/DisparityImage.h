@@ -15,22 +15,14 @@ namespace stereo_msgs
   class DisparityImage : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef sensor_msgs::Image _image_type;
-      _image_type image;
-      typedef float _f_type;
-      _f_type f;
-      typedef float _T_type;
-      _T_type T;
-      typedef sensor_msgs::RegionOfInterest _valid_window_type;
-      _valid_window_type valid_window;
-      typedef float _min_disparity_type;
-      _min_disparity_type min_disparity;
-      typedef float _max_disparity_type;
-      _max_disparity_type max_disparity;
-      typedef float _delta_d_type;
-      _delta_d_type delta_d;
+      std_msgs::Header header;
+      sensor_msgs::Image image;
+      float f;
+      float T;
+      sensor_msgs::RegionOfInterest valid_window;
+      float min_disparity;
+      float max_disparity;
+      float delta_d;
 
     DisparityImage():
       header(),

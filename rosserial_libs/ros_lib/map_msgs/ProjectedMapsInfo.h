@@ -14,10 +14,9 @@ static const char PROJECTEDMAPSINFO[] = "map_msgs/ProjectedMapsInfo";
   class ProjectedMapsInfoRequest : public ros::Msg
   {
     public:
-      uint32_t projected_maps_info_length;
-      typedef map_msgs::ProjectedMapInfo _projected_maps_info_type;
-      _projected_maps_info_type st_projected_maps_info;
-      _projected_maps_info_type * projected_maps_info;
+      uint8_t projected_maps_info_length;
+      map_msgs::ProjectedMapInfo st_projected_maps_info;
+      map_msgs::ProjectedMapInfo * projected_maps_info;
 
     ProjectedMapsInfoRequest():
       projected_maps_info_length(0), projected_maps_info(NULL)
@@ -27,12 +26,11 @@ static const char PROJECTEDMAPSINFO[] = "map_msgs/ProjectedMapsInfo";
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->projected_maps_info_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->projected_maps_info_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->projected_maps_info_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->projected_maps_info_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->projected_maps_info_length);
-      for( uint32_t i = 0; i < projected_maps_info_length; i++){
+      *(outbuffer + offset++) = projected_maps_info_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < projected_maps_info_length; i++){
       offset += this->projected_maps_info[i].serialize(outbuffer + offset);
       }
       return offset;
@@ -41,15 +39,12 @@ static const char PROJECTEDMAPSINFO[] = "map_msgs/ProjectedMapsInfo";
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t projected_maps_info_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      projected_maps_info_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      projected_maps_info_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      projected_maps_info_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->projected_maps_info_length);
+      uint8_t projected_maps_info_lengthT = *(inbuffer + offset++);
       if(projected_maps_info_lengthT > projected_maps_info_length)
         this->projected_maps_info = (map_msgs::ProjectedMapInfo*)realloc(this->projected_maps_info, projected_maps_info_lengthT * sizeof(map_msgs::ProjectedMapInfo));
+      offset += 3;
       projected_maps_info_length = projected_maps_info_lengthT;
-      for( uint32_t i = 0; i < projected_maps_info_length; i++){
+      for( uint8_t i = 0; i < projected_maps_info_length; i++){
       offset += this->st_projected_maps_info.deserialize(inbuffer + offset);
         memcpy( &(this->projected_maps_info[i]), &(this->st_projected_maps_info), sizeof(map_msgs::ProjectedMapInfo));
       }

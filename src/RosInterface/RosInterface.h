@@ -25,6 +25,8 @@
 #include <supra_msgs/get_nodes.h>
 #include <supra_msgs/get_node_parameters.h>
 #include <supra_msgs/set_node_parameter.h>
+#include <supra_msgs/freeze.h>
+#include <supra_msgs/sequence.h>
 
 namespace supra
 {
@@ -58,6 +60,8 @@ namespace supra
 		static ServiceReturnType get_nodesCallback(ROSSERIAL_REQUESTTYPECONST supra_msgs::get_nodes::Request & req, supra_msgs::get_nodes::Response& res);
 		static ServiceReturnType get_node_parametersCallback(ROSSERIAL_REQUESTTYPECONST supra_msgs::get_node_parameters::Request & req, supra_msgs::get_node_parameters::Response & res);
 		static ServiceReturnType set_node_parameterCallback(ROSSERIAL_REQUESTTYPECONST supra_msgs::set_node_parameter::Request & req, supra_msgs::set_node_parameter::Response & res);
+		static ServiceReturnType sequenceCallback(ROSSERIAL_REQUESTTYPECONST supra_msgs::sequence::Request & req, supra_msgs::sequence::Response& res);
+		static void freezeCallback(const supra_msgs::freeze & freezeMsg);
 
 		static std::string getParameterTypeString(const ValueRangeDictionary * ranges, std::string paramName);
 		static std::string getParameterValueString(const ConfigurationDictionary * config, const ValueRangeDictionary * ranges, std::string paramName);
@@ -66,6 +70,8 @@ namespace supra
 
 		static void fillParameterMessage(const ConfigurationDictionary* confDict, const ValueRangeDictionary * ranges, std::string paramName, supra_msgs::parameter* pParam);
 		static bool convertAndSetParameter(std::string inputID, std::string paramName, std::string newValue);
+		static bool sequence(bool active);
+		static void freeze(bool freezeActive);
 
 		template <typename ValueType>
 		static void fillParameterMessage(const ConfigurationDictionary* confDict, const ValueRangeDictionary * ranges, std::string paramName, supra_msgs::parameter* pParam)
@@ -94,6 +100,8 @@ namespace supra
 				}
 			}
 		}
+
+		static bool m_sequenceActive;
 	};
 }
 

@@ -14,10 +14,8 @@ namespace geometry_msgs
   class PoseStamped : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Pose _pose_type;
-      _pose_type pose;
+      std_msgs::Header header;
+      geometry_msgs::Pose pose;
 
     PoseStamped():
       header(),

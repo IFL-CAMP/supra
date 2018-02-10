@@ -14,10 +14,8 @@ namespace geometry_msgs
   class WrenchStamped : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Wrench _wrench_type;
-      _wrench_type wrench;
+      std_msgs::Header header;
+      geometry_msgs::Wrench wrench;
 
     WrenchStamped():
       header(),

@@ -13,8 +13,7 @@ namespace rosgraph_msgs
   class Clock : public ros::Msg
   {
     public:
-      typedef ros::Time _clock_type;
-      _clock_type clock;
+      ros::Time clock;
 
     Clock():
       clock()

@@ -12,8 +12,7 @@ namespace actionlib_tutorials
   class FibonacciGoal : public ros::Msg
   {
     public:
-      typedef int32_t _order_type;
-      _order_type order;
+      int32_t order;
 
     FibonacciGoal():
       order(0)

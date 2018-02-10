@@ -35,7 +35,6 @@
 #ifndef ROS_TRANSFORM_BROADCASTER_H_
 #define ROS_TRANSFORM_BROADCASTER_H_
 
-#include "ros.h"
 #include "tfMessage.h"
 
 namespace tf

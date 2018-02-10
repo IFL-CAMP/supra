@@ -22,7 +22,7 @@ namespace shape_msgs
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      for( uint32_t i = 0; i < 4; i++){
+      for( uint8_t i = 0; i < 4; i++){
       union {
         double real;
         uint64_t base;
@@ -44,7 +44,7 @@ namespace shape_msgs
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      for( uint32_t i = 0; i < 4; i++){
+      for( uint8_t i = 0; i < 4; i++){
       union {
         double real;
         uint64_t base;

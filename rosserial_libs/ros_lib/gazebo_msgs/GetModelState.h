@@ -6,7 +6,6 @@
 #include "ros/msg.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Twist.h"
-#include "std_msgs/Header.h"
 
 namespace gazebo_msgs
 {
@@ -16,10 +15,8 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
   class GetModelStateRequest : public ros::Msg
   {
     public:
-      typedef const char* _model_name_type;
-      _model_name_type model_name;
-      typedef const char* _relative_entity_name_type;
-      _relative_entity_name_type relative_entity_name;
+      const char* model_name;
+      const char* relative_entity_name;
 
     GetModelStateRequest():
       model_name(""),
@@ -31,12 +28,12 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
     {
       int offset = 0;
       uint32_t length_model_name = strlen(this->model_name);
-      varToArr(outbuffer + offset, length_model_name);
+      memcpy(outbuffer + offset, &length_model_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->model_name, length_model_name);
       offset += length_model_name;
       uint32_t length_relative_entity_name = strlen(this->relative_entity_name);
-      varToArr(outbuffer + offset, length_relative_entity_name);
+      memcpy(outbuffer + offset, &length_relative_entity_name, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->relative_entity_name, length_relative_entity_name);
       offset += length_relative_entity_name;
@@ -47,7 +44,7 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
     {
       int offset = 0;
       uint32_t length_model_name;
-      arrToVar(length_model_name, (inbuffer + offset));
+      memcpy(&length_model_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_model_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -56,7 +53,7 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
       this->model_name = (char *)(inbuffer + offset-1);
       offset += length_model_name;
       uint32_t length_relative_entity_name;
-      arrToVar(length_relative_entity_name, (inbuffer + offset));
+      memcpy(&length_relative_entity_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_relative_entity_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -75,19 +72,12 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
   class GetModelStateResponse : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Pose _pose_type;
-      _pose_type pose;
-      typedef geometry_msgs::Twist _twist_type;
-      _twist_type twist;
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _status_message_type;
-      _status_message_type status_message;
+      geometry_msgs::Pose pose;
+      geometry_msgs::Twist twist;
+      bool success;
+      const char* status_message;
 
     GetModelStateResponse():
-      header(),
       pose(),
       twist(),
       success(0),
@@ -98,7 +88,6 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      offset += this->header.serialize(outbuffer + offset);
       offset += this->pose.serialize(outbuffer + offset);
       offset += this->twist.serialize(outbuffer + offset);
       union {
@@ -109,7 +98,7 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_status_message = strlen(this->status_message);
-      varToArr(outbuffer + offset, length_status_message);
+      memcpy(outbuffer + offset, &length_status_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->status_message, length_status_message);
       offset += length_status_message;
@@ -119,7 +108,6 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      offset += this->header.deserialize(inbuffer + offset);
       offset += this->pose.deserialize(inbuffer + offset);
       offset += this->twist.deserialize(inbuffer + offset);
       union {
@@ -131,7 +119,7 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_status_message;
-      arrToVar(length_status_message, (inbuffer + offset));
+      memcpy(&length_status_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_status_message; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -143,7 +131,7 @@ static const char GETMODELSTATE[] = "gazebo_msgs/GetModelState";
     }
 
     const char * getType(){ return GETMODELSTATE; };
-    const char * getMD5(){ return "ccd51739bb00f0141629e87b792e92b9"; };
+    const char * getMD5(){ return "1f8f991dc94e0cb27fe61383e0f576bb"; };
 
   };
 

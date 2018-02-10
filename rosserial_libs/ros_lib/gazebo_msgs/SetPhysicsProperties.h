@@ -15,14 +15,10 @@ static const char SETPHYSICSPROPERTIES[] = "gazebo_msgs/SetPhysicsProperties";
   class SetPhysicsPropertiesRequest : public ros::Msg
   {
     public:
-      typedef double _time_step_type;
-      _time_step_type time_step;
-      typedef double _max_update_rate_type;
-      _max_update_rate_type max_update_rate;
-      typedef geometry_msgs::Vector3 _gravity_type;
-      _gravity_type gravity;
-      typedef gazebo_msgs::ODEPhysics _ode_config_type;
-      _ode_config_type ode_config;
+      double time_step;
+      double max_update_rate;
+      geometry_msgs::Vector3 gravity;
+      gazebo_msgs::ODEPhysics ode_config;
 
     SetPhysicsPropertiesRequest():
       time_step(0),
@@ -114,10 +110,8 @@ static const char SETPHYSICSPROPERTIES[] = "gazebo_msgs/SetPhysicsProperties";
   class SetPhysicsPropertiesResponse : public ros::Msg
   {
     public:
-      typedef bool _success_type;
-      _success_type success;
-      typedef const char* _status_message_type;
-      _status_message_type status_message;
+      bool success;
+      const char* status_message;
 
     SetPhysicsPropertiesResponse():
       success(0),
@@ -136,7 +130,7 @@ static const char SETPHYSICSPROPERTIES[] = "gazebo_msgs/SetPhysicsProperties";
       *(outbuffer + offset + 0) = (u_success.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->success);
       uint32_t length_status_message = strlen(this->status_message);
-      varToArr(outbuffer + offset, length_status_message);
+      memcpy(outbuffer + offset, &length_status_message, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->status_message, length_status_message);
       offset += length_status_message;
@@ -155,7 +149,7 @@ static const char SETPHYSICSPROPERTIES[] = "gazebo_msgs/SetPhysicsProperties";
       this->success = u_success.real;
       offset += sizeof(this->success);
       uint32_t length_status_message;
-      arrToVar(length_status_message, (inbuffer + offset));
+      memcpy(&length_status_message, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_status_message; ++k){
           inbuffer[k-1]=inbuffer[k];

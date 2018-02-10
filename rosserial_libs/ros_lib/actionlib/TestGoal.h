@@ -12,8 +12,7 @@ namespace actionlib
   class TestGoal : public ros::Msg
   {
     public:
-      typedef int32_t _goal_type;
-      _goal_type goal;
+      int32_t goal;
 
     TestGoal():
       goal(0)

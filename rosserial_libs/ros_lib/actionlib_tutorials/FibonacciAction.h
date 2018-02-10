@@ -15,12 +15,9 @@ namespace actionlib_tutorials
   class FibonacciAction : public ros::Msg
   {
     public:
-      typedef actionlib_tutorials::FibonacciActionGoal _action_goal_type;
-      _action_goal_type action_goal;
-      typedef actionlib_tutorials::FibonacciActionResult _action_result_type;
-      _action_result_type action_result;
-      typedef actionlib_tutorials::FibonacciActionFeedback _action_feedback_type;
-      _action_feedback_type action_feedback;
+      actionlib_tutorials::FibonacciActionGoal action_goal;
+      actionlib_tutorials::FibonacciActionResult action_result;
+      actionlib_tutorials::FibonacciActionFeedback action_feedback;
 
     FibonacciAction():
       action_goal(),

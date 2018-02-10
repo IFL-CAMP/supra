@@ -13,22 +13,14 @@ namespace actionlib
   class TestRequestGoal : public ros::Msg
   {
     public:
-      typedef int32_t _terminate_status_type;
-      _terminate_status_type terminate_status;
-      typedef bool _ignore_cancel_type;
-      _ignore_cancel_type ignore_cancel;
-      typedef const char* _result_text_type;
-      _result_text_type result_text;
-      typedef int32_t _the_result_type;
-      _the_result_type the_result;
-      typedef bool _is_simple_client_type;
-      _is_simple_client_type is_simple_client;
-      typedef ros::Duration _delay_accept_type;
-      _delay_accept_type delay_accept;
-      typedef ros::Duration _delay_terminate_type;
-      _delay_terminate_type delay_terminate;
-      typedef ros::Duration _pause_status_type;
-      _pause_status_type pause_status;
+      int32_t terminate_status;
+      bool ignore_cancel;
+      const char* result_text;
+      int32_t the_result;
+      bool is_simple_client;
+      ros::Duration delay_accept;
+      ros::Duration delay_terminate;
+      ros::Duration pause_status;
       enum { TERMINATE_SUCCESS =  0 };
       enum { TERMINATE_ABORTED =  1 };
       enum { TERMINATE_REJECTED =  2 };
@@ -69,7 +61,7 @@ namespace actionlib
       *(outbuffer + offset + 0) = (u_ignore_cancel.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->ignore_cancel);
       uint32_t length_result_text = strlen(this->result_text);
-      varToArr(outbuffer + offset, length_result_text);
+      memcpy(outbuffer + offset, &length_result_text, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->result_text, length_result_text);
       offset += length_result_text;
@@ -146,7 +138,7 @@ namespace actionlib
       this->ignore_cancel = u_ignore_cancel.real;
       offset += sizeof(this->ignore_cancel);
       uint32_t length_result_text;
-      arrToVar(length_result_text, (inbuffer + offset));
+      memcpy(&length_result_text, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_result_text; ++k){
           inbuffer[k-1]=inbuffer[k];

@@ -13,23 +13,16 @@ static const char SETPIDGAINS[] = "control_toolbox/SetPidGains";
   class SetPidGainsRequest : public ros::Msg
   {
     public:
-      typedef double _p_type;
-      _p_type p;
-      typedef double _i_type;
-      _i_type i;
-      typedef double _d_type;
-      _d_type d;
-      typedef double _i_clamp_type;
-      _i_clamp_type i_clamp;
-      typedef bool _antiwindup_type;
-      _antiwindup_type antiwindup;
+      double p;
+      double i;
+      double d;
+      double i_clamp;
 
     SetPidGainsRequest():
       p(0),
       i(0),
       d(0),
-      i_clamp(0),
-      antiwindup(0)
+      i_clamp(0)
     {
     }
 
@@ -92,13 +85,6 @@ static const char SETPIDGAINS[] = "control_toolbox/SetPidGains";
       *(outbuffer + offset + 6) = (u_i_clamp.base >> (8 * 6)) & 0xFF;
       *(outbuffer + offset + 7) = (u_i_clamp.base >> (8 * 7)) & 0xFF;
       offset += sizeof(this->i_clamp);
-      union {
-        bool real;
-        uint8_t base;
-      } u_antiwindup;
-      u_antiwindup.real = this->antiwindup;
-      *(outbuffer + offset + 0) = (u_antiwindup.base >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->antiwindup);
       return offset;
     }
 
@@ -165,19 +151,11 @@ static const char SETPIDGAINS[] = "control_toolbox/SetPidGains";
       u_i_clamp.base |= ((uint64_t) (*(inbuffer + offset + 7))) << (8 * 7);
       this->i_clamp = u_i_clamp.real;
       offset += sizeof(this->i_clamp);
-      union {
-        bool real;
-        uint8_t base;
-      } u_antiwindup;
-      u_antiwindup.base = 0;
-      u_antiwindup.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      this->antiwindup = u_antiwindup.real;
-      offset += sizeof(this->antiwindup);
      return offset;
     }
 
     const char * getType(){ return SETPIDGAINS; };
-    const char * getMD5(){ return "4a43159879643e60937bf2893b633607"; };
+    const char * getMD5(){ return "b06494a6fc3d5b972ded4e2a9a71535a"; };
 
   };
 

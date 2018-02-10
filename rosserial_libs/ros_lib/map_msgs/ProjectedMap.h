@@ -13,12 +13,9 @@ namespace map_msgs
   class ProjectedMap : public ros::Msg
   {
     public:
-      typedef nav_msgs::OccupancyGrid _map_type;
-      _map_type map;
-      typedef double _min_z_type;
-      _min_z_type min_z;
-      typedef double _max_z_type;
-      _max_z_type max_z;
+      nav_msgs::OccupancyGrid map;
+      double min_z;
+      double max_z;
 
     ProjectedMap():
       map(),

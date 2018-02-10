@@ -12,8 +12,7 @@ namespace actionlib
   class TestFeedback : public ros::Msg
   {
     public:
-      typedef int32_t _feedback_type;
-      _feedback_type feedback;
+      int32_t feedback;
 
     TestFeedback():
       feedback(0)

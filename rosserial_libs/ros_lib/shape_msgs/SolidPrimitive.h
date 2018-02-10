@@ -12,12 +12,10 @@ namespace shape_msgs
   class SolidPrimitive : public ros::Msg
   {
     public:
-      typedef uint8_t _type_type;
-      _type_type type;
-      uint32_t dimensions_length;
-      typedef double _dimensions_type;
-      _dimensions_type st_dimensions;
-      _dimensions_type * dimensions;
+      uint8_t type;
+      uint8_t dimensions_length;
+      double st_dimensions;
+      double * dimensions;
       enum { BOX = 1 };
       enum { SPHERE = 2 };
       enum { CYLINDER = 3 };
@@ -42,12 +40,11 @@ namespace shape_msgs
       int offset = 0;
       *(outbuffer + offset + 0) = (this->type >> (8 * 0)) & 0xFF;
       offset += sizeof(this->type);
-      *(outbuffer + offset + 0) = (this->dimensions_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->dimensions_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->dimensions_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->dimensions_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->dimensions_length);
-      for( uint32_t i = 0; i < dimensions_length; i++){
+      *(outbuffer + offset++) = dimensions_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < dimensions_length; i++){
       union {
         double real;
         uint64_t base;
@@ -71,15 +68,12 @@ namespace shape_msgs
       int offset = 0;
       this->type =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->type);
-      uint32_t dimensions_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      dimensions_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      dimensions_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      dimensions_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->dimensions_length);
+      uint8_t dimensions_lengthT = *(inbuffer + offset++);
       if(dimensions_lengthT > dimensions_length)
         this->dimensions = (double*)realloc(this->dimensions, dimensions_lengthT * sizeof(double));
+      offset += 3;
       dimensions_length = dimensions_lengthT;
-      for( uint32_t i = 0; i < dimensions_length; i++){
+      for( uint8_t i = 0; i < dimensions_length; i++){
       union {
         double real;
         uint64_t base;

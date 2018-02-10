@@ -15,12 +15,9 @@ namespace control_msgs
   class GripperCommandAction : public ros::Msg
   {
     public:
-      typedef control_msgs::GripperCommandActionGoal _action_goal_type;
-      _action_goal_type action_goal;
-      typedef control_msgs::GripperCommandActionResult _action_result_type;
-      _action_result_type action_result;
-      typedef control_msgs::GripperCommandActionFeedback _action_feedback_type;
-      _action_feedback_type action_feedback;
+      control_msgs::GripperCommandActionGoal action_goal;
+      control_msgs::GripperCommandActionResult action_result;
+      control_msgs::GripperCommandActionFeedback action_feedback;
 
     GripperCommandAction():
       action_goal(),

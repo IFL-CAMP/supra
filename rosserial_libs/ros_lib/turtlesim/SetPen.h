@@ -13,16 +13,11 @@ static const char SETPEN[] = "turtlesim/SetPen";
   class SetPenRequest : public ros::Msg
   {
     public:
-      typedef uint8_t _r_type;
-      _r_type r;
-      typedef uint8_t _g_type;
-      _g_type g;
-      typedef uint8_t _b_type;
-      _b_type b;
-      typedef uint8_t _width_type;
-      _width_type width;
-      typedef uint8_t _off_type;
-      _off_type off;
+      uint8_t r;
+      uint8_t g;
+      uint8_t b;
+      uint8_t width;
+      uint8_t off;
 
     SetPenRequest():
       r(0),

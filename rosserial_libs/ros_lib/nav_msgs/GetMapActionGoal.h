@@ -15,12 +15,9 @@ namespace nav_msgs
   class GetMapActionGoal : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef actionlib_msgs::GoalID _goal_id_type;
-      _goal_id_type goal_id;
-      typedef nav_msgs::GetMapGoal _goal_type;
-      _goal_type goal;
+      std_msgs::Header header;
+      actionlib_msgs::GoalID goal_id;
+      nav_msgs::GetMapGoal goal;
 
     GetMapActionGoal():
       header(),

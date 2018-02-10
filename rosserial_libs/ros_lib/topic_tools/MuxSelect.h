@@ -13,8 +13,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
   class MuxSelectRequest : public ros::Msg
   {
     public:
-      typedef const char* _topic_type;
-      _topic_type topic;
+      const char* topic;
 
     MuxSelectRequest():
       topic("")
@@ -25,7 +24,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
     {
       int offset = 0;
       uint32_t length_topic = strlen(this->topic);
-      varToArr(outbuffer + offset, length_topic);
+      memcpy(outbuffer + offset, &length_topic, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->topic, length_topic);
       offset += length_topic;
@@ -36,7 +35,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
     {
       int offset = 0;
       uint32_t length_topic;
-      arrToVar(length_topic, (inbuffer + offset));
+      memcpy(&length_topic, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_topic; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -55,8 +54,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
   class MuxSelectResponse : public ros::Msg
   {
     public:
-      typedef const char* _prev_topic_type;
-      _prev_topic_type prev_topic;
+      const char* prev_topic;
 
     MuxSelectResponse():
       prev_topic("")
@@ -67,7 +65,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
     {
       int offset = 0;
       uint32_t length_prev_topic = strlen(this->prev_topic);
-      varToArr(outbuffer + offset, length_prev_topic);
+      memcpy(outbuffer + offset, &length_prev_topic, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->prev_topic, length_prev_topic);
       offset += length_prev_topic;
@@ -78,7 +76,7 @@ static const char MUXSELECT[] = "topic_tools/MuxSelect";
     {
       int offset = 0;
       uint32_t length_prev_topic;
-      arrToVar(length_prev_topic, (inbuffer + offset));
+      memcpy(&length_prev_topic, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_prev_topic; ++k){
           inbuffer[k-1]=inbuffer[k];

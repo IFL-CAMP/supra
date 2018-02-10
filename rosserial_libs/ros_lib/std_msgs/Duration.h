@@ -13,8 +13,7 @@ namespace std_msgs
   class Duration : public ros::Msg
   {
     public:
-      typedef ros::Duration _data_type;
-      _data_type data;
+      ros::Duration data;
 
     Duration():
       data()

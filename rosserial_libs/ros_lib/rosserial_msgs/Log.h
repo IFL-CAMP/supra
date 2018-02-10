@@ -12,10 +12,8 @@ namespace rosserial_msgs
   class Log : public ros::Msg
   {
     public:
-      typedef uint8_t _level_type;
-      _level_type level;
-      typedef const char* _msg_type;
-      _msg_type msg;
+      uint8_t level;
+      const char* msg;
       enum { ROSDEBUG = 0 };
       enum { INFO = 1 };
       enum { WARN = 2 };
@@ -34,7 +32,7 @@ namespace rosserial_msgs
       *(outbuffer + offset + 0) = (this->level >> (8 * 0)) & 0xFF;
       offset += sizeof(this->level);
       uint32_t length_msg = strlen(this->msg);
-      varToArr(outbuffer + offset, length_msg);
+      memcpy(outbuffer + offset, &length_msg, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->msg, length_msg);
       offset += length_msg;
@@ -47,7 +45,7 @@ namespace rosserial_msgs
       this->level =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->level);
       uint32_t length_msg;
-      arrToVar(length_msg, (inbuffer + offset));
+      memcpy(&length_msg, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_msg; ++k){
           inbuffer[k-1]=inbuffer[k];

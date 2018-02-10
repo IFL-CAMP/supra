@@ -1,4 +1,4 @@
-/*
+/* 
  * Software License Agreement (BSD License)
  *
  * Copyright (c) 2011, Willow Garage, Inc.
@@ -46,7 +46,7 @@ namespace ros {
       virtual void callback(unsigned char *data)=0;
       virtual int getEndpointType()=0;
 
-      // id_ is set by NodeHandle when we advertise
+      // id_ is set by NodeHandle when we advertise 
       int id_;
 
       virtual const char * getMsgType()=0;
@@ -55,40 +55,41 @@ namespace ros {
   };
 
   /* Bound function subscriber. */
-  template<typename MsgT, typename ObjT=void>
-  class Subscriber: public Subscriber_
+  template<typename MsgT, typename ObjT = void>
+  class Subscriber : public Subscriber_
   {
-    public:
-      typedef void(ObjT::*CallbackT)(const MsgT&);
-      MsgT msg;
+  public:
+	  typedef void(ObjT::*CallbackT)(const MsgT&);
+	  MsgT msg;
 
-      Subscriber(const char * topic_name, CallbackT cb, ObjT* obj, int endpoint=rosserial_msgs::TopicInfo::ID_SUBSCRIBER) :
-        cb_(cb),
-        obj_(obj),
-        endpoint_(endpoint)
-      {
-        topic_ = topic_name;
-      };
+	  Subscriber(const char * topic_name, CallbackT cb, ObjT* obj, int endpoint = rosserial_msgs::TopicInfo::ID_SUBSCRIBER) :
+		  cb_(cb),
+		  obj_(obj),
+		  endpoint_(endpoint)
+	  {
+		  topic_ = topic_name;
+	  };
 
-      virtual void callback(unsigned char* data)
-      {
-        msg.deserialize(data);
-        (obj_->*cb_)(msg);
-      }
+	  virtual void callback(unsigned char* data)
+	  {
+		  msg.deserialize(data);
+		  (obj_->*cb_)(msg);
+	  }
 
-      virtual const char * getMsgType() { return this->msg.getType(); }
-      virtual const char * getMsgMD5() { return this->msg.getMD5(); }
-      virtual int getEndpointType() { return endpoint_; }
+	  virtual const char * getMsgType() { return this->msg.getType(); }
+	  virtual const char * getMsgMD5() { return this->msg.getMD5(); }
+	  virtual int getEndpointType() { return endpoint_; }
 
-    private:
-      CallbackT cb_;
-      ObjT* obj_;
-      int endpoint_;
+  private:
+	  CallbackT cb_;
+	  ObjT* obj_;
+	  int endpoint_;
   };
 
   /* Standalone function subscriber. */
+  /* Actual subscriber, templated on message type. */
   template<typename MsgT>
-  class Subscriber<MsgT, void>: public Subscriber_
+  class Subscriber<MsgT, void> : public Subscriber_
   {
     public:
       typedef void(*CallbackT)(const MsgT&);
@@ -101,15 +102,14 @@ namespace ros {
         topic_ = topic_name;
       };
 
-      virtual void callback(unsigned char* data)
-      {
+      virtual void callback(unsigned char* data){
         msg.deserialize(data);
         this->cb_(msg);
       }
 
-      virtual const char * getMsgType() { return this->msg.getType(); }
-      virtual const char * getMsgMD5() { return this->msg.getMD5(); }
-      virtual int getEndpointType() { return endpoint_; }
+      virtual const char * getMsgType(){ return this->msg.getType(); }
+      virtual const char * getMsgMD5(){ return this->msg.getMD5(); }
+      virtual int getEndpointType(){ return endpoint_; }
 
     private:
       CallbackT cb_;

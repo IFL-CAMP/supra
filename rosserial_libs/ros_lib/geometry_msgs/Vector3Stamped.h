@@ -14,10 +14,8 @@ namespace geometry_msgs
   class Vector3Stamped : public ros::Msg
   {
     public:
-      typedef std_msgs::Header _header_type;
-      _header_type header;
-      typedef geometry_msgs::Vector3 _vector_type;
-      _vector_type vector;
+      std_msgs::Header header;
+      geometry_msgs::Vector3 vector;
 
     Vector3Stamped():
       header(),

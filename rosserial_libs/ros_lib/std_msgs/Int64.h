@@ -12,8 +12,7 @@ namespace std_msgs
   class Int64 : public ros::Msg
   {
     public:
-      typedef int64_t _data_type;
-      _data_type data;
+      int64_t data;
 
     Int64():
       data(0)

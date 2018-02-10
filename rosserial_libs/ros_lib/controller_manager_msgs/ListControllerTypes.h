@@ -38,14 +38,12 @@ static const char LISTCONTROLLERTYPES[] = "controller_manager_msgs/ListControlle
   class ListControllerTypesResponse : public ros::Msg
   {
     public:
-      uint32_t types_length;
-      typedef char* _types_type;
-      _types_type st_types;
-      _types_type * types;
-      uint32_t base_classes_length;
-      typedef char* _base_classes_type;
-      _base_classes_type st_base_classes;
-      _base_classes_type * base_classes;
+      uint8_t types_length;
+      char* st_types;
+      char* * types;
+      uint8_t base_classes_length;
+      char* st_base_classes;
+      char* * base_classes;
 
     ListControllerTypesResponse():
       types_length(0), types(NULL),
@@ -56,26 +54,24 @@ static const char LISTCONTROLLERTYPES[] = "controller_manager_msgs/ListControlle
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->types_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->types_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->types_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->types_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->types_length);
-      for( uint32_t i = 0; i < types_length; i++){
+      *(outbuffer + offset++) = types_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < types_length; i++){
       uint32_t length_typesi = strlen(this->types[i]);
-      varToArr(outbuffer + offset, length_typesi);
+      memcpy(outbuffer + offset, &length_typesi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->types[i], length_typesi);
       offset += length_typesi;
       }
-      *(outbuffer + offset + 0) = (this->base_classes_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->base_classes_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->base_classes_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->base_classes_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->base_classes_length);
-      for( uint32_t i = 0; i < base_classes_length; i++){
+      *(outbuffer + offset++) = base_classes_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < base_classes_length; i++){
       uint32_t length_base_classesi = strlen(this->base_classes[i]);
-      varToArr(outbuffer + offset, length_base_classesi);
+      memcpy(outbuffer + offset, &length_base_classesi, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->base_classes[i], length_base_classesi);
       offset += length_base_classesi;
@@ -86,17 +82,14 @@ static const char LISTCONTROLLERTYPES[] = "controller_manager_msgs/ListControlle
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t types_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      types_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      types_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      types_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->types_length);
+      uint8_t types_lengthT = *(inbuffer + offset++);
       if(types_lengthT > types_length)
         this->types = (char**)realloc(this->types, types_lengthT * sizeof(char*));
+      offset += 3;
       types_length = types_lengthT;
-      for( uint32_t i = 0; i < types_length; i++){
+      for( uint8_t i = 0; i < types_length; i++){
       uint32_t length_st_types;
-      arrToVar(length_st_types, (inbuffer + offset));
+      memcpy(&length_st_types, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_types; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -106,17 +99,14 @@ static const char LISTCONTROLLERTYPES[] = "controller_manager_msgs/ListControlle
       offset += length_st_types;
         memcpy( &(this->types[i]), &(this->st_types), sizeof(char*));
       }
-      uint32_t base_classes_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      base_classes_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      base_classes_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      base_classes_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->base_classes_length);
+      uint8_t base_classes_lengthT = *(inbuffer + offset++);
       if(base_classes_lengthT > base_classes_length)
         this->base_classes = (char**)realloc(this->base_classes, base_classes_lengthT * sizeof(char*));
+      offset += 3;
       base_classes_length = base_classes_lengthT;
-      for( uint32_t i = 0; i < base_classes_length; i++){
+      for( uint8_t i = 0; i < base_classes_length; i++){
       uint32_t length_st_base_classes;
-      arrToVar(length_st_base_classes, (inbuffer + offset));
+      memcpy(&length_st_base_classes, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_base_classes; ++k){
           inbuffer[k-1]=inbuffer[k];

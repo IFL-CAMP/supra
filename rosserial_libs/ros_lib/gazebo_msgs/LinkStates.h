@@ -14,18 +14,15 @@ namespace gazebo_msgs
   class LinkStates : public ros::Msg
   {
     public:
-      uint32_t name_length;
-      typedef char* _name_type;
-      _name_type st_name;
-      _name_type * name;
-      uint32_t pose_length;
-      typedef geometry_msgs::Pose _pose_type;
-      _pose_type st_pose;
-      _pose_type * pose;
-      uint32_t twist_length;
-      typedef geometry_msgs::Twist _twist_type;
-      _twist_type st_twist;
-      _twist_type * twist;
+      uint8_t name_length;
+      char* st_name;
+      char* * name;
+      uint8_t pose_length;
+      geometry_msgs::Pose st_pose;
+      geometry_msgs::Pose * pose;
+      uint8_t twist_length;
+      geometry_msgs::Twist st_twist;
+      geometry_msgs::Twist * twist;
 
     LinkStates():
       name_length(0), name(NULL),
@@ -37,32 +34,29 @@ namespace gazebo_msgs
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->name_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->name_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->name_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->name_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->name_length);
-      for( uint32_t i = 0; i < name_length; i++){
+      *(outbuffer + offset++) = name_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < name_length; i++){
       uint32_t length_namei = strlen(this->name[i]);
-      varToArr(outbuffer + offset, length_namei);
+      memcpy(outbuffer + offset, &length_namei, sizeof(uint32_t));
       offset += 4;
       memcpy(outbuffer + offset, this->name[i], length_namei);
       offset += length_namei;
       }
-      *(outbuffer + offset + 0) = (this->pose_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->pose_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->pose_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->pose_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->pose_length);
-      for( uint32_t i = 0; i < pose_length; i++){
+      *(outbuffer + offset++) = pose_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < pose_length; i++){
       offset += this->pose[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->twist_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->twist_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->twist_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->twist_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->twist_length);
-      for( uint32_t i = 0; i < twist_length; i++){
+      *(outbuffer + offset++) = twist_length;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      *(outbuffer + offset++) = 0;
+      for( uint8_t i = 0; i < twist_length; i++){
       offset += this->twist[i].serialize(outbuffer + offset);
       }
       return offset;
@@ -71,17 +65,14 @@ namespace gazebo_msgs
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t name_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      name_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      name_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      name_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->name_length);
+      uint8_t name_lengthT = *(inbuffer + offset++);
       if(name_lengthT > name_length)
         this->name = (char**)realloc(this->name, name_lengthT * sizeof(char*));
+      offset += 3;
       name_length = name_lengthT;
-      for( uint32_t i = 0; i < name_length; i++){
+      for( uint8_t i = 0; i < name_length; i++){
       uint32_t length_st_name;
-      arrToVar(length_st_name, (inbuffer + offset));
+      memcpy(&length_st_name, (inbuffer + offset), sizeof(uint32_t));
       offset += 4;
       for(unsigned int k= offset; k< offset+length_st_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -91,27 +82,21 @@ namespace gazebo_msgs
       offset += length_st_name;
         memcpy( &(this->name[i]), &(this->st_name), sizeof(char*));
       }
-      uint32_t pose_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      pose_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      pose_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      pose_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->pose_length);
+      uint8_t pose_lengthT = *(inbuffer + offset++);
       if(pose_lengthT > pose_length)
         this->pose = (geometry_msgs::Pose*)realloc(this->pose, pose_lengthT * sizeof(geometry_msgs::Pose));
+      offset += 3;
       pose_length = pose_lengthT;
-      for( uint32_t i = 0; i < pose_length; i++){
+      for( uint8_t i = 0; i < pose_length; i++){
       offset += this->st_pose.deserialize(inbuffer + offset);
         memcpy( &(this->pose[i]), &(this->st_pose), sizeof(geometry_msgs::Pose));
       }
-      uint32_t twist_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      twist_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      twist_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      twist_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->twist_length);
+      uint8_t twist_lengthT = *(inbuffer + offset++);
       if(twist_lengthT > twist_length)
         this->twist = (geometry_msgs::Twist*)realloc(this->twist, twist_lengthT * sizeof(geometry_msgs::Twist));
+      offset += 3;
       twist_length = twist_lengthT;
-      for( uint32_t i = 0; i < twist_length; i++){
+      for( uint8_t i = 0; i < twist_length; i++){
       offset += this->st_twist.deserialize(inbuffer + offset);
         memcpy( &(this->twist[i]), &(this->st_twist), sizeof(geometry_msgs::Twist));
       }

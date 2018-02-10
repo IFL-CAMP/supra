@@ -14,10 +14,8 @@ namespace geometry_msgs
   class Transform : public ros::Msg
   {
     public:
-      typedef geometry_msgs::Vector3 _translation_type;
-      _translation_type translation;
-      typedef geometry_msgs::Quaternion _rotation_type;
-      _rotation_type rotation;
+      geometry_msgs::Vector3 translation;
+      geometry_msgs::Quaternion rotation;
 
     Transform():
       translation(),
