@@ -32,6 +32,7 @@ namespace supra
 	void TrackerInterfaceSimulated::startAcquisition()
 	{
 		m_callFrequency.setName("TR");
+		m_initTime = getCurrentTime();
 		setUpTimer(m_frequency);
 		timerLoop();
 	}
@@ -59,8 +60,7 @@ namespace supra
 				std::vector<TrackerData> trackingData;
 				double currentTime = getCurrentTime();
 
-				trackingData.push_back(TrackerData(0, 0, m_currentZ, 0, 0, 0, 0, 100, 666, "SimulTranslation", currentTime));
-				m_currentZ += 0.02;
+				trackingData.push_back(TrackerData(0, 0, currentTime - m_initTime, 0, 0, 0, 0, 100, m_trackerId, "SimulTranslation", currentTime));
 
 				pTrackingDataSet = make_shared<TrackerDataSet>(trackingData, currentTime, currentTime);
 			}
@@ -79,5 +79,7 @@ namespace supra
 		{
 			setUpTimer(m_frequency);
 		}
+
+		m_trackerId = m_configurationDictionary.get<int>("trackerID", 123);
 	}
 }

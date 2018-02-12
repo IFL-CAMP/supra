@@ -16,9 +16,17 @@
 					0.5
 				</param>
 			</input>
-			<input type="TrackerInterfaceSimulated" id="TR-Sim">
+			<input type="TrackerInterfaceSimulated" id="TR-Sim1">
 				<param name="frequency" type="int">
 					100
+				</param>
+			</input>
+			<input type="TrackerInterfaceSimulated" id="TR-Sim2">
+				<param name="frequency" type="int">
+					100
+				</param>
+				<param name="trackerID" type="int">
+					124
 				</param>
 			</input>
 		</inputs>
@@ -36,8 +44,13 @@
 		</outputs>
 		<nodes>
 			<node type="StreamSynchronizer" id="SYNC">
-				<param name="numInputs" type="size_t">
+				<param name="numStreamsToSync" type="uint32_t">
 					2
+				</param>
+			</node>
+			<node type="TemporalOffsetNode" id="TempOff">
+				<param name="offset" type="double">
+					2.5
 				</param>
 			</node>
 		</nodes>
@@ -48,8 +61,16 @@
 			<to id="SYNC" port="0" />
 		</connection>
 		<connection>
-			<from id="TR-Sim" port="0" />
+			<from id="TR-Sim1" port="0" />
 			<to id="SYNC" port="1" />
+		</connection>
+		<connection>
+			<from id="TR-Sim2" port="0" />
+			<to id="TempOff" port="0" />
+		</connection>
+		<connection>
+			<from id="TempOff" port="0" />
+			<to id="SYNC" port="2" />
 		</connection>
 		<connection>
 			<from id="SYNC" port="0" />
