@@ -111,6 +111,7 @@ SET(SUPRA_Lib_SOURCE
 	ConfigurationDictionary.cpp
 	ValueRangeDictionary.cpp
 	StreamSynchronizer.cpp
+	TemporalOffsetNode.cpp
 	InterfaceFactory.cpp
 	utilities/utility.cpp
 	utilities/Logging.cpp
@@ -138,6 +139,7 @@ SET(SUPRA_Lib_HEADERS
 	AbstractInput.h
 	AbstractOutput.h
 	StreamSynchronizer.h
+	TemporalOffsetNode.h
 	InterfaceFactory.h
 	utilities/utility.h
 	utilities/cudaUtility.h

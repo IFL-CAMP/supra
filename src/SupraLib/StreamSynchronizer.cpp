@@ -116,6 +116,7 @@ namespace supra
 
 		//setup the sync nodes
 		m_syncLists.resize(m_numStreamsToSync);
+		m_toSyncNodes.clear();
 		for (size_t i = 0; i < m_numStreamsToSync; i++)
 		{
 			m_syncListMutexes.push_back(unique_ptr<mutex>(new mutex()));
@@ -126,6 +127,6 @@ namespace supra
 
 	bool StreamSynchronizer::syncObjectComparator(const shared_ptr<RecordObject>& a, const shared_ptr<RecordObject>& b)
 	{
-		return a->getSyncTimestamp() < b->getReceiveTimestamp();
+		return a->getSyncTimestamp() < b->getSyncTimestamp();
 	}
 }

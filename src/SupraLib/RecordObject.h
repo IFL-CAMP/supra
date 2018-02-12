@@ -45,6 +45,8 @@ namespace supra
 		inline double getReceiveTimestamp() const { return m_receiveTimestamp; };
 		/// Returns the snyc timestamp (in seconds), that is after optinal temporal synchronization
 		inline double getSyncTimestamp() const { return m_syncTimestamp; };
+		/// Apply a temporal offset to the original timestamp to perform temporal synchronization
+		inline void setSyncOffset(double temporalOffset) { m_syncTimestamp = m_receiveTimestamp + temporalOffset; };
 
 		/// Returns the type of the dataset. Overwritten in subclasses.
 		virtual RecordObjectType getType() const { return TypeRecordUnknown; }

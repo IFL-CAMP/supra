@@ -33,13 +33,14 @@ namespace supra
 			, m_frozen(false)
 		{
 			m_valueRangeDictionary.set<int>("frequency", 5, 200, 50, "Frequency");
+			m_valueRangeDictionary.set<int>("trackerID", 123, "Tacker ID");
 		};
 
 		~TrackerInterfaceSimulated() {};
 
 		//Functions to be overwritten
 	public:
-		virtual void initializeDevice() { m_currentZ = 0.0; };
+		virtual void initializeDevice() { };
 		virtual bool ready() { return true; };
 
 		virtual std::vector<size_t> getImageOutputPorts() { return{}; };
@@ -59,10 +60,12 @@ namespace supra
 		virtual bool timerCallback();
 
 	private:
-		double m_currentZ;
+		double m_initTime; 
 		int m_frequency;
 		std::mutex m_objectMutex;
 		std::atomic_bool m_frozen;
+		int m_trackerId;
+		
 
 		void readConfiguration();
 	};

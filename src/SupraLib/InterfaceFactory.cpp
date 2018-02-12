@@ -30,6 +30,7 @@
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
 #include "StreamSyncNode.h"
+#include "TemporalOffsetNode.h"
 #include "StreamSynchronizer.h"
 #include "FrequencyLimiterNode.h"
 #include "AutoQuitNode.h"
@@ -142,6 +143,10 @@ namespace supra
 		if (nodeType == "StreamSynchronizer")
 		{
 			retVal = make_shared<StreamSynchronizer>(*pG, nodeID);
+		}
+		if (nodeType == "TemporalOffsetNode")
+		{
+			retVal = make_shared<TemporalOffsetNode>(*pG, nodeID);
 		}
 		if (nodeType == "FrequencyLimiterNode")
 		{
