@@ -17,7 +17,13 @@
 using namespace supra;
 
 int main(int argc, char** argv) {
-	logging::Base::setLogLevel(logging::info);
+
+	logging::Base::setLogLevel(
+		logging::info |
+		logging::warning |
+		logging::error |
+		logging::param |
+		logging::external);
 
 	if(argc < 3)
 	{
