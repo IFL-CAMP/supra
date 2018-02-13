@@ -102,6 +102,7 @@ namespace supra
 
 	void RosInterface::mainLoop(string masterHost)
 	{
+		logging::log_info("RosInterface: Connecting to master '", masterHost, "'");
 		RosWrapper wr(masterHost);
 		m_sequenceActive = false;
 

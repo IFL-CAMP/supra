@@ -28,6 +28,7 @@ namespace supra
 	{
 		m_valueRangeDictionary.set<string>("rosMaster", "", "Ros Master");
 		m_valueRangeDictionary.set<string>("topic", "", "Ros Transform topic");
+		m_valueRangeDictionary.set<int>("trackerID", 0, "Tracker ID");
 		configurationChanged();
 	}
 	void TrackerInterfaceROS::initializeDevice()
@@ -68,7 +69,7 @@ namespace supra
 			trackerData.push_back(TrackerData(
 			{ pos.x, pos.y, pos.z },
 			{ quat.x, quat.y, quat.z, quat.w },
-				100, 666,
+				100, m_trackerID,
 				transform.child_frame_id,
 				timestamp));
 
@@ -87,5 +88,6 @@ namespace supra
 		//read conf values
 		m_rosMaster = m_configurationDictionary.get<string>("rosMaster");
 		m_rosTopic = m_configurationDictionary.get<string>("topic");
+		m_trackerID = m_configurationDictionary.get<int>("trackerID");
 	}
 }

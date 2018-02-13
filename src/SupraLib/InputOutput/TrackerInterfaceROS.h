@@ -59,6 +59,7 @@ namespace supra
 		std::string m_rosTopic;
 		//uint32_t m_port;
 		std::atomic_bool m_frozen;
+		int m_trackerID;
 
 		std::mutex m_objectMutex;
 		std::shared_ptr<RosWrapper> m_rosWrapper;
