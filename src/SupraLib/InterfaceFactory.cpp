@@ -29,6 +29,7 @@
 #include "Beamformer/LogCompressorNode.h"
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
+#include "Beamformer/RawDelayNode.h"
 #include "StreamSyncNode.h"
 #include "TemporalOffsetNode.h"
 #include "StreamSynchronizer.h"
@@ -180,6 +181,10 @@ namespace supra
 		if (nodeType == "TemporalFilterNode")
 		{
 			retVal = make_shared<TemporalFilterNode>(*pG, nodeID);
+		}
+		if (nodeType == "RawDelayNode")
+		{
+			retVal = make_shared<RawDelayNode>(*pG, nodeID);
 		}
 #endif
 		logging::log_error_if(!((bool)retVal),
