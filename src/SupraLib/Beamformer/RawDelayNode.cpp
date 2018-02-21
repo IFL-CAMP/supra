@@ -129,8 +129,9 @@ namespace supra
 	{
 		m_lastSeenImageProperties = imageProperties;
 		m_editedImageProperties = make_shared<USImageProperties>(*imageProperties);
-		m_editedImageProperties->setSpecificParameter("Beamformer.FNumber", m_fNumber);
-		m_editedImageProperties->setSpecificParameter("Beamformer.WindowType", m_windowType);
-		m_editedImageProperties->setSpecificParameter("Beamformer.WindowParameter", m_windowParameter);
+		m_editedImageProperties->setImageState(USImageProperties::RawDelayed);
+		m_editedImageProperties->setSpecificParameter("RawDelay.FNumber", m_fNumber);
+		m_editedImageProperties->setSpecificParameter("RawDelay.WindowType", m_windowType);
+		m_editedImageProperties->setSpecificParameter("RawDelay.WindowParameter", m_windowParameter);
 	}
 }

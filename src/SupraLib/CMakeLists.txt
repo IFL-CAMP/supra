@@ -193,6 +193,7 @@ IF(SUPRA_BEAMFORMER)
 		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
+		Beamformer/BeamformingMVNode.cu
 		Beamformer/IQDemodulator.cu
 		Beamformer/LogCompressor.cu
 		Beamformer/ScanConverter.cu
@@ -202,6 +203,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/Sequencer.h
 		Beamformer/Beamformer.h
 		Beamformer/RxBeamformerCuda.h
+		Beamformer/BeamformingMVNode.h
 		Beamformer/RxBeamformerCommon.h
 		Beamformer/RxSampleBeamformerDelayAndSum.h
 		Beamformer/RxSampleBeamformerDelayAndStdDev.h
@@ -225,7 +227,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
-		${CUDA_LIBRARIES})
+		${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}

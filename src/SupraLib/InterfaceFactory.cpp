@@ -25,6 +25,7 @@
 #include "InputOutput/RosImageOutputDevice.h"
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "Beamformer/BeamformingNode.h"
+#include "Beamformer/BeamformingMVNode.h"
 #include "Beamformer/IQDemodulatorNode.h"
 #include "Beamformer/LogCompressorNode.h"
 #include "Beamformer/ScanConverterNode.h"
@@ -165,6 +166,10 @@ namespace supra
 		if (nodeType == "BeamformingNode")
 		{
 			retVal = make_shared<BeamformingNode>(*pG, nodeID);
+		}
+		if (nodeType == "BeamformingMVNode")
+		{
+			retVal = make_shared<BeamformingMVNode>(*pG, nodeID);
 		}
 		if (nodeType == "IQDemodulatorNode")
 		{
