@@ -15,6 +15,7 @@
 #include "RxSampleBeamformerDelayAndStdDev.h"
 #include "RxSampleBeamformerTestSignal.h"
 #include "RxBeamformerCommon.h"
+#include "utilities/cudaUtility.h"
 
 //TODO ALL ELEMENT/SCANLINE Y positons are actually Z! Change all variable names accordingly
 namespace supra
@@ -204,7 +205,7 @@ namespace supra
 					}
 				}
 			}
-			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(sInterp);
+			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(min(max(sInterp, static_cast<float>(LimitProxy<ResultType>::min)), static_cast<float>(LimitProxy<ResultType>::max)));
 		}
 	}
 
@@ -293,7 +294,7 @@ namespace supra
 			}
 
 
-			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(sInterp);
+			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(min(max(sInterp, static_cast<float>(LimitProxy<ResultType>::min)), static_cast<float>(LimitProxy<ResultType>::max)));
 		}
 	}
 

@@ -19,6 +19,8 @@
 #include "utilities/Logging.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
+
 
 namespace supra
 {
@@ -35,6 +37,14 @@ namespace supra
 	using std::floor;
 	using std::ceil;
 #endif
+
+	template <typename T>
+	class LimitProxy
+	{
+		public:
+			static const T max = std::numeric_limits<T>::max();
+			static const T min = std::numeric_limits<T>::min();
+	};
 
 #ifdef HAVE_CUDA
 	//define for portable function name resolution
