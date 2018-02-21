@@ -22,6 +22,7 @@ namespace supra
 		, m_nextFrameNumber(0)
 		, m_memoryBufferSize(0)
 		, m_closing(false)
+		, m_maxFrameNumber(0)
 	{};
 
 	MhdSequenceWriter::~MhdSequenceWriter()
@@ -29,8 +30,10 @@ namespace supra
 		closeFiles();
 	};
 
-	void MhdSequenceWriter::open(std::string basefilename, size_t memoryBufferSize)
+	void MhdSequenceWriter::open(std::string basefilename, size_t maxNumberFrames, size_t memoryBufferSize)
 	{
+		m_maxFrameNumber = maxNumberFrames -1;
+
 		m_baseFilename = basefilename;
 		m_mhdFilename = m_baseFilename + ".mhd";
 		m_mhdFile.open(m_mhdFilename, std::ios_base::out | std::ios_base::trunc);
@@ -62,7 +65,7 @@ namespace supra
 			"MHD only implemented for uchar and short at the moment");
 		if (w > 0 && h > 0 && d > 0)
 		{
-			if (m_nextFrameNumber < 10000)
+			if (m_nextFrameNumber <= m_maxFrameNumber)
 			{
 				if (!m_wroteHeaders)
 				{
@@ -132,12 +135,12 @@ namespace supra
 				}
 			}
 			else {
-				logging::log_warn("Could not write frame to MHD, file already contains 9999 frames.");
+				logging::log_warn("Could not write frame to MHD " + m_baseFilename + ", file already contains " + std::to_string(m_nextFrameNumber) + " frames.");
 				return std::make_pair(false, 0);
 			}
 		}
 		else {
-			logging::log_error("Could not write frame to MHD, sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
+			logging::log_error("Could not write frame to MHD " + m_baseFilename + ", sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
 			return std::make_pair(false, 0);
 		}
 	}

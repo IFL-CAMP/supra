@@ -31,7 +31,7 @@ namespace supra
 	public:
 		MhdSequenceWriter();
 		
-		void open(std::string basefilename, size_t memoryBufferSize = sm_memoryBufferDefaultSize);
+		void open(std::string basefilename, size_t maxNumberFrames, size_t memoryBufferSize = sm_memoryBufferDefaultSize);
 
 		bool isOpen();
 
@@ -52,6 +52,8 @@ namespace supra
 		void addImageInternal(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
 		static constexpr size_t sm_memoryBufferDefaultSize = 4 * 1024 * 1024 * (size_t)1024; // [Bytes]
+
+		size_t m_maxFrameNumber;
 
 		bool m_wroteHeaders;
 		size_t m_nextFrameNumber;

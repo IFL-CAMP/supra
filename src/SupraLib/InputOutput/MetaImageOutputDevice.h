@@ -72,6 +72,9 @@ namespace supra
 		std::atomic_bool m_isRecording;
 		size_t m_sequencesWritten;
 
+		// maximum number frames to be written
+		size_t m_maxFrames;
+
 		std::mutex m_writerMutex;
 
 		std::string m_filename;

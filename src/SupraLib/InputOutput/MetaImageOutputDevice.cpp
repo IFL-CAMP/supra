@@ -45,6 +45,7 @@ namespace supra
 		m_valueRangeDictionary.set<string>("filename", "output", "Filename");
 		m_valueRangeDictionary.set<bool>("createSequences", { false, true }, true, "Sequences");
 		m_valueRangeDictionary.set<bool>("active", { false, true }, true, "Active");
+		m_valueRangeDictionary.set<uint32_t>("maxFrames", 1, 99999, 10000, "Maximum frames to be written");
 
 		m_isReady = false;
 	}
@@ -113,6 +114,7 @@ namespace supra
 		m_filename = m_configurationDictionary.get<string>("filename");
 		m_createSequences = m_configurationDictionary.get<bool>("createSequences");
 		m_active = m_configurationDictionary.get<bool>("active");
+		m_maxFrames = m_configurationDictionary.get<uint32_t>("maxFrames");
 	}
 
 	void MetaImageOutputDevice::writeData(std::shared_ptr<RecordObject> data)
@@ -139,8 +141,9 @@ namespace supra
 		{
 			m_pWriter->closeWhenEverythingWritten();
 		}
+
 		m_pWriter = new MhdSequenceWriter();
-		m_pWriter->open(filename);
+		m_pWriter->open(filename, m_maxFrames);
 		m_isRecording = m_pWriter->isOpen();
 	}
 
