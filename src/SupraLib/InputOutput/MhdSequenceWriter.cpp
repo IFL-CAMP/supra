@@ -22,7 +22,6 @@ namespace supra
 		, m_nextFrameNumber(0)
 		, m_memoryBufferSize(0)
 		, m_closing(false)
-		, m_maxFrameNumber(0)
 	{};
 
 	MhdSequenceWriter::~MhdSequenceWriter()
@@ -30,10 +29,8 @@ namespace supra
 		closeFiles();
 	};
 
-	void MhdSequenceWriter::open(std::string basefilename, size_t maxNumberFrames, size_t memoryBufferSize)
+	void MhdSequenceWriter::open(std::string basefilename, size_t memoryBufferSize)
 	{
-		m_maxFrameNumber = maxNumberFrames -1;
-
 		m_baseFilename = basefilename;
 		m_mhdFilename = m_baseFilename + ".mhd";
 		m_mhdFile.open(m_mhdFilename, std::ios_base::out | std::ios_base::trunc);
@@ -65,79 +62,73 @@ namespace supra
 			"MHD only implemented for uchar and short at the moment");
 		if (w > 0 && h > 0 && d > 0)
 		{
-			if (m_nextFrameNumber <= m_maxFrameNumber)
+			if (!m_wroteHeaders)
 			{
-				if (!m_wroteHeaders)
+				//this is the first image in the sequence: write the headers
+				m_mhdFile << "ObjectType = Image\n"
+					<< (d == 1 ? "NDims = 3\n" : "NDims = 4\n")
+					<< "DimSize = " << w << " " << h << " ";
+				if (d > 1)
 				{
-					//this is the first image in the sequence: write the headers
-					m_mhdFile << "ObjectType = Image\n"
-						<< (d == 1 ? "NDims = 3\n" : "NDims = 4\n")
-						<< "DimSize = " << w << " " << h << " ";
-					if (d > 1)
-					{
-						m_mhdFile << d << " ";
-					}
-					//remember where the 3rd dimension = number of images has to be written to
-					m_positionImageCount = m_mhdFile.tellp();
-					//place a few spaces as placeholders, assuming trailing whitespace does not hurt
-					m_mhdFile << "          \n"; // 10 spaces that can be replaced with numbers
-					m_mhdFile << "ElementNumberOfChannels = 1\n";
-					if (std::is_same<ValueType, uint8_t>::value)
-					{
-						m_mhdFile << "ElementType = MET_UCHAR\n";
-					}
-					else if (std::is_same<ValueType, int16_t>::value)
-					{
-						m_mhdFile << "ElementType = MET_SHORT\n";
-					}
-					m_mhdFile << "ElementSpacing = " << spacing << " " << spacing << " ";
-					if (d > 1)
-					{
-						m_mhdFile << spacing << " ";
-					}
-					m_mhdFile << "1\n"
-						<< "AnatomicalOrientation = RAI\n"
-						<< "BinaryData = True\n"
-						<< "BinaryDataByteOrderMSB = False\n"
-						<< "CenterOfRotation = 0 0 0\n"
-						<< "CompressedData = False\n"
-						<< "TransformMatrix = 1 0 0 0 1 0 0 0 1\n"
-						<< "UltrasoundImageOrientation = MFA\n"
-						<< "UltrasoundImageType = BRIGHTNESS\n"
-						<< "ElementByteOrderMSB = False\n";
-					m_wroteHeaders = true;
+					m_mhdFile << d << " ";
 				}
-
-				//add data to the write queue
-				bool written = addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
-
-				if(!written)
-				{ 
-					return std::make_pair(false, 0);
-				}
-				else
+				//remember where the 3rd dimension = number of images has to be written to
+				m_positionImageCount = m_mhdFile.tellp();
+				//place a few spaces as placeholders, assuming trailing whitespace does not hurt
+				m_mhdFile << "          \n"; // 10 spaces that can be replaced with numbers
+				m_mhdFile << "ElementNumberOfChannels = 1\n";
+				if (std::is_same<ValueType, uint8_t>::value)
 				{
-					size_t thisFrameNum = m_nextFrameNumber;
-					m_nextFrameNumber++;
-
-					//write the image sequence info
-					std::stringstream frameNumStr;
-					frameNumStr << std::setfill('0') << std::setw(4) << thisFrameNum;
-					m_mhdFile << "Seq_Frame" << frameNumStr.str() << "_ImageStatus = OK\n"
-						<< "Seq_Frame" << frameNumStr.str() << "_Timestamp = " << timestamp << "\n";
-
-					//update the sequence size
-					m_mhdFile.seekp(m_positionImageCount);
-					m_mhdFile << thisFrameNum + 1;
-					m_mhdFile.seekp(0, std::ios_base::end);
-
-					return std::make_pair(true, thisFrameNum);
+					m_mhdFile << "ElementType = MET_UCHAR\n";
 				}
+				else if (std::is_same<ValueType, int16_t>::value)
+				{
+					m_mhdFile << "ElementType = MET_SHORT\n";
+				}
+				m_mhdFile << "ElementSpacing = " << spacing << " " << spacing << " ";
+				if (d > 1)
+				{
+					m_mhdFile << spacing << " ";
+				}
+				m_mhdFile << "1\n"
+					<< "AnatomicalOrientation = RAI\n"
+					<< "BinaryData = True\n"
+					<< "BinaryDataByteOrderMSB = False\n"
+					<< "CenterOfRotation = 0 0 0\n"
+					<< "CompressedData = False\n"
+					<< "TransformMatrix = 1 0 0 0 1 0 0 0 1\n"
+					<< "UltrasoundImageOrientation = MFA\n"
+					<< "UltrasoundImageType = BRIGHTNESS\n"
+					<< "ElementByteOrderMSB = False\n";
+				m_wroteHeaders = true;
 			}
-			else {
-				logging::log_warn("Could not write frame to MHD " + m_baseFilename + ", file already contains " + std::to_string(m_nextFrameNumber) + " frames.");
+
+			//add data to the write queue
+			bool written = addImageQueue(reinterpret_cast<const uint8_t*>(imageData), w*h*d * sizeof(ValueType), deleteCallback);
+
+			if(!written)
+			{ 
 				return std::make_pair(false, 0);
 			}
+			else
+			{
+				size_t thisFrameNum = m_nextFrameNumber;
+				m_nextFrameNumber++;
+
+				//write the image sequence info
+				std::stringstream frameNumStr;
+				frameNumStr << std::setfill('0') << std::setw(4) << thisFrameNum;
+				m_mhdFile << "Seq_Frame" << frameNumStr.str() << "_ImageStatus = OK\n"
+					<< "Seq_Frame" << frameNumStr.str() << "_Timestamp = " << timestamp << "\n";
+
+				//update the sequence size
+				m_mhdFile.seekp(m_positionImageCount);
+				m_mhdFile << thisFrameNum + 1;
+				m_mhdFile.seekp(0, std::ios_base::end);
+
+				return std::make_pair(true, thisFrameNum);
+			}
+			
 		}
 		else {
 			logging::log_error("Could not write frame to MHD " + m_baseFilename + ", sizes are inconsistent. (w = ", w, ", h = ", h, ", d = ", d, ")");
