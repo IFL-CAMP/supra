@@ -94,7 +94,8 @@ namespace supra
 				{
 					finalEntry += Rmatrices[matrixIdx + tempIdx*numelR];
 				}
-				TempRmatrices[matrixIdx + sampleIdx*numelR] = finalEntry*scaling;
+				//TempRmatrices[matrixIdx + sampleIdx*numelR] = finalEntry*scaling;
+				TempRmatrices[0] = finalEntry*scaling;
 			}
 		}
 	}
@@ -120,10 +121,6 @@ namespace supra
 
 			float* R = &Rmatrices[sampleIdx*numelR];
 
-			//% Diagonal Loading Parameter
-			//	delta = 1 / subArraySize;
-			//R = R + (delta*trace(R))*eye(N_weight);
-
 			// compute trace in one block
 			float localSum = 0.0f;
 			for (int diagIdx = tIdx; diagIdx < subArraySize; diagIdx += blockDim.x*blockDim.y)
@@ -144,24 +141,52 @@ namespace supra
 		}
 	}
 
-	template <typename ImageDataType>
-	__global__ void applyWeights()
+	template <typename ChannelDataType, typename ImageDataType>
+	__global__ void applyWeights(
+		const float* RinverseA, 
+		const float* A, 
+		const ChannelDataType* rawData,
+		uint32_t numSamples, 
+		uint32_t numChannels, 
+		uint32_t numScanlines, 
+		uint32_t scanlineIdx, 
+		uint32_t subArraySize, 
+		ImageDataType* beamformed)
 	{
-		//	RiA = in Avectors
-		//  w = (RiA) / (a'*RiA);
-		//	v = 0;
-		//  for i = 1:num_sub_arr
-		//	  v = v + u(i : i + N_weight - 1);
-		//  end
-		//  v = w'*v;
-		//  v = v / num_sub_arr;
+		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
+		int sampleIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
 
+		if (sampleIdx < numSamples)
+		{
+			int numSubArrays = numChannels - subArraySize + 1;
 
-		//	end
-		//	% beamform
-		//	v(sampleIdx) = CalculateV(u, w, N_weight, num_sub_arr);
-		//  v(isnan(v)) = 0;
-		//	end
+			// compute weight scaling <a, R\a>
+			const float* RinvAloc = &RinverseA[sampleIdx * subArraySize];
+			const float* Aloc = &A[sampleIdx * subArraySize];
+			float weightScaling = 0.0f;
+			for (int vectorIdx = tIdx; vectorIdx < subArraySize; vectorIdx += blockDim.x*blockDim.y)
+			{
+				weightScaling += RinvAloc[vectorIdx] * Aloc[vectorIdx];
+			}
+			weightScaling = 1 / (warpAllReduceSum(weightScaling) * numSubArrays);
+
+			// compute one sample at a time, according to spatial smoothing
+			float beamformedSample = 0.0f;
+			for (int vectorIdx = tIdx; vectorIdx < subArraySize; vectorIdx += blockDim.x*blockDim.y)
+			{
+				float sample = 0.0;
+				for (int subArray = 0; subArray < numSubArrays; subArray++)
+				{
+					sample += rawData[sampleIdx + (subArray + vectorIdx)*numSamples + scanlineIdx*numChannels*numSamples];
+				}
+				beamformedSample += sample*RinvAloc[vectorIdx] * weightScaling;
+			}
+			beamformedSample = warpAllReduceSum(beamformedSample);
+			if (tIdx == 0)
+			{
+				beamformed[scanlineIdx + sampleIdx * numScanlines] = beamformedSample;
+			}
+		}
 	}
 
 	// perform the receive beamforming
@@ -183,6 +208,10 @@ namespace supra
 		uint32_t numScanlines = static_cast<uint32_t>(rawData->getNumScanlines());
 		uint32_t numSamples   = static_cast<uint32_t>(rawData->getNumSamples());
 		uint32_t numChannels  = static_cast<uint32_t>(rawData->getNumReceivedChannels());
+		if (subArraySize == 0)
+		{
+			subArraySize = numChannels;
+		}
 
 		uint32_t numSubArrays = numChannels - subArraySize + 1;
 
@@ -196,7 +225,7 @@ namespace supra
 		shared_ptr<Container<float> > AvectorsOrg = std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*numSamples, 1.0f));
 
 		shared_ptr<Container<int> > pivotizationArray = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, subArraySize* numSamples);
-		shared_ptr<Container<int> > cublasInfoArray = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, numSamples);
+		std::vector<int> cublasInfoArray(numSamples);
 
 		int numelR = subArraySize*subArraySize;
 		std::vector<float*> Rpointers(numSamples);
@@ -206,27 +235,18 @@ namespace supra
 			Rpointers[sampleIdx] = RmatricesTempSmooth->get() + sampleIdx* numelR;
 			Apointers[sampleIdx] = Avectors->get() + sampleIdx* subArraySize;
 		}
+		shared_ptr<Container<float*> > RpointersDevice = std::make_shared<Container<float*> >(ContainerLocation::LocationGpu, stream, Rpointers);
+		shared_ptr<Container<float*> > ApointersDevice = std::make_shared<Container<float*> >(ContainerLocation::LocationGpu, stream, Apointers);
 
 		for (uint32_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 		{
 			cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
 			cudaSafeCall(cudaMemcpyAsync(Avectors->get(), AvectorsOrg->get(), subArraySize*numSamples * sizeof(float), cudaMemcpyDefault, stream));
 			
-			////if applyCF
-			////	pline = RawDataCurrent.*RawDataCurrent; %For coherence factor CF
-			////	% Apply CF(coherence factor)
-			////	% Calculate the CF factor
-			////	nominator_cf = numChannels*sum(pline, 2); %CF
-			////	numerator_cf = sum(RawDataCurrent, 2).*sum(RawDataCurrent, 2); %CF
-			////	cf = numerator_cf. / nominator_cf;
-			////cf(isnan(cf)) = 0;
+			//TEST
+			cudaSafeCall(cudaDeviceSynchronize());
 
-			////%   Apply the CF factor to our data
-			////	RawDataCurrent = bsxfun(@times, cf, RawDataCurrent);
-			////weights(:, : , scanlineIdx) = bsxfun(@times, cf, weights(:, : , scanlineIdx));
-			////end
-
-			dim3 blockSize(32, 2);
+			dim3 blockSize(32, 1);
 			dim3 gridSize(numSamples, 1);
 			computeRmatrices<<<gridSize, blockSize, 0, stream>>>(
 				gRawData->get(),
@@ -237,6 +257,8 @@ namespace supra
 				Rmatrices->get()
 			);
 			cudaSafeCall(cudaPeekAtLastError());
+			//TEST
+			cudaSafeCall(cudaDeviceSynchronize());
 
 			computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>>(
 				Rmatrices->get(),
@@ -244,43 +266,61 @@ namespace supra
 				subArraySize,
 				numSubArrays,
 				temporalSmoothing,
-				RmatricesTempSmooth->get()
+				Rmatrices->get()//RmatricesTempSmooth->get()
 			);
 			cudaSafeCall(cudaPeekAtLastError());
+			//TEST
+			cudaSafeCall(cudaDeviceSynchronize());
 
-			addDiagonalLoading<<<dim3(32, 1), gridSize, 0, stream>>>(
+			/*
+			addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>>(
 				RmatricesTempSmooth->get(),
 				numSamples, subArraySize
 			);
 			cudaSafeCall(cudaPeekAtLastError());
+			//TEST
+			cudaSafeCall(cudaDeviceSynchronize());
 
-			/*cublasSafeCall(cublasSgetrfBatched(
+			cublasSafeCall(cublasSgetrfBatched(
 				cublasH,
 				subArraySize,
-				Rpointers.data(),
-				0,
+				(float**)RpointersDevice->get(),
+				subArraySize,
 				pivotizationArray->get(),
-				cublasInfoArray->get(),
+				cublasInfoArray.data(),
 				numSamples));
+			//TEST
+			cudaSafeCall(cudaDeviceSynchronize());*/
 
-			cublasSafeCall(cublasSgetrsBatched(
+			/*cublasSafeCall(cublasSgetrsBatched(
 				cublasH,
 				CUBLAS_OP_N,
 				subArraySize,
 				1,
-				Rpointers.data(),
-				0,
+				(const float**)RpointersDevice->get(),
+				subArraySize,
 				pivotizationArray->get(),
-				Apointers.data(),
-				0,
-				cublasInfoArray->get(),
-				numSamples));*/
+				(float**)ApointersDevice->get(),
+				subArraySize,
+				cublasInfoArray.data(),
+				numSamples));
 
-			//% calculate beamforming weights
-			
+			// calculate beamforming weights from that and perform beamforming
+			applyWeights<<<gridSize, dim3(32, 1), 0, stream>>>(
+				Avectors->get(),
+				AvectorsOrg->get(),
+				gRawData->get(),
+				numSamples,
+				numChannels,
+				numScanlines,
+				scanlineIdx,
+				subArraySize,
+				pData->get()
+			);
+			cudaSafeCall(cudaPeekAtLastError());*/
 		}
 
-		auto retImage = std::make_shared<USImage<int16_t> >(
+		auto retImage = std::make_shared<USImage<ImageDataType> >(
 			vec2s{ numScanlines, numSamples },
 			pData,
 			rawData->getImageProperties(),
