@@ -99,6 +99,7 @@ namespace supra
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
 	static __device__ ResultType sampleDelay3D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
+		int rxScanlineIdx,
 		const RFType* RF,
 		vec2T<uint32_t> elementLayout,
 		uint32_t numReceivedChannels,
@@ -190,7 +191,7 @@ namespace supra
 				}
 
 				uint32_t elemIdxLocal = (elemIdxX - txParams.firstActiveElementIndex.x) + (elemIdxY - txParams.firstActiveElementIndex.y)*elementLayout.x;
-				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
+				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
 					static_cast<RFType>(sample * weightingScale);
 			}
 		}
@@ -199,6 +200,7 @@ namespace supra
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
 	static __device__ void sampleDelay2D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
+		int rxScanlineIdx,
 		const RFType* RF,
 		uint32_t numTransducerElements,
 		uint32_t numReceivedChannels,
@@ -278,7 +280,7 @@ namespace supra
 					}
 				}
 			}
-			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
+			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
 				static_cast<RFType>(sample * weightingScale);
 
 			localElemIdxX++;
@@ -367,7 +369,7 @@ namespace supra
 					}
 					
 					sampleDelay3D<interpolateRFlines, RFType, float, LocationType>(
-						txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+						txParams, scanlineIdx, RF, elementLayout, numReceivedChannels, numTimesteps,
 						x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared, RFdelayed);
 				}
@@ -433,7 +435,7 @@ namespace supra
 					}
 
 					sampleDelay2D<interpolateRFlines, RFType, float, LocationType>(
-						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
+						txParams, scanlineIdx, RF, numTransducerElements, numReceivedChannels, numTimesteps,
 						x_elemsDT, scanline_x, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, RFdelayed);
 				}
@@ -610,7 +612,7 @@ namespace supra
 		}
 
 		shared_ptr<USRawData<int16_t> > rawDataDelayed = std::make_shared<USRawData<int16_t> >
-			   (rawData->getNumScanlines(),
+			   (m_numRxScanlines,
 				rawData->getNumElements(),
 				rawData->getElementLayout(),
 				rawData->getNumReceivedChannels(),
@@ -618,7 +620,7 @@ namespace supra
 				1 / (m_depth / m_speedOfSoundMMperS / m_rxNumDepths),
 				pData,
 				rawData->getRxBeamformerParameters(),
-				rawData->getImageProperties(),
+				m_editedImageProperties,
 				rawData->getReceiveTimestamp(),
 				rawData->getSyncTimestamp());
 
