@@ -1,6 +1,6 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
+// If not explicitly stated: Copyright (C) 2017, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
@@ -9,79 +9,30 @@
 // 
 // ================================================================================================
 
-#ifndef __BEAMFORMINGMVNODE_H__
-#define __BEAMFORMINGMVNODE_H__
+#ifndef __RXBEAMFORMERMV_H__
+#define __RXBEAMFORMERMV_H__
 
 #ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
 
 #include <memory>
-//#include <vector>
-//#include <deque>
-//#include <mutex>
-#include <tbb/flow_graph.h>
-
-#include "AbstractNode.h"
-#include "RecordObject.h"
 
 #include <cublas_v2.h>
 
-//#include "SyncRecordObject.h"
-//#include "RxBeamformerParameters.h"
-
 namespace supra
 {
-	//forward declarations
-	//enum WindowType : uint32_t;
-	class USImageProperties;
+	template <typename T>
+	class USRawData;
+	template <typename T>
+	class USImage;
 
-	class BeamformingMVNode : public AbstractNode {
-	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, TBB_QUEUE_RESOLVER(false)> nodeType;
-
-	public:
-		BeamformingMVNode(tbb::flow::graph& graph, const std::string & nodeID);
-		~BeamformingMVNode();
-
-		virtual size_t getNumInputs() { return 1; }
-		virtual size_t getNumOutputs() { return 1; }
-
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
-			if (index == 0)
-			{
-				return &m_node;
-			}
-			return nullptr;
-		};
-
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
-			if (index == 0)
-			{
-				return &m_node;
-			}
-			return nullptr;
-		};
-
-	protected:
-		void configurationChanged();
-		void configurationEntryChanged(const std::string& configKey);
-
-	private:
-		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
-		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
-
-		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
-		std::shared_ptr<USImageProperties> m_editedImageProperties;
-
-		std::mutex m_mutex;
-		cublasHandle_t m_cublasH;
-
-		nodeType m_node;
-
-		uint32_t m_subArraySize;
-		uint32_t m_temporalSmoothing;
-	};
+	template <typename ChannelDataType, typename ImageDataType>
+	std::shared_ptr<USImage<ImageDataType> > performRxBeamforming(
+		std::shared_ptr<const USRawData<ChannelDataType> > rawData,
+		uint32_t subArraySize,
+		uint32_t temporalSmoothing,
+		cublasHandle_t cublasH);
 }
 
 #endif //HAVE_BEAMFORMER_MINIMUM_VARIANCE
 
-#endif //!__BEAMFORMINGMVNODE_H__
+#endif //!__RXBEAMFORMERMV_H__

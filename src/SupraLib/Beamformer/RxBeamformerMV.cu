@@ -1,6 +1,6 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
+// If not explicitly stated: Copyright (C) 2017, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
@@ -9,7 +9,7 @@
 // 
 // ================================================================================================
 
-#include "BeamformingMVNode.h"
+#include "RxBeamformerMV.h"
 
 #include "USImage.h"
 #include "USRawData.h"
@@ -21,27 +21,6 @@ using namespace std;
 
 namespace supra
 {
-	/// Verifies a cuda call returned "CUBLAS_STATUS_SUCCESS". Prints error message otherwise.
-	/// returns true if no error occured, false otherwise.
-	#define cublasSafeCall(_err_) cublasSafeCall2(_err_, __FILE__, __LINE__, FUNCNAME_PORTABLE)
-
-	/// Verifies a cuda call returned "CUBLAS_STATUS_SUCCESS". Prints error message otherwise.
-	/// returns true if no error occured, false otherwise. Calles by cudaSafeCall
-	inline bool cublasSafeCall2(cublasStatus_t err, const char* file, int line, const char* func) {
-
-		//#ifdef CUDA_ERROR_CHECK
-		if (CUBLAS_STATUS_SUCCESS != err) {
-			char buf[1024];
-			sprintf(buf, "CUBLAS Error (in \"%s\", Line: %d, %s): %d\n", file, line, func, err);
-			printf("%s", buf);
-			logging::log_error(buf);
-			return false;
-		}
-
-		//#endif
-		return true;
-	}
-
 	template <typename ChannelDataType>
 	__global__ void computeRmatrices(const ChannelDataType* rawData,
 		uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx, uint32_t sampleIdxStart,
@@ -361,94 +340,10 @@ namespace supra
 		return retImage;
 	}
 
-	BeamformingMVNode::BeamformingMVNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
-		, m_lastSeenImageProperties(nullptr)
-	{
-		m_callFrequency.setName("BeamformingMV");
-		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 0, "Sub-array size");
-		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
-		
-		configurationChanged();
-
-		cublasSafeCall(cublasCreate(&m_cublasH));
-		cublasSafeCall(cublasSetAtomicsMode(m_cublasH, CUBLAS_ATOMICS_ALLOWED));
-	}
-
-	BeamformingMVNode::~BeamformingMVNode()
-	{
-		cublasSafeCall(cublasDestroy(m_cublasH));
-	}
-
-	void BeamformingMVNode::configurationChanged()
-	{
-		m_subArraySize = m_configurationDictionary.get<uint32_t>("subArraySize");
-		m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
-	}
-
-	void BeamformingMVNode::configurationEntryChanged(const std::string& configKey)
-	{
-		unique_lock<mutex> l(m_mutex);
-		if (configKey == "subArraySize")
-		{
-			m_subArraySize = m_configurationDictionary.get<uint32_t>("subArraySize");
-		}
-		else if (configKey == "temporalSmoothing")
-		{
-			m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
-		}
-		if (m_lastSeenImageProperties)
-		{
-			updateImageProperties(m_lastSeenImageProperties);
-		}
-	}
-
-	shared_ptr<RecordObject> BeamformingMVNode::checkTypeAndBeamform(shared_ptr<RecordObject> inObj)
-	{
-		unique_lock<mutex> l(m_mutex);
-
-		shared_ptr<USImage<int16_t> > pImageRF = nullptr;
-		if (inObj->getType() == TypeUSRawData)
-		{
-			shared_ptr<const USRawData<int16_t> > pRawData = dynamic_pointer_cast<const USRawData<int16_t>>(inObj);
-			if (pRawData)
-			{
-				if (pRawData->getImageProperties()->getImageState() == USImageProperties::RawDelayed)
-				{
-					m_callFrequency.measure();
-
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					cublasSafeCall(cublasSetStream(m_cublasH, pRawData->getData()->getStream()));
-					pImageRF = performRxBeamforming<int16_t, int16_t>(
-						pRawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
-					m_callFrequency.measureEnd();
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					if (m_lastSeenImageProperties != pImageRF->getImageProperties())
-					{
-						updateImageProperties(pImageRF->getImageProperties());
-					}
-					pImageRF->setImageProperties(m_editedImageProperties);
-				}
-				else {
-					logging::log_error("BeamformingMVNode: Cannot beamform undelayed RawData. Apply RawDelayNode first");
-				}
-			}
-			else {
-				logging::log_error("BeamformingMVNode: could not cast object to USRawData type, is it in supported ElementType?");
-			}
-		}
-		return pImageRF;
-	}
-
-	void BeamformingMVNode::updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties)
-	{
-		m_lastSeenImageProperties = imageProperties;
-		m_editedImageProperties = make_shared<USImageProperties>(*imageProperties);
-		m_editedImageProperties->setImageState(USImageProperties::RF);
-		m_editedImageProperties->setSpecificParameter("BeamformingMVNode.subArraySize", m_subArraySize);
-		m_editedImageProperties->setSpecificParameter("BeamformingMVNode.temporalSmoothing", m_temporalSmoothing);
-	}
+	template 
+	shared_ptr<USImage<int16_t> > performRxBeamforming(
+		shared_ptr<const USRawData<int16_t> > rawData,
+		uint32_t subArraySize,
+		uint32_t temporalSmoothing,
+		cublasHandle_t cublasH);
 }
