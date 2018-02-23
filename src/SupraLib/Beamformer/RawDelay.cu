@@ -97,7 +97,7 @@ namespace supra
 	}
 
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
-	static __device__ ResultType sampleDelay3D(
+	static __device__ void sampleDelay3D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
 		int rxScanlineIdx,
 		const RFType* RF,
@@ -120,7 +120,7 @@ namespace supra
 		LocationType dt,
 		const WindowFunctionGpu* windowFunction,
 		const WindowFunction::ElementType* functionShared,
-		RFType* RFdelayed
+		ResultType* RFdelayed
 	)
 	{
 		float sample = 0.0f;
@@ -192,7 +192,7 @@ namespace supra
 
 				uint32_t elemIdxLocal = (elemIdxX - txParams.firstActiveElementIndex.x) + (elemIdxY - txParams.firstActiveElementIndex.y)*elementLayout.x;
 				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
-					static_cast<RFType>(sample * weightingScale);
+					static_cast<ResultType>(sample * weightingScale);
 			}
 		}
 	}
@@ -218,7 +218,7 @@ namespace supra
 		LocationType speedOfSound,
 		LocationType dt,
 		const WindowFunctionGpu* windowFunction,
-		RFType* RFdelayed
+		ResultType* RFdelayed
 	)
 	{
 		float weightAcum = 0.0f;
@@ -281,7 +281,7 @@ namespace supra
 				}
 			}
 			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
-				static_cast<RFType>(sample * weightingScale);
+				static_cast<ResultType>(sample * weightingScale);
 
 			localElemIdxX++;
 		}
@@ -368,7 +368,7 @@ namespace supra
 						return;
 					}
 					
-					sampleDelay3D<interpolateRFlines, RFType, float, LocationType>(
+					sampleDelay3D<interpolateRFlines, RFType, ResultType, LocationType>(
 						txParams, scanlineIdx, RF, elementLayout, numReceivedChannels, numTimesteps,
 						x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared, RFdelayed);
@@ -434,7 +434,7 @@ namespace supra
 						return;
 					}
 
-					sampleDelay2D<interpolateRFlines, RFType, float, LocationType>(
+					sampleDelay2D<interpolateRFlines, RFType, ResultType, LocationType>(
 						txParams, scanlineIdx, RF, numTransducerElements, numReceivedChannels, numTimesteps,
 						x_elemsDT, scanline_x, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, RFdelayed);

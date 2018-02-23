@@ -12,6 +12,8 @@
 #ifndef __BEAMFORMINGMVNODE_H__
 #define __BEAMFORMINGMVNODE_H__
 
+#ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
+
 #include <memory>
 //#include <vector>
 //#include <deque>
@@ -79,5 +81,7 @@ namespace supra
 		uint32_t m_temporalSmoothing;
 	};
 }
+
+#endif //HAVE_BEAMFORMER_MINIMUM_VARIANCE
 
 #endif //!__BEAMFORMINGMVNODE_H__
