@@ -727,7 +727,7 @@ namespace supra
 							(*m_rxParameters)[rxScanIdxX + scanlineIdxX*m_rxScanlineSubdivision.x][0] = interpolated;
 						}
 					}
-					(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][0] = getRxScanline3D((m_numScanlines.x - 1), m_txParameters[(m_rxScanlineSubdivision.x - 1)]);
+					(*m_rxParameters)[(m_numScanlines.x - 1)*m_rxScanlineSubdivision.x][0] = getRxScanline3D((m_numScanlines.x - 1), m_txParameters[(m_numScanlines.x - 1)]);
 				}
 			}
 			else if (m_type == Planewave)
