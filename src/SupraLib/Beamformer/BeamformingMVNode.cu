@@ -44,17 +44,18 @@ namespace supra
 
 	template <typename ChannelDataType>
 	__global__ void computeRmatrices(const ChannelDataType* rawData,
-		uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx,
+		uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx, uint32_t sampleIdxStart,
 		uint32_t subArraySize, float* Rmatrices)
 	{
 		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
-		int sampleIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
+		int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
+		int sampleIdx = sampleIdxLocal + sampleIdxStart;
 		
 		if (sampleIdx < numSamples)
 		{
 			int numSubArrays = numChannels - subArraySize + 1;
 			int numelR = subArraySize*subArraySize;
-			float* R = &Rmatrices[sampleIdx * numelR];
+			float* R = &Rmatrices[sampleIdxLocal * numelR];
 
 			for (int subArray = 0; subArray < numSubArrays; subArray++)
 			{
@@ -86,7 +87,7 @@ namespace supra
 			int firstIdx = max(0, sampleIdx - temporalSmoothing);
 			int lastIdx = min(numSamples - 1, sampleIdx + temporalSmoothing);
 
-			float scaling = 1 / ((lastIdx - firstIdx + 1)*(numSubArrays));
+			float scaling = 1.0f / (static_cast<float>(lastIdx - firstIdx + 1)*(numSubArrays));
 			for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
 			{
 				float finalEntry = 0.0f;
@@ -94,14 +95,13 @@ namespace supra
 				{
 					finalEntry += Rmatrices[matrixIdx + tempIdx*numelR];
 				}
-				//TempRmatrices[matrixIdx + sampleIdx*numelR] = finalEntry*scaling;
-				TempRmatrices[0] = finalEntry*scaling;
+				TempRmatrices[matrixIdx + sampleIdx*numelR] = finalEntry*scaling;
 			}
 		}
 	}
 
-	__inline__ __device__
-	int warpAllReduceSum(int val) {
+	template <typename T>
+	__inline__ __device__ T warpAllReduceSum(T val) {
 		for (int mask = warpSize / 2; mask > 0; mask /= 2)
 		{
 			val += __shfl_xor(val, mask);
@@ -150,26 +150,28 @@ namespace supra
 		uint32_t numChannels, 
 		uint32_t numScanlines, 
 		uint32_t scanlineIdx, 
+		uint32_t sampleIdxStart,
 		uint32_t subArraySize, 
 		ImageDataType* beamformed)
 	{
 		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
-		int sampleIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
+		int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
+		int sampleIdx = sampleIdxLocal + sampleIdxStart;
 
 		if (sampleIdx < numSamples)
 		{
 			int numSubArrays = numChannels - subArraySize + 1;
 
 			// compute weight scaling <a, R\a>
-			const float* RinvAloc = &RinverseA[sampleIdx * subArraySize];
-			const float* Aloc = &A[sampleIdx * subArraySize];
+			const float* RinvAloc = &RinverseA[sampleIdxLocal * subArraySize];
+			const float* Aloc = &A[sampleIdxLocal * subArraySize];
 			float weightScaling = 0.0f;
 			for (int vectorIdx = tIdx; vectorIdx < subArraySize; vectorIdx += blockDim.x*blockDim.y)
 			{
 				weightScaling += RinvAloc[vectorIdx] * Aloc[vectorIdx];
 			}
-			weightScaling = 1 / (warpAllReduceSum(weightScaling) * numSubArrays);
-
+			weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * numSubArrays);
+			
 			// compute one sample at a time, according to spatial smoothing
 			float beamformedSample = 0.0f;
 			for (int vectorIdx = tIdx; vectorIdx < subArraySize; vectorIdx += blockDim.x*blockDim.y)
@@ -179,12 +181,13 @@ namespace supra
 				{
 					sample += rawData[sampleIdx + (subArray + vectorIdx)*numSamples + scanlineIdx*numChannels*numSamples];
 				}
-				beamformedSample += sample*RinvAloc[vectorIdx] * weightScaling;
+				beamformedSample += sample * RinvAloc[vectorIdx] * weightScaling;
 			}
 			beamformedSample = warpAllReduceSum(beamformedSample);
 			if (tIdx == 0)
 			{
-				beamformed[scanlineIdx + sampleIdx * numScanlines] = beamformedSample;
+				beamformed[scanlineIdx + sampleIdx * numScanlines] = 
+					static_cast<ImageDataType>(min(max(beamformedSample * numChannels, static_cast<float>(LimitProxy<ImageDataType>::min)), static_cast<float>(LimitProxy<ImageDataType>::max)));
 			}
 		}
 	}
@@ -197,6 +200,8 @@ namespace supra
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH)
 	{
+		int sampleBlockSize = 10;
+
 		//Ensure the raw-data are on the gpu
 		auto gRawData = rawData->getData();
 		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
@@ -210,7 +215,7 @@ namespace supra
 		uint32_t numChannels  = static_cast<uint32_t>(rawData->getNumReceivedChannels());
 		if (subArraySize == 0)
 		{
-			subArraySize = numChannels;
+			subArraySize = numChannels/2;
 		}
 
 		uint32_t numSubArrays = numChannels - subArraySize + 1;
@@ -218,19 +223,25 @@ namespace supra
 		size_t numelOut = numScanlines*numSamples;
 		shared_ptr<Container<ImageDataType> > pData = std::make_shared<Container<ImageDataType> >(ContainerLocation::LocationGpu, stream, numelOut);
 
-		size_t numelRmatrices = subArraySize*subArraySize* numSamples;
-		shared_ptr<Container<float> > Rmatrices = std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, numelRmatrices);
-		shared_ptr<Container<float> > RmatricesTempSmooth = std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, numelRmatrices);
-		shared_ptr<Container<float> > Avectors = std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*numSamples, 1.0f));
-		shared_ptr<Container<float> > AvectorsOrg = std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*numSamples, 1.0f));
+		size_t numelRmatrices = subArraySize*subArraySize* sampleBlockSize;
+		shared_ptr<Container<float> > Rmatrices = 
+			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, numelRmatrices);
+		shared_ptr<Container<float> > RmatricesTempSmooth =
+			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, numelRmatrices);
+		shared_ptr<Container<float> > Avectors = 
+			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
+		shared_ptr<Container<float> > AvectorsOrg = 
+			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
 
-		shared_ptr<Container<int> > pivotizationArray = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, subArraySize* numSamples);
-		std::vector<int> cublasInfoArray(numSamples);
+		shared_ptr<Container<int> > pivotizationArray = 
+			std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, subArraySize* sampleBlockSize);
+		std::vector<int> cublasInfoArrayHost(sampleBlockSize);
+		shared_ptr<Container<int> > cublasInfoArrayDevice = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, sampleBlockSize);
 
 		int numelR = subArraySize*subArraySize;
-		std::vector<float*> Rpointers(numSamples);
-		std::vector<float*> Apointers(numSamples);
-		for (uint32_t sampleIdx = 0; sampleIdx < numSamples; sampleIdx++)
+		std::vector<float*> Rpointers(sampleBlockSize);
+		std::vector<float*> Apointers(sampleBlockSize);
+		for (uint32_t sampleIdx = 0; sampleIdx < sampleBlockSize; sampleIdx++)
 		{
 			Rpointers[sampleIdx] = RmatricesTempSmooth->get() + sampleIdx* numelR;
 			Apointers[sampleIdx] = Avectors->get() + sampleIdx* subArraySize;
@@ -240,84 +251,104 @@ namespace supra
 
 		for (uint32_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 		{
-			cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
-			cudaSafeCall(cudaMemcpyAsync(Avectors->get(), AvectorsOrg->get(), subArraySize*numSamples * sizeof(float), cudaMemcpyDefault, stream));
-			
-			//TEST
-			cudaSafeCall(cudaDeviceSynchronize());
+			for (uint32_t sampleIdx = 0; sampleIdx < numSamples; sampleIdx += sampleBlockSize)
+			{
+				uint32_t numSamplesBatch = min(sampleBlockSize, numSamples - sampleIdx);
 
-			dim3 blockSize(32, 1);
-			dim3 gridSize(numSamples, 1);
-			computeRmatrices<<<gridSize, blockSize, 0, stream>>>(
-				gRawData->get(),
-				numSamples,
-				numChannels,
-				scanlineIdx,
-				subArraySize,
-				Rmatrices->get()
-			);
-			cudaSafeCall(cudaPeekAtLastError());
-			//TEST
-			cudaSafeCall(cudaDeviceSynchronize());
+				cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
+				cudaSafeCall(cudaMemcpyAsync(Avectors->get(), AvectorsOrg->get(), subArraySize*sampleBlockSize * sizeof(float), cudaMemcpyDefault, stream));
 
-			computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>>(
-				Rmatrices->get(),
-				numSamples,
-				subArraySize,
-				numSubArrays,
-				temporalSmoothing,
-				Rmatrices->get()//RmatricesTempSmooth->get()
-			);
-			cudaSafeCall(cudaPeekAtLastError());
-			//TEST
-			cudaSafeCall(cudaDeviceSynchronize());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
 
-			/*
-			addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>>(
-				RmatricesTempSmooth->get(),
-				numSamples, subArraySize
-			);
-			cudaSafeCall(cudaPeekAtLastError());
-			//TEST
-			cudaSafeCall(cudaDeviceSynchronize());
+				dim3 blockSize(32, 1);
+				dim3 gridSize(numSamplesBatch, 1);
+				computeRmatrices<<<gridSize, blockSize, 0, stream>>> (
+					gRawData->get(),
+					numSamples,
+					numChannels,
+					scanlineIdx,
+					sampleIdx,
+					subArraySize,
+					Rmatrices->get()
+					);
+				cudaSafeCall(cudaPeekAtLastError());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
 
-			cublasSafeCall(cublasSgetrfBatched(
-				cublasH,
-				subArraySize,
-				(float**)RpointersDevice->get(),
-				subArraySize,
-				pivotizationArray->get(),
-				cublasInfoArray.data(),
-				numSamples));
-			//TEST
-			cudaSafeCall(cudaDeviceSynchronize());*/
+				//TEST
+				auto RmatHost1 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
 
-			/*cublasSafeCall(cublasSgetrsBatched(
-				cublasH,
-				CUBLAS_OP_N,
-				subArraySize,
-				1,
-				(const float**)RpointersDevice->get(),
-				subArraySize,
-				pivotizationArray->get(),
-				(float**)ApointersDevice->get(),
-				subArraySize,
-				cublasInfoArray.data(),
-				numSamples));
+				computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>> (
+					Rmatrices->get(),
+					numSamplesBatch,
+					subArraySize,
+					numSubArrays,
+					temporalSmoothing,
+					RmatricesTempSmooth->get()
+					);
+				cudaSafeCall(cudaPeekAtLastError());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
 
-			// calculate beamforming weights from that and perform beamforming
-			applyWeights<<<gridSize, dim3(32, 1), 0, stream>>>(
-				Avectors->get(),
-				AvectorsOrg->get(),
-				gRawData->get(),
-				numSamples,
-				numChannels,
-				numScanlines,
-				scanlineIdx,
-				subArraySize,
-				pData->get()
-			);
-			cudaSafeCall(cudaPeekAtLastError());*/
+				//TEST
+				auto RmatHost2 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
+
+				addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>> (
+					RmatricesTempSmooth->get(),
+					numSamplesBatch, subArraySize
+					);
+				cudaSafeCall(cudaPeekAtLastError());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
+
+				//TEST
+				auto RmatHost3 = make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
+
+				cublasSafeCall(cublasSgetrfBatched(
+					cublasH,
+					subArraySize,
+					(float**)RpointersDevice->get(),
+					subArraySize,
+					pivotizationArray->get(),
+					cublasInfoArrayDevice->get(),
+					numSamplesBatch));
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
+
+
+				cublasSafeCall(cublasSgetrsBatched(
+					cublasH,
+					CUBLAS_OP_N,
+					subArraySize,
+					1,
+					(const float**)RpointersDevice->get(),
+					subArraySize,
+					pivotizationArray->get(),
+					(float**)ApointersDevice->get(),
+					subArraySize,
+					cublasInfoArrayHost.data(),
+					numSamplesBatch));
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
+
+				// calculate beamforming weights from that and perform beamforming
+				applyWeights<<<gridSize, dim3(32, 1), 0, stream>>> (
+					Avectors->get(),
+					AvectorsOrg->get(),
+					gRawData->get(),
+					numSamples,
+					numChannels,
+					numScanlines,
+					scanlineIdx,
+					sampleIdx,
+					subArraySize,
+					pData->get()
+					);
+				cudaSafeCall(cudaPeekAtLastError());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
+			}
 		}
 
 		auto retImage = std::make_shared<USImage<ImageDataType> >(
@@ -387,10 +418,13 @@ namespace supra
 				{
 					m_callFrequency.measure();
 
+					cudaSafeCall(cudaDeviceSynchronize());
+
 					cublasSafeCall(cublasSetStream(m_cublasH, pRawData->getData()->getStream()));
 					pImageRF = performRxBeamforming<int16_t, int16_t>(
 						pRawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
 					m_callFrequency.measureEnd();
+					cudaSafeCall(cudaDeviceSynchronize());
 
 					if (m_lastSeenImageProperties != pImageRF->getImageProperties())
 					{
