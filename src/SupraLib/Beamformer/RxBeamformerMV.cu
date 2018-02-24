@@ -22,9 +22,36 @@ using namespace std;
 namespace supra
 {
 	template <typename ChannelDataType>
+	__global__ void computeSubArrayMasks(
+		const ChannelDataType* rawData,
+		uint32_t numSamples, uint32_t numChannels,
+		uint32_t scanlineIdx, uint32_t sampleIdxStart,
+		uint32_t subArraySize, uint8_t* subArrayMasks)
+	{
+		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
+		int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
+		int sampleIdx = sampleIdxLocal + sampleIdxStart;
+		
+		if (sampleIdx < numSamples)
+		{
+			int numSubArrays = numChannels - subArraySize + 1;
+
+			for (int subArray = tIdx; subArray < numSubArrays; subArray++)
+			{
+				ChannelDataType xLeft = rawData[sampleIdx + (subArray + 0)*numSamples + scanlineIdx*numChannels*numSamples];
+				ChannelDataType xRight = rawData[sampleIdx + (subArray + subArraySize - 1)*numSamples + scanlineIdx*numChannels*numSamples];
+				if (xLeft != 0 && xRight != 0)
+				{
+					subArrayMasks[subArray + sampleIdxLocal*numSubArrays] = 1;
+				}
+			}
+		}
+	}
+
+	template <typename ChannelDataType>
 	__global__ void computeRmatrices(const ChannelDataType* rawData,
 		uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx, uint32_t sampleIdxStart,
-		uint32_t subArraySize, float* Rmatrices)
+		uint32_t subArraySize, const uint8_t * subArrayMasks, float* Rmatrices)
 	{
 		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
 		int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
@@ -38,15 +65,18 @@ namespace supra
 
 			for (int subArray = 0; subArray < numSubArrays; subArray++)
 			{
-				for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
+				if (subArrayMasks[subArray + sampleIdxLocal*numSubArrays] != 0)
 				{
-					int colIdx = matrixIdx % subArraySize;
-					int rowIdx = matrixIdx / subArraySize;
+					for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
+					{
+						int colIdx = matrixIdx % subArraySize;
+						int rowIdx = matrixIdx / subArraySize;
 
-					float xCol = rawData[sampleIdx + (subArray + colIdx)*numSamples + scanlineIdx*numChannels*numSamples];
-					float xRow = rawData[sampleIdx + (subArray + rowIdx)*numSamples + scanlineIdx*numChannels*numSamples];
+						float xCol = rawData[sampleIdx + (subArray + colIdx)*numSamples + scanlineIdx*numChannels*numSamples];
+						float xRow = rawData[sampleIdx + (subArray + rowIdx)*numSamples + scanlineIdx*numChannels*numSamples];
 
-					atomicAdd(&R[matrixIdx], xCol*xRow);
+						atomicAdd(&R[matrixIdx], xCol*xRow);
+					}
 				}
 			}
 		}
@@ -130,7 +160,8 @@ namespace supra
 		uint32_t numScanlines, 
 		uint32_t scanlineIdx, 
 		uint32_t sampleIdxStart,
-		uint32_t subArraySize, 
+		uint32_t subArraySize,
+		const uint8_t * subArrayMasks,
 		ImageDataType* beamformed)
 	{
 		int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
@@ -158,13 +189,20 @@ namespace supra
 				float sample = 0.0;
 				for (int subArray = 0; subArray < numSubArrays; subArray++)
 				{
-					sample += rawData[sampleIdx + (subArray + vectorIdx)*numSamples + scanlineIdx*numChannels*numSamples];
+					if (subArrayMasks[subArray + sampleIdxLocal*numSubArrays] != 0)
+					{
+						sample += rawData[sampleIdx + (subArray + vectorIdx)*numSamples + scanlineIdx*numChannels*numSamples];
+					}
 				}
 				beamformedSample += sample * RinvAloc[vectorIdx] * weightScaling;
 			}
 			beamformedSample = warpAllReduceSum(beamformedSample);
 			if (tIdx == 0)
 			{
+				if (abs(beamformedSample) > 1e7 || ::isnan(beamformedSample))
+				{
+					beamformedSample = 0.0f;
+				}
 				beamformed[scanlineIdx + sampleIdx * numScanlines] = 
 					static_cast<ImageDataType>(min(max(beamformedSample * numChannels, static_cast<float>(LimitProxy<ImageDataType>::min)), static_cast<float>(LimitProxy<ImageDataType>::max)));
 			}
@@ -211,6 +249,8 @@ namespace supra
 			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
 		shared_ptr<Container<float> > AvectorsOrg = 
 			std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
+		shared_ptr<Container<uint8_t> > subArrayMask = 
+			std::make_shared<Container<uint8_t> >(ContainerLocation::LocationGpu, stream, numSubArrays*sampleBlockSize);
 
 		shared_ptr<Container<int> > pivotizationArray = 
 			std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, subArraySize* sampleBlockSize);
@@ -236,12 +276,25 @@ namespace supra
 
 				cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
 				cudaSafeCall(cudaMemcpyAsync(Avectors->get(), AvectorsOrg->get(), subArraySize*sampleBlockSize * sizeof(float), cudaMemcpyDefault, stream));
+				cudaSafeCall(cudaMemsetAsync(subArrayMask->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint8_t), stream));
 
 				//TEST
 				cudaSafeCall(cudaDeviceSynchronize());
 
 				dim3 blockSize(32, 1);
 				dim3 gridSize(numSamplesBatch, 1);
+
+				computeSubArrayMasks<<<gridSize, blockSize, 0, stream>>>(
+					gRawData->get(),
+					numSamples, 
+					numChannels,
+					scanlineIdx, 
+					sampleIdx,
+					subArraySize,
+					subArrayMask->get());
+				//TEST
+				cudaSafeCall(cudaDeviceSynchronize());
+					
 				computeRmatrices<<<gridSize, blockSize, 0, stream>>> (
 					gRawData->get(),
 					numSamples,
@@ -249,6 +302,7 @@ namespace supra
 					scanlineIdx,
 					sampleIdx,
 					subArraySize,
+					subArrayMask->get(),
 					Rmatrices->get()
 					);
 				cudaSafeCall(cudaPeekAtLastError());
@@ -322,6 +376,7 @@ namespace supra
 					scanlineIdx,
 					sampleIdx,
 					subArraySize,
+					subArrayMask->get(),
 					pData->get()
 					);
 				cudaSafeCall(cudaPeekAtLastError());
