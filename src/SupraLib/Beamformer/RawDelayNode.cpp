@@ -29,7 +29,7 @@ namespace supra
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
 		m_callFrequency.setName("Beamforming");
-		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
+		m_valueRangeDictionary.set<double>("fNumber", 0.01, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
 		configurationChanged();

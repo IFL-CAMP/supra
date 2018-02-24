@@ -7,10 +7,10 @@
 					10
 				</param>
 				<param name="mockMetaDataFilename" type="string">
-					/mnt/data/mockData/linearProbe_CIRS.mock
+					data/linearProbe_IPCAI_128-2.mock
 				</param>
 				<param name="mockDataFilename" type="string">
-					/mnt/data/mockData/linearProbe_CIRS_0.raw
+					data/linearProbe_IPCAI_128-2_0.raw
 				</param>
 				<param name="singleImage" type="bool">
 					0
@@ -22,21 +22,27 @@
 		</inputs>
 		<nodes>
 			<node type="RawDelayNode" id="DELAY">
+				<param name="fNumber" type="double">
+					0.01
+				</param>
 				<param name="windowType" type="string">
 					Rectangular
 				</param>
 				<param name="windowParameter" type="double">
 					0.5
 				</param>
-				<param name="fNumber" type="double">
-					0.1
-				</param>
 			</node>
-			<node type="BeamformingMVNode" id="BEAM">
+			<node type="BeamformingMVNode" id="BEAM-MV">
+				<param name="subArraySize" type="uint32_t">
+					48
+				</param>
+				<param name="temporalSmoothing" type="uint32_t">
+					7
+				</param>
 			</node>
 			<node type="TemporalFilterNode" id="FILT">
 			</node>
-			<node type="IQDemodulatorNode" id="DEMO">
+			<node type="IQDemodulatorNode" id="DEMO-MV">
 				<param name="decimation" type="uint32_t">
 					1
 				</param>
@@ -100,7 +106,7 @@
 					3000000
 				</param>
 			</node>
-			<node type="LogCompressorNode" id="LOGC">
+			<node type="LogCompressorNode" id="LOGC-MV">
 				<param name="dynamicRange" type="double">
 					80
 				</param>
@@ -108,8 +114,94 @@
 					32600
 				</param>
 			</node>
-			<node type="ScanConverterNode" id="SCAN">
+			<node type="ScanConverterNode" id="SCAN-MV">
 			</node>
+
+
+			<node type="BeamformingNode" id="BEAM-DAS">
+				<param name="windowType" type="string">
+					Hamming
+				</param>
+				<param name="windowParameter" type="double">
+					0.5
+				</param>
+			</node>
+			<node type="IQDemodulatorNode" id="DEMO-DAS">
+				<param name="decimation" type="uint32_t">
+					1
+				</param>
+				<param name="referenceFrequency" type="double">
+					7000000
+				</param>
+				<param name="bandwidth" type="double">
+					3000000
+				</param>
+				<param name="weight" type="double">
+					1
+				</param>
+
+				<param name="referenceFrequencyAdd0" type="double">
+					6500000
+				</param>
+				<param name="weightAdd0" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd1" type="double">
+					7500000
+				</param>
+				<param name="weightAdd1" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+	
+				<param name="referenceFrequencyAdd2" type="double">
+					6000000
+				</param>
+				<param name="weightAdd2" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd3" type="double">
+					8000000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd4" type="double">
+					5500000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+			</node>
+			<node type="LogCompressorNode" id="LOGC-DAS">
+				<param name="dynamicRange" type="double">
+					80
+				</param>
+				<param name="inMax" type="double">
+					32600
+				</param>
+			</node>
+			<node type="ScanConverterNode" id="SCAN-DAS">
+			</node>
+
+
 			<node type="StreamSyncNode" id="SYNC">
 			</node>
 			<node type="AutoQuitNode" id="AutoQuit">
@@ -126,31 +218,53 @@
 		</connection>
 		<connection>
 			<from id="DELAY" port="0" />
-			<to id="BEAM" port="0" />
+			<to id="BEAM-MV" port="0" />
 		</connection>
 		<connection>
-			<from id="BEAM" port="0" />
-			<to id="DEMO" port="0" />
+			<from id="BEAM-MV" port="0" />
+			<to id="DEMO-MV" port="0" />
 		</connection>
 		<connection>
-			<from id="DEMO" port="0" /><!--
+			<from id="DEMO-MV" port="0" /><!--
 			<to id="FILT" port="0" />
 		</connection>
 		<connection>
 			<from id="FILT" port="0" />-->
-			<to id="LOGC" port="0" />
+			<to id="LOGC-MV" port="0" />
 		</connection>
 		<connection>
-			<from id="LOGC" port="0" />
-			<to id="SCAN" port="0" />
+			<from id="LOGC-MV" port="0" />
+			<to id="SCAN-MV" port="0" />
 		</connection>
 		<connection>
-			<from id="SCAN" port="0" />
+			<from id="SCAN-MV" port="0" />
 			<to id="SYNC" port="0" />
 		</connection>
 		<connection>
 			<from id="SYNC" port="0" />
 			<to id="AutoQuit" port="0" />
+		</connection>
+
+
+		<connection>
+			<from id="US-Mock" port="0" />
+			<to id="BEAM-DAS" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM-DAS" port="0" />
+			<to id="DEMO-DAS" port="0" />
+		</connection>
+		<connection>
+			<from id="DEMO-DAS" port="0" /><!--
+			<to id="FILT" port="0" />
+		</connection>
+		<connection>
+			<from id="FILT" port="0" />-->
+			<to id="LOGC-DAS" port="0" />
+		</connection>
+		<connection>
+			<from id="LOGC-DAS" port="0" />
+			<to id="SCAN-DAS" port="0" />
 		</connection>
 	</connections>
 </supra_config>

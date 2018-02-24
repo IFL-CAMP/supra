@@ -63,8 +63,8 @@ namespace supra
 		{
 			int numelR = subArraySize*subArraySize;
 
-			int firstIdx = max(0, sampleIdx - temporalSmoothing);
-			int lastIdx = min(numSamples - 1, sampleIdx + temporalSmoothing);
+			int firstIdx = max(0, sampleIdx - (int)(temporalSmoothing));
+			int lastIdx = min((int)(numSamples) - 1, sampleIdx + (int)(temporalSmoothing));
 
 			float scaling = 1.0f / (static_cast<float>(lastIdx - firstIdx + 1)*(numSubArrays));
 			for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
@@ -179,7 +179,7 @@ namespace supra
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH)
 	{
-		int sampleBlockSize = 10;
+		int sampleBlockSize = 2000;//128;
 
 		//Ensure the raw-data are on the gpu
 		auto gRawData = rawData->getData();
