@@ -6,6 +6,13 @@
 				<param name="txVoltage" type="double">
 					60
 				</param>
+				<param name="txPulseType" type="string">
+					bipolar
+				</param>
+				<param name="txPulseInversion" type="double">
+					0
+				</param>
+
 				<param name="endDepth" type="double">
 					60
 				</param>

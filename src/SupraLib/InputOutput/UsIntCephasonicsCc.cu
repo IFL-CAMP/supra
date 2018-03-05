@@ -258,6 +258,8 @@ namespace supra
 
 				m_valueRangeDictionary.remove(idApp+"scanType");
 				m_valueRangeDictionary.remove(idApp+"txVoltage");
+				m_valueRangeDictionary.remove(idApp+"txPulseType");
+				m_valueRangeDictionary.remove(idApp+"txPulseInversion");
 				m_valueRangeDictionary.remove(idApp+"txFrequency");
 				m_valueRangeDictionary.remove(idApp+"txPulseRepetitionFrequency");
 				m_valueRangeDictionary.remove(idApp+"txWindowType");
@@ -305,6 +307,8 @@ namespace supra
 
 			// beam ensemble specific settings
 			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 60, 6, descApp+"Pulse voltage [V]");
+			m_valueRangeDictionary.set<string>(idApp+"txPulseType", {"unipolar", "bipolar"}, "bipolar", descApp+"Pulse Type" ;
+			m_valueRangeDictionary.set<bool>(idApp+"txPulseInversion", {false, true}, false, descApp+"Pulse Inversion [negative V]");
 			m_valueRangeDictionary.set<double>(idApp+"txFrequency", 0.0, 20.0, 7.0, descApp+"Pulse frequency [MHz]");
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
 			m_valueRangeDictionary.set<double>(idApp+"txDutyCycle", 0.0, 1.0, 1.0, descApp+"Duty cycle [percent]");
@@ -633,6 +637,8 @@ namespace supra
 			newProps->setSpecificParameter("UsIntCepCc.txFrequency",m_beamEnsembleTxParameters.at(numSeq).txFrequency);
 			newProps->setSpecificParameter("UsIntCepCc.txPrf", m_beamEnsembleTxParameters.at(numSeq).txPrf);
 			newProps->setSpecificParameter("UsIntCepCc.txVoltage", m_beamEnsembleTxParameters.at(numSeq).txVoltage);
+			newProps->setSpecificParameter("UsIntCepCc.txPulseType", m_beamEnsembleTxParameters.at(numSeq).txPulseType);
+			newProps->setSpecificParameter("UsIntCepCc.txPulseInversion", m_beamEnsembleTxParameters.at(numSeq).txPulseInversion);
 
 
 			newProps->setSpecificParameter("UsIntCepCc.txNumCyclesCephasonics",  m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics);
@@ -861,6 +867,21 @@ namespace supra
 			// ensemble-specific parameters (valid for a whole image irrespective of whether it is linear, phased, planewave, or push)
 			m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
 			m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
+
+			std::string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
+			if ("unipolar" == pulseType)
+			{
+				m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Unipolar;
+			}
+			else if ("bipolar" == pulseType)
+			{
+				m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+			}
+			else {
+				logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
+			}
+			
+			m_beamEnsembleTxParameters.at(numSeq).txPulseInversion = m_configurationDictionary.get<bool>(seqIdApp+"txPulseInversion");
 			m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
 			m_beamEnsembleTxParameters.at(numSeq).txDutyCycle = m_configurationDictionary.get<double>(seqIdApp+"txDutyCycle");
 			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
@@ -1032,6 +1053,28 @@ namespace supra
 					m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
 					applyVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage);
 				}
+
+				if (configKey == seqIdApp+"txPulseType")
+				{
+					string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
+					if ("unipolar" == pulseType)
+					{
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Unipolar;
+					}
+					else if ("bipolar" == pulseType)
+					{
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+					}
+					else {
+						logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+					}
+				}
+				if (configKey == seqIdApp+"txPulseInversion")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txPulseInversion = m_configurationDictionary.get<bool>(seqIdApp+"txPulseInversion");
+				}
+
 				if(configKey == seqIdApp+"txDutyCycle")
 				{
 					// TODO

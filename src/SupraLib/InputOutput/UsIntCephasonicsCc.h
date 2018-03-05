@@ -57,12 +57,22 @@ namespace supra
 	class ScanlineTxParameters3D;
 	class USTransducer;
 
+	enum PulseType {
+			Unipolar,
+			Bipolar
+		};
+
 	struct BeamEnsembleTxParameters
 	{
 		double txVoltage;				// voltage applied for pulse
+		PulseType txPulseType;			// configuration of pulse (bipolar or unipolar)
+		bool txPulseInversion;			// inverted pulse starts on negative pulse direction
+
 		double txDutyCycle;				// duty cycle (percent) used for pulse
 		double txFrequency;				// pulse frequency in MHz
 		double txPrf;					// pulse repetition frequency of image in Hz
+
+		
 
 		//Cephasonics allows to automatically repeat the tX pulse from a generated wave table, both options can be chosen/combined
 		size_t txNumCyclesCephasonics;	// Automatic tX pulse repetition using Cephasonics API
