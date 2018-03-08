@@ -1254,7 +1254,7 @@ namespace supra
 		if(voltage != setVoltage)
 		{
 			//retry
-			applyVoltageSetting(pFrameDef, setVoltage, isUniPolar, true);
+			applyVoltageSetting(pFrameDef, targetVoltage, isUniPolar, true);
 			pFrameDef->update(GetTransmitVoltage(voltage));
 		}
 
