@@ -706,7 +706,8 @@ namespace supra
 		// After system startup we can get the actual voltages -> verify everthing is set correctly
 		for (size_t numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
-			checkVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage);
+			bool isUniPolar = (BeamEnsembleTxParameters::Unipolar == m_beamEnsembleTxParameters.at(numSeq).txPulseType);
+			checkVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage, isUniPolar);
 		}
 
 
@@ -1219,13 +1220,17 @@ namespace supra
 	}
 
 	// apply new voltage 
-	void UsIntCephasonicsCc::applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool noCheck)
+	void UsIntCephasonicsCc::applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool isUniPolar, bool noCheck)
 	{
-		pFrameDef->update(SetTransmitVoltage(newVoltage));
+
+		// consider that cephasonics considers Vpp always bipolar, thus double unipolar target voltage
+		double setVoltage = newVoltage * (isUniPolar ? 2.0 : 1.0);
+
+		pFrameDef->update(SetTransmitVoltage(setVoltage));
 
 		double voltage;
 		pFrameDef->update(GetTransmitVoltage(voltage));
-		//if(voltage != newVoltage)
+		if(voltage != setVoltage)
 		{
 			logging::log_warn("Transmit voltage requested: ", newVoltage, ", returned: ", voltage);
 			logging::log_warn("Erroneous reporting is known for CUSDK api, but please verify output");
@@ -1233,31 +1238,34 @@ namespace supra
 
 		if(! noCheck)
 		{
-			checkVoltageSetting(pFrameDef, newVoltage);
+			checkVoltageSetting(pFrameDef, newVoltage, isUniPolar);
 		}
 	}
 
 	// check new voltage setting and log if not successful
-	void UsIntCephasonicsCc::checkVoltageSetting(const FrameDef* pFrameDef, double targetVoltage )
+	void UsIntCephasonicsCc::checkVoltageSetting(const FrameDef* pFrameDef, double targetVoltage, bool isUniPolar )
 	{
 		double voltage;
 		pFrameDef->update(GetTransmitVoltage(voltage));
+
+		// consider that cephasonics considers Vpp always bipolar, thus double unipolar target voltage
+		double setVoltage = targetVoltage * (isUniPolar ? 2.0 : 1.0);
 		
-		if(voltage != targetVoltage)
+		if(voltage != setVoltage)
 		{
 			//retry
-			applyVoltageSetting(pFrameDef, targetVoltage, true);
+			applyVoltageSetting(pFrameDef, setVoltage, isUniPolar, true);
 			pFrameDef->update(GetTransmitVoltage(voltage));
 		}
 
-		if(voltage > targetVoltage)
+		if(voltage > setVoltage)
 		{
-			logging::log_error("UsIntCephasonics: Voltage requested ", targetVoltage, "V, but ", voltage, "V was set!");
+			logging::log_error("UsIntCephasonics: Voltage requested ", setVoltage, "V, but ", voltage, "V was set!");
 			//CS_THROW("Applied voltage is higher than requested. Emergency stop!");
 		}
-		if(voltage < targetVoltage)
+		if(voltage < setVoltage)
 		{
-			logging::log_warn("UsIntCephasonics: Voltage requested ", targetVoltage, "V, but only ", voltage, "V could be set.");
+			logging::log_warn("UsIntCephasonics: Voltage requested ", setVoltage, "V, but only ", voltage, "V could be set.");
 		}
 	}
 
@@ -1461,7 +1469,8 @@ namespace supra
 		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailA: ", pC.RAILA_VOLTAGE_MIN, " - ", pC.RAILA_VOLTAGE_MAX, "V");
 		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailB: ", pC.RAILB_VOLTAGE_MIN, " - ", pC.RAILB_VOLTAGE_MAX, "V");
 		
-		double targetVoltage = txEnsembleParams.txVoltage;
+		bool isUniPolar = BeamEnsembleTxParameters::Unipolar == txEnsembleParams.txPulseType;
+		double targetVoltage = txEnsembleParams.txVoltage * (isUniPolar ? 2.0 : 1.0);
 		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN)
 		{
 			//TODO Rail B only allows for 110V right now...weird
@@ -1493,8 +1502,8 @@ namespace supra
 		fdef->update(SetPRF(txEnsembleParams.txPrf,1));
 
 		//We cannot check the voltage right now, as the frameDef is not completely determined
-		applyVoltageSetting(fdef, targetVoltage, true);
-		
+		applyVoltageSetting(fdef, txEnsembleParams.txVoltage, isUniPolar);
+
 		return std::pair<size_t, const cs::FrameDef*>(subframeID,fdef);
 	}
 

@@ -129,8 +129,8 @@ namespace supra
 
 		void readVgaSettings();
 		void applyVgaSettings();
-		void applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool noCheck = false);
-		void checkVoltageSetting(const cs::FrameDef* pFrameDef, double targetVoltage);
+		void applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool isUniPolar, bool noCheck = false);
+		void checkVoltageSetting(const cs::FrameDef* pFrameDef, double targetVoltage, bool isUnipolar);
 		void updateImageProperties();
 
 		std::mutex m_objectMutex;
