@@ -57,13 +57,13 @@ namespace supra
 	class ScanlineTxParameters3D;
 	class USTransducer;
 
-	enum PulseType {
+	struct BeamEnsembleTxParameters
+	{
+		enum PulseType {
 			Unipolar,
 			Bipolar
 		};
 
-	struct BeamEnsembleTxParameters
-	{
 		double txVoltage;				// voltage applied for pulse
 		PulseType txPulseType;			// configuration of pulse (bipolar or unipolar)
 		bool txPulseInversion;			// inverted pulse starts on negative pulse direction

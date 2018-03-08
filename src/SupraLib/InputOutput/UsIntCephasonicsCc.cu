@@ -206,7 +206,7 @@ namespace supra
 		m_valueRangeDictionary.set<bool>("highPassFilterBypass", {false, true}, true, "HighPassFilter bypass");
 		m_valueRangeDictionary.set<double>("highPassFilterFrequency", 0.14, 1.4, 0.898, "HighPassFilter [MHz]");
 		m_valueRangeDictionary.set<double>("lowNoiseAmplifierGain", 10, 20, 18.5, "LowNoiseAmp gain [dB]");
-		m_valueRangeDictionary.set<double>("inputImpedance", {200}, 200, "Input impedance [Ohm]");
+		m_valueRangeDictionary.set<double>("inputImpedance", {50,200}, 200, "Input impedance [Ohm]");
 
 		m_valueRangeDictionary.set<bool>("writeMockData", {false, true}, false, "(Write mock)");
 		m_valueRangeDictionary.set<string>("mockDataFilename", "", "(Mock meta filename)");
@@ -306,8 +306,8 @@ namespace supra
 			m_valueRangeDictionary.set<string>(idApp+"scanType", {"linear", "phased", "biphased", "planewave"}, "linear", descApp+"Scan Type");
 
 			// beam ensemble specific settings
-			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 60, 6, descApp+"Pulse voltage [V]");
-			m_valueRangeDictionary.set<string>(idApp+"txPulseType", {"unipolar", "bipolar"}, "bipolar", descApp+"Pulse Type" ;
+			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 140, 6, descApp+"Pulse voltage [V]");
+			m_valueRangeDictionary.set<string>(idApp+"txPulseType", {"unipolar", "bipolar"}, "bipolar", descApp+"Pulse Type");
 			m_valueRangeDictionary.set<bool>(idApp+"txPulseInversion", {false, true}, false, descApp+"Pulse Inversion [negative V]");
 			m_valueRangeDictionary.set<double>(idApp+"txFrequency", 0.0, 20.0, 7.0, descApp+"Pulse frequency [MHz]");
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
@@ -389,7 +389,7 @@ namespace supra
 		string probeSN = "Unknown";          //Probe Serial No
 		double minFreq = 2000000;            //Probe MinFrequency
 		double maxFreq = 7000000;            //Probe MaxFrequency
-		double maxVoltage = 120;             //Probe MaxVoltage
+		double maxVoltage = 140;             //Probe MaxVoltage
 		double yLen = 0;                     //Probe YLen, not used currently
 		uint32 xNumElem = m_numMuxedChannels;
 											 //maximum elelments system can support
@@ -716,40 +716,115 @@ namespace supra
 	std::vector<PulseVal> UsIntCephasonicsCc::createWeightedWaveform(
 		const BeamEnsembleTxParameters& txParams, size_t numTotalEntries, float weight, uint8_t csTxOversample)
 	{
-		//Creating TX single pulse
-		//The wave pulse is constructed at 4x the system clock.
+		//Creating TX single pulse - The wave pulse is constructed at 4x the system clock.
 		//Assuming the system clock is 40MHz, then below is an even duty cycle
-		//32 positive, 32 negative pulse waveform.  NOTE:  The leading, trailing, and middle ground
+		//NOTE:  Leading, trailing, and middle ground (for bipolar pulses) 
 		//points are required in order to make a proper wave.
-		//The Wave Frequency is given by TXFREQ = SysClock*4/Number of pos pulses + Number of neg pulses
-		//2.5MHz Transmit Pulse Signal = 40*4/(32+32)
 		//Calculation of num_pules to make frequency of transmit pulse is based on _txFreq, set by -f option
-		size_t pulseHalfLength = (
-				static_cast<double>(m_systemTxClock)*1e6*
-				csTxOversample /
-				(txParams.txFrequency*1e6)
-				)/2 - 1;
-		size_t pulseHalfLengthWeighted = static_cast<size_t>(std::round(std::max((
-				weight*static_cast<double>(m_systemTxClock)*1e6*
-				csTxOversample /
-				(txParams.txFrequency*1e6)
-				)/2.0 - 1.0, 0.0)));
 
-		vector<PulseVal> waveDef((pulseHalfLength*2 + 2) * txParams.txNumCyclesManual + 1, GND);
+		//
+		//The Wave Frequency is given by TxFrequency = SysClock*4/ (Number of pos pulses + Number of neg pulses)
+		// NumPulseVals = SysClock*4 / TxFrequency
+		// E.G: 2.5MHz Transmit Pulse Signal = 40*4/(32+32)
+		double pulseLength = static_cast<double>(m_systemTxClock)*1e6*csTxOversample / (txParams.txFrequency*1e6);
 
-		for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
+
+		// Bipolar pulse with positive and negative half pulses (or the inverse)
+		// size_t pulseHalfLength = (pulseLength)/2 - 1;
+		// size_t pulseHalfLengthWeighted = static_cast<size_t>(std::round(
+		// 	std::max((weight*pulseLength)/2.0 - 1.0, 0.0)));
+
+		// vector<PulseVal> waveDef((pulseHalfLength*2 + 2) * txParams.txNumCyclesManual + 1, GND);
+
+		// for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
+		// {
+		// 	//Points to element with Leading Ground
+		// 	size_t firstIdx = cycleIdx*(pulseHalfLength*2 + 2);
+
+		// 	//Points to element with Mid Ground
+		// 	size_t centerIdx = firstIdx + pulseHalfLength + 1;
+
+		// 	// creat waveform with bipolar signals centered around mid ground
+		// 	// and with co-inciding peaks (pos/neg) also for different weight factors
+		// 	for (size_t i = 1; i <= pulseHalfLengthWeighted; i++)
+		// 	{
+		// 		waveDef[centerIdx - i] = POSV0;
+		// 		waveDef[centerIdx + i] = NEGV0;
+		// 	}
+		// }
+
+		vector<PulseVal> waveDef;
+
+		
+		// set desired pulsing direction and values if pulse inversion is enabled.
+		// std::pair<auto,auto> pulsingValues(POSV0,NEGV0);
+		// if (txParams.txPulseInversion == true)
+		// {
+		// 	pulsingValues.first = NEGV0;
+		// 	pulsingValues.second = POSV0;
+		// }
+
+		if (BeamEnsembleTxParameters::Unipolar == txParams.txPulseType)
 		{
-			//Points to element with Leading Ground
-			size_t firstIdx = cycleIdx*(pulseHalfLength*2 + 2);
-			//Points to element with Mid Ground
-			size_t centerIdx = firstIdx + pulseHalfLength + 1;
+			
+			// set desired pulsing direction and values if pulse inversion is enabled.
+			auto pulsingValue = (txParams.txPulseInversion == true) ? NEGV0 : POSV0;
 
-			for (size_t i = 1; i <= pulseHalfLengthWeighted; i++)
+			// Unipolar pulse reaching only in positive or negative voltage amplitude
+			double pulseHalflength = pulseLength/2.0;
+			double pulseHalflengthWeighted = weight*pulseHalflength;	
+
+			waveDef = vector<PulseVal>(ceil(pulseHalflength*2 + 2) * txParams.txNumCyclesManual, GND);
+
+			for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
 			{
-				waveDef[centerIdx - i] = POSV0;
-				waveDef[centerIdx + i] = NEGV0;
+				//Points to element with Leading Ground
+				size_t firstIdx = cycleIdx*(pulseHalflength*2 + 2);
+
+				//Points to location of left peak (+1 because of leading ground)
+				double peak = firstIdx + 1 + pulseHalflength;
+				for (size_t i = round(peak-pulseHalflengthWeighted); 
+					i < round(peak+pulseHalflengthWeighted); i++)
+				{
+					waveDef[i] = pulsingValue;
+				}
 			}
 		}
+		else if (BeamEnsembleTxParameters::Bipolar == txParams.txPulseType)
+		{
+			// Bipolar pulse with positive and negative half pulses (or the inverse)
+			double pulseQuarterLength = pulseLength/4.0;
+			double pulseQuarterLengthWeighted = weight*pulseQuarterLength;
+
+			// set desired pulsing values depending on pulse inversion.
+			auto pulsingValueLeft = (txParams.txPulseInversion == true) ? NEGV0 : POSV0;
+			auto pulsingValueRight = (txParams.txPulseInversion == true) ? POSV0 : NEGV0;
+
+			waveDef = vector<PulseVal> (ceil(pulseQuarterLength*4 + 3) * txParams.txNumCyclesManual, GND);
+
+			for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
+			{
+				//Points to element with Leading Ground
+				size_t firstIdx = cycleIdx*(pulseQuarterLength*4 + 3);
+
+				//Points to location of left peak (+1 because of leading ground)
+				double leftPeak = firstIdx + 1 + pulseQuarterLength ;
+				for (size_t i = round(leftPeak-pulseQuarterLengthWeighted); 
+					i < round(leftPeak+pulseQuarterLengthWeighted); i++)
+				{
+					waveDef[i] = pulsingValueLeft;
+				}
+				
+				// Points to location of right peak (+2 because of leading and mid ground)
+				double rightPeak = firstIdx + 2 + (3*pulseQuarterLength);
+				for (size_t i = round(rightPeak-pulseQuarterLengthWeighted); 
+					i < round(rightPeak+pulseQuarterLengthWeighted); i++)
+				{
+					waveDef[i] = pulsingValueRight;
+				}	
+			}	
+		}		
+
 
 		return waveDef;
 	}
@@ -871,11 +946,11 @@ namespace supra
 			std::string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
 			if ("unipolar" == pulseType)
 			{
-				m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Unipolar;
+				m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Unipolar;
 			}
 			else if ("bipolar" == pulseType)
 			{
-				m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+				m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 			}
 			else {
 				logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
@@ -1051,7 +1126,6 @@ namespace supra
 				if (configKey == seqIdApp+"txVoltage")
 				{
 					m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
-					applyVoltageSetting(m_pFrameDefs.at(numSeq), m_beamEnsembleTxParameters.at(numSeq).txVoltage);
 				}
 
 				if (configKey == seqIdApp+"txPulseType")
@@ -1059,15 +1133,15 @@ namespace supra
 					string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
 					if ("unipolar" == pulseType)
 					{
-						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Unipolar;
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Unipolar;
 					}
 					else if ("bipolar" == pulseType)
 					{
-						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 					}
 					else {
 						logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
-						m_beamEnsembleTxParameters.at(numSeq).txPulseType = PulseType::Bipolar;
+						m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 					}
 				}
 				if (configKey == seqIdApp+"txPulseInversion")
@@ -1144,10 +1218,19 @@ namespace supra
 		}
 	}
 
-	// apply new voltage with max 60V (no damage to probe)
+	// apply new voltage 
 	void UsIntCephasonicsCc::applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool noCheck)
 	{
-		pFrameDef->update(SetTransmitVoltage(min(newVoltage, 60.0)));
+		pFrameDef->update(SetTransmitVoltage(newVoltage));
+
+		double voltage;
+		pFrameDef->update(GetTransmitVoltage(voltage));
+		//if(voltage != newVoltage)
+		{
+			logging::log_warn("Transmit voltage requested: ", newVoltage, ", returned: ", voltage);
+			logging::log_warn("Erroneous reporting is known for CUSDK api, but please verify output");
+		}
+
 		if(! noCheck)
 		{
 			checkVoltageSetting(pFrameDef, newVoltage);
@@ -1155,11 +1238,11 @@ namespace supra
 	}
 
 	// check new voltage setting and log if not successful
-	void UsIntCephasonicsCc::checkVoltageSetting(const FrameDef* pFrameDef, double targetVoltage)
+	void UsIntCephasonicsCc::checkVoltageSetting(const FrameDef* pFrameDef, double targetVoltage )
 	{
 		double voltage;
 		pFrameDef->update(GetTransmitVoltage(voltage));
-
+		
 		if(voltage != targetVoltage)
 		{
 			//retry
@@ -1170,7 +1253,7 @@ namespace supra
 		if(voltage > targetVoltage)
 		{
 			logging::log_error("UsIntCephasonics: Voltage requested ", targetVoltage, "V, but ", voltage, "V was set!");
-			CS_THROW("Applied voltage is higher than requested. Emergency stop!");
+			//CS_THROW("Applied voltage is higher than requested. Emergency stop!");
 		}
 		if(voltage < targetVoltage)
 		{
@@ -1377,15 +1460,19 @@ namespace supra
 		railType rail = DEFAULT;
 		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailA: ", pC.RAILA_VOLTAGE_MIN, " - ", pC.RAILA_VOLTAGE_MAX, "V");
 		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailB: ", pC.RAILB_VOLTAGE_MIN, " - ", pC.RAILB_VOLTAGE_MAX, "V");
-		if(txEnsembleParams.txVoltage <= pC.RAILA_VOLTAGE_MAX && txEnsembleParams.txVoltage >= pC.RAILA_VOLTAGE_MIN)
-		{
-			rail = RAIL_A;
-		}
-		else if (txEnsembleParams.txVoltage <= pC.RAILB_VOLTAGE_MAX && txEnsembleParams.txVoltage >= pC.RAILB_VOLTAGE_MIN)
+		
+		double targetVoltage = txEnsembleParams.txVoltage;
+		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN)
 		{
 			//TODO Rail B only allows for 110V right now...weird
 			//rail = RAIL_B;
+			rail = RAIL_B;
+			logging::log_warn("UsIntCephasonicsCc Setting rail B");
+		}
+		else if(targetVoltage <= pC.RAILA_VOLTAGE_MAX && targetVoltage >= pC.RAILA_VOLTAGE_MIN)
+		{
 			rail = RAIL_A;
+			logging::log_warn("UsIntCephasonicsCc Setting rail A");
 		}
 		else {
 			CS_THROW("Voltage not supported. Emergency stop!");
@@ -1406,8 +1493,7 @@ namespace supra
 		fdef->update(SetPRF(txEnsembleParams.txPrf,1));
 
 		//We cannot check the voltage right now, as the frameDef is not completely determined
-		applyVoltageSetting(fdef, txEnsembleParams.txVoltage, true);
-
+		applyVoltageSetting(fdef, targetVoltage, true);
 		
 		return std::pair<size_t, const cs::FrameDef*>(subframeID,fdef);
 	}
