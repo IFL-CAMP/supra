@@ -7,7 +7,7 @@
 					10
 				</param>
 				<param name="endDepth" type="double">
-					70
+					60
 				</param>
 				<param name="txFocusActive" type="bool">
 					1
@@ -16,35 +16,33 @@
 					40
 				</param>
 				<param name="txSectorAngleX" type="double">
-					60
+					0
 				</param>
 				<param name="txSectorAngleY" type="double">
-					60
+					0
 				</param>
 				<param name="numScanlinesX" type="uint32_t">
-					32
+					64
 				</param>
 				<param name="numScanlinesY" type="uint32_t">
-					16
+					1
 				</param>
 				<param name="rxScanlineSubdivisionX" type="uint32_t">
-					1
+					4
 				</param>
 				<param name="rxScanlineSubdivisionY" type="uint32_t">
 					1
 				</param>
+
 				<param name="numSamplesRecon" type="uint32_t">
 					2000
 				</param>
 				<param name="scanType" type="string">
-					biphased
+					linear
 				</param> 
 				<param name="probeName" type="string">
-					2D
+					Linear
 				</param> 
-				<param name="txWindowType" type="string">
-					Hamming
-				</param>
 				<param name="highPassFilterBypass" type="bool">
 					0
 				</param>
@@ -78,22 +76,45 @@
 				<param name="tgc9" type="double">
 					44
 				</param>
-				<param name="writeMockData" type="bool"> 
+				<param name="txApertureSizeX" type="uint32_t"> 
+					32
+				</param> 
+				<param name="txApertureSizeY" type="uint32_t"> 
 					1 
 				</param>
-				<param name="mockDataFilename" type="string"> 
-					/mnt/data/mockData/2DProbeHighSubdev.mock 
+			</input>
+
+			<input type="TrackerInterfaceROS" id="TR-Probe">
+				<param name="rosMaster" type="string">
+					160.69.69.120
+				</param>
+				<param name="topic" type="string">
+					/ndi/probe_in_ndi
+				</param>
+				<param name="trackerID" type="int">
+					0
 				</param>
 			</input>
 		</inputs>
 		<outputs>
 			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
-			<output type="MetaImageOutputDevice" id="MHD_Raw">
+			<!--<output type="MetaImageOutputDevice" id="MHD_Beam">
+				<param name="active" type="bool">
+				    0
+				</param>
 				<param name="createSequences" type="bool">
 					1
 				</param>
 				<param name="filename" type="string">
-					/mnt/data/mockData/2DProbe
+					beamformed
+				</param>
+			</output>-->
+			<output type="MetaImageOutputDevice" id="MHD_Scan">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					robot
 				</param>
 			</output>
 		</outputs>
@@ -102,18 +123,66 @@
 				<param name="windowType" type="string">
 					Hamming
 				</param>
-				<param name="windowParameter" type="double">
-					0.5
-				</param>
 			</node>
 			<node type="IQDemodulatorNode" id="DEMO">
+				<param name="decimation" type="uint32_t">
+					1
+				</param>
+				<param name="referenceFrequency" type="double">
+					7000000
+				</param>
+				<param name="referenceFrequencyAdd0" type="double">
+					6500000
+				</param>
+				<param name="referenceFrequencyAdd1" type="double">
+					6000000
+				</param>
+				<param name="referenceFrequencyAdd2" type="double">
+					5500000
+				</param>
+				<param name="referenceFrequencyAdd3" type="double">
+					5000000
+				</param>
+				<param name="weight" type="double">
+					1
+				</param>
+				<param name="weightAdd0" type="double">
+					1
+				</param>
+				<param name="weightAdd1" type="double">
+					1
+				</param>
+				<param name="weightAdd2" type="double">
+					1
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
 			</node>
 			<node type="LogCompressorNode" id="LOGC">
 				<param name="dynamicRange" type="double">
 					40
 				</param>
+				<param name="gain" type="double">
+					0.85
+				</param>
+				<param name="inMax" type="double">
+					3024
+				</param>
 			</node>
 			<node type="ScanConverterNode" id="SCAN">
+				<param name="imageResolution" type="double">
+					0.09
+				</param>
+				<param name="imageResolutionForced" type="bool">
+					1
+				</param>
+			</node>
+
+			<node type="StreamSynchronizer" id="SYNC">
+				<param name="numStreamsToSync" type="uint32_t">
+					1
+				</param>
 			</node>
 		</nodes>
 	</devices>
@@ -126,6 +195,10 @@
 			<from id="BEAM" port="0" />
 			<to id="DEMO" port="0" />
 		</connection>
+<!--		<connection>
+			<from id="BEAM" port="0" />
+			<to id="MHD_Beam" port="0" />
+		</connection>-->
 		<connection>
 			<from id="DEMO" port="0" />
 			<to id="LOGC" port="0" />
@@ -135,10 +208,21 @@
 			<to id="SCAN" port="0" />
 		</connection>
 		<connection>
-			<from id="US-Cep" port="0" />
-			<to id="MHD_Raw" port="0" />
+			<from id="SCAN" port="0" />
+			<to id="SYNC" port="0" />
 		</connection>
+
 		<connection>
+			<from id="TR-Probe" port="0" />
+			<to id="SYNC" port="1" />
+		</connection>
+
+		
+		<connection>
+			<from id="SYNC" port="0" />
+			<to id="MHD_Scan" port="0" />
+		</connection>
+                <connection>
 			<from id="SCAN" port="0" />
 			<to id="IGTL" port="0" />
 		</connection>

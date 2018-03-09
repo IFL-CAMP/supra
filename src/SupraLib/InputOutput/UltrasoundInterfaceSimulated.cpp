@@ -29,12 +29,13 @@ namespace supra
 	{
 		m_callFrequency.setName("US-Sim");
 		//Setup allowed values for parameters
-		m_valueRangeDictionary.set<double>("gain", { 0.01, 0.1, 0.5, 1.0 }, 0.5, "Gain");
-		m_valueRangeDictionary.set<size_t>("numVectors", 16, 256, 128, "Num of vectors (width)");
-		m_valueRangeDictionary.set<size_t>("numSamples", 100, 1024, 600, "Num of samples (height)");
+		m_valueRangeDictionary.set<double>("gain", 0.0, 1.0, 0.5, "Gain");
 		m_valueRangeDictionary.set<int>("frequency", 5, 10000, 25, "Frequency");
-		m_valueRangeDictionary.set<double>("depth", 20, 120, 60, "Depth (mm)");
+		m_valueRangeDictionary.set<double>("endDepth", 20, 300, 60, "Depth (mm)");
+		m_valueRangeDictionary.set<double>("txFrequency", 0.1, 12.0, 7.0, "txFreq (MHz)");
 		m_valueRangeDictionary.set<double>("width", 20, 60, 40, "Width (mm)");
+		m_valueRangeDictionary.set<double>("txVoltage", 6, 60, 10 , "Power");
+		m_valueRangeDictionary.set<double>("txFocusDepth", 10, 300, 40, "Focus");
 	}
 
 	void UltrasoundInterfaceSimulated::initializeDevice()
@@ -78,14 +79,18 @@ namespace supra
 				lock_guard<mutex> lock(m_objectMutex);
 				m_callFrequency.measure();
 
-				int modValue = rand() % std::min((int)(255 * m_gain), 255);
+				int modValue = std::min((int)(255 * m_gain), 255);
+				int offset = modValue * (m_txFrequency / 12.0);
+				modValue -= offset;
 
 				auto pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_bmodeNumVectors*m_bmodeNumSamples);
 				for (size_t k = 0; k < m_bmodeNumSamples; ++k)
 				{
 					uint8_t* dummyData = (pData->get()) + (k*m_bmodeNumVectors);
 					for (unsigned int ss = 0; ss < m_bmodeNumVectors; ++ss)
-						dummyData[ss] = modValue; //rand() % 
+					{
+						dummyData[ss] = (rand() % modValue) + offset;
+					}
 				}
 
 				pImage = make_shared<USImage<uint8_t> >(
@@ -102,11 +107,13 @@ namespace supra
 		lock_guard<mutex> lock(m_objectMutex);
 		//read conf values
 		m_frequency = m_configurationDictionary.get<int>("frequency");
-		m_bmodeNumVectors = m_configurationDictionary.get<size_t>("numVectors");
-		m_bmodeNumSamples = m_configurationDictionary.get<size_t>("numSamples");
 		m_gain = m_configurationDictionary.get<double>("gain");
-		m_depth = m_configurationDictionary.get<double>("depth");
+		m_txFrequency = m_configurationDictionary.get<double>("txFrequency");
+		m_depth = m_configurationDictionary.get<double>("endDepth");
 		m_width = m_configurationDictionary.get<double>("width");
+
+		m_bmodeNumVectors = m_width*10;
+		m_bmodeNumSamples = m_depth*10;
 
 		if (getTimerFrequency() != m_frequency)
 		{
