@@ -80,7 +80,7 @@ namespace supra
 	};
 
 
-	class UsIntCephasonicsCc : public AbstractInput<RecordObject>
+	class UsIntCephasonicsCc : public AbstractInput
 	{
 	public:
 		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID);
@@ -159,7 +159,7 @@ namespace supra
 		const cs::Probe*          m_pProbe;
 
 		// many Frame/SubFrames possible
-		std::map<size_t, size_t> m_pFrameMap; // mapping of linearized frameIDs in cusdk to seq and angle number
+		std::map<size_t, size_t> m_pFrameMap; // mapping of cusdk subframeIDS (key) to linearized frameIDs (value)
 		std::vector<const cs::FrameDef*> m_pFrameDefs;
 		std::vector<const cs::SubFrameDef*> m_pSubframeDefs;
 		std::vector<BeamEnsembleTxParameters> m_beamEnsembleTxParameters; // CS specific transmit parameters

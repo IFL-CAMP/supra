@@ -22,7 +22,7 @@ using namespace std;
 namespace supra
 {
 	TrackerInterfaceROS::TrackerInterfaceROS(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_connected(false)
 		, m_frozen(false)
 	{

@@ -221,7 +221,7 @@ namespace supra
 		return retVal;
 	}
 
-	void CommandlineInterface::readAndSetParameter(std::shared_ptr<AbstractInput<RecordObject> > inputNode, std::string paramName)
+	void CommandlineInterface::readAndSetParameter(std::shared_ptr<AbstractInput> inputNode, std::string paramName)
 	{
 		auto ranges = inputNode->getValueRangeDictionary();
 		if (ranges->hasKey(paramName))

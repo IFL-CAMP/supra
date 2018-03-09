@@ -144,7 +144,7 @@ namespace supra
 
 
 	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID, 2)
 		, m_pTransducer(nullptr)
 		, m_pSequencer(nullptr)
 		, m_pProbe(nullptr)
@@ -1790,13 +1790,15 @@ namespace supra
 				lock_guard<mutex> lock(m_objectMutex);
 				m_callFrequency.measure();
 
+				size_t linFrID = m_pFrameMap[frameIndex];
+
 				//build filename
 				/*std::stringstream filename;
 				filename << "/mnt/data/ascii_test/rawData_copiedtogether.txt";
 				writeAscii(filename.str(), pData.get(), sArraySize);*/
 
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(m_pFrameMap[frameIndex]);
-				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(m_pFrameMap[frameIndex]);
+				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(linFrID);
+				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(linFrID);
 
 				// we received the data from all necessary platforms, now we can start the beamforming
 				shared_ptr<USRawData<int16_t> > rawData = make_shared<USRawData<int16_t> >
@@ -1821,7 +1823,20 @@ namespace supra
 				pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, ContainerFactory::getNextStream(), sArraySize);
 				platformsReceived.assign(m_numPlatforms, false);
 
-				addData<0>(rawData);
+				// switch outputs for sequences. I.e. first sequence transmitted on output port 0, second port 1, etc.
+				// max ouptut ports is 2 for the moment.
+				switch (linFrID)
+				{
+					case 0:	addData<0>(rawData);
+					break;
+
+					case 1: 
+						addData<1>(rawData);
+					break;
+					
+					default: addData<0>(rawData);
+					break;
+				}
 			}
 		}
 

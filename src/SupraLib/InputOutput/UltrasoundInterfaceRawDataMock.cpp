@@ -27,7 +27,7 @@ using namespace std;
 namespace supra
 {
 	UltrasoundInterfaceRawDataMock::UltrasoundInterfaceRawDataMock(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_sequenceIndex(0)
 		, m_frameIndex(0)
 		, m_numel(0)
