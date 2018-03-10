@@ -45,7 +45,7 @@
 		</connection>
 		<connection>
 			<from id="US-Cep" port="0" />
-			<to id="MHD_Raw" port="0" />
+			<to id="MHD_Beam" port="0" />
 		</connection>
 		<!--<connection>
 			<from id="BEAM" port="0" />

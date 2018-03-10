@@ -3,11 +3,11 @@
 	<devices>
 		<inputs>
 			<input type="UltrasoundInterfaceCephasonicsCC" id="US-Cep">
-				<param name="voltage" type="double">
+				<param name="txVoltage" type="double">
 					10
 				</param>
 				<param name="endDepth" type="double">
-					60
+					70
 				</param>
 				<param name="txFocusActive" type="bool">
 					1
@@ -22,16 +22,16 @@
 					60
 				</param>
 				<param name="numScanlinesX" type="uint32_t">
-					16
+					32
 				</param>
 				<param name="numScanlinesY" type="uint32_t">
 					16
 				</param>
 				<param name="rxScanlineSubdivisionX" type="uint32_t">
-					4
+					1
 				</param>
 				<param name="rxScanlineSubdivisionY" type="uint32_t">
-					4
+					1
 				</param>
 				<param name="numSamplesRecon" type="uint32_t">
 					2000
@@ -99,10 +99,21 @@
 		</outputs>
 		<nodes>
 			<node type="BeamformingNode" id="BEAM">
+				<param name="windowType" type="string">
+					Hamming
+				</param>
+				<param name="windowParameter" type="double">
+					0.5
+				</param>
 			</node>
 			<node type="IQDemodulatorNode" id="DEMO">
 			</node>
-			<node type="LogCompressorNode" id="SCAN">
+			<node type="LogCompressorNode" id="LOGC">
+				<param name="dynamicRange" type="double">
+					40
+				</param>
+			</node>
+			<node type="ScanConverterNode" id="SCAN">
 			</node>
 		</nodes>
 	</devices>
