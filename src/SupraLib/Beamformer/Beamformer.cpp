@@ -116,6 +116,12 @@ namespace supra
 		m_ready = false;
 	}
 
+
+	void Beamformer::setRxModeActive(const bool active)
+	{
+		m_disableRx = !active;
+	}
+
 	void Beamformer::setSpeedOfSound(const double speedOfSound)
 	{
 		if (speedOfSound != m_speedOfSound)
@@ -312,6 +318,11 @@ namespace supra
 			throw std::invalid_argument("Scan type string invalid");
 		}
 		return scanType;
+	}
+
+	bool Beamformer::getRxModeActive() const
+	{
+		return !m_disableRx;
 	}
 
 	double Beamformer::getSpeedOfSound() const

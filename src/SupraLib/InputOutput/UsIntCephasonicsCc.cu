@@ -257,6 +257,7 @@ namespace supra
 				std::string idApp = getBeamSequenceApp(oldBeamSequenceValueRange,numSeq);
 
 				m_valueRangeDictionary.remove(idApp+"scanType");
+				m_valueRangeDictionary.remove(idApp+"rxModeActive");
 				m_valueRangeDictionary.remove(idApp+"txVoltage");
 				m_valueRangeDictionary.remove(idApp+"txPulseType");
 				m_valueRangeDictionary.remove(idApp+"txPulseInversion");
@@ -304,20 +305,19 @@ namespace supra
 
 			// overall scan type for sequence
 			m_valueRangeDictionary.set<string>(idApp+"scanType", {"linear", "phased", "biphased", "planewave"}, "linear", descApp+"Scan Type");
+			m_valueRangeDictionary.set<bool>(idApp+"rxModeActive", {true, false}, true, descApp+"Activate Rx [true]]");
 
-			// beam ensemble specific settings
+			// beam specific settings
 			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 140, 6, descApp+"Pulse voltage [V]");
 			m_valueRangeDictionary.set<string>(idApp+"txPulseType", {"unipolar", "bipolar"}, "bipolar", descApp+"Pulse Type");
 			m_valueRangeDictionary.set<bool>(idApp+"txPulseInversion", {false, true}, false, descApp+"Pulse Inversion [negative V]");
 			m_valueRangeDictionary.set<double>(idApp+"txFrequency", 0.0, 20.0, 7.0, descApp+"Pulse frequency [MHz]");
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
 			m_valueRangeDictionary.set<double>(idApp+"txDutyCycle", 0.0, 1.0, 1.0, descApp+"Duty cycle [percent]");
-
-			// further global parameters for one imaging sequence
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 10, 1, descApp+"Number Pulse Cycles (ceph)");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesManual", 1, 10, 1, descApp+"Number Pulse Cycles (manual)");
 
-			// beam specific settings
+			// beam ensemble specific settings
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numScanlinesX", 1, 512, 256, descApp+"Number of scanlines X");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numScanlinesY", 1, 512, 1, descApp+"Number of scanlines Y");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"rxScanlineSubdivisionX", 1, 512, 256, descApp+"Rx scanline supersampling X");
@@ -631,6 +631,8 @@ namespace supra
 			newProps->setSpecificParameter("UsIntCepCc.txCorrectMatchingLayers", bf->getTxCorrectMatchingLayers());
 			newProps->setSpecificParameter("UsIntCepCc.numSamplesRecon", bf->getNumDepths());
 			newProps->setSpecificParameter("UsIntCepCc.scanType", bf->getScanType());
+			newProps->setSpecificParameter("UsIntCepCc.rxModeActive", bf->getRxModeActive());
+
 
 
 			// setting specific for beam ensemble transmit, not handled not within beamformer
@@ -894,6 +896,7 @@ namespace supra
 			std::string scanType = m_configurationDictionary.get<std::string>(seqIdApp+"scanType");
 			bf->setScanType(scanType);
 
+			bf->setRxModeActive(m_valueRangeDictionary.get<bool>(seqIdApp+"rxModeActive"));
 			bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
 			bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
 			bf->setRxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth")); // currently rx and tx focus are the same
@@ -1404,8 +1407,9 @@ namespace supra
 
 			// Get the Tx scanline parameters to program the Hardware with them
 			const std::vector<ScanlineTxParameters3D>* beamTxParams = bf->getTxParameters();
+			bool disableRx = !bf->getRxModeActive();
 
-			std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
+			std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq), disableRx);
 										
 			// store framedef and add it to Cephasonics interface
 			m_pFrameMap[fdef.first] = m_sequenceNumFrames;
@@ -1422,7 +1426,8 @@ namespace supra
 	std::pair<size_t, const cs::FrameDef*> UsIntCephasonicsCc::createFrame(
 		const std::vector<ScanlineTxParameters3D>* txBeamParams, 
 		const std::shared_ptr<USImageProperties> imageProps, 
-		const BeamEnsembleTxParameters& txEnsembleParams)
+		const BeamEnsembleTxParameters& txEnsembleParams,
+		const bool disableRx)
 	{
 
 		// publish Rx Scanline parameters together with the RawData
@@ -1451,14 +1456,12 @@ namespace supra
 		double centerAngle = 0; 			//ignored if making full custom beams
 		rxWindowType rxWindow = RECTANGULAR;//ignored if making full custom beams
 
-
-
 		// create a new SubFrameDef and provide it with the vector of BeamEnsembleDefs
 		const SubFrameDef* sf = &SubFrameDef::createSubFrameDef(*m_cPlatformHandle,
 				LINEAR, //not used for fully custom beams beam creation
 				numScanlines.x*numScanlines.y, npb, txFreq, txEnsembleParams.txNumCyclesCephasonics, m_startDepth/1000, m_endDepth/1000,
 				focalDepth, txFstop, rxFstop, rxWindow, angle, centerAngle,
-				beamEnsembles);
+				beamEnsembles, false, disableRx);
 		m_pSubframeDefs.push_back(sf);
 		size_t subframeID = sf->getID();
 
