@@ -64,7 +64,7 @@ namespace supra
 		std::vector<std::string> m_mockDataFilenames;
 		bool m_singleImage;
 		bool m_streamSequenceOnce;
-		int m_frequency;
+		double m_frequency;
 		std::shared_ptr<USRawData<int16_t> > m_protoRawData;
 		std::shared_ptr<Container<int16_t> > m_pMockData;
 
