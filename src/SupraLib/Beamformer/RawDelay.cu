@@ -97,7 +97,7 @@ namespace supra
 	}
 
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
-	static __device__ ResultType sampleDelay3D(
+	static __device__ void sampleDelay3D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
 		const RFType* RF,
 		vec2T<uint32_t> elementLayout,

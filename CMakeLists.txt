@@ -21,6 +21,7 @@ ENDIF(WIN32)
 
 # options for modules to include
 OPTION(SUPRA_PROFILING             "Add profiling message to logfile"  OFF)
+OPTION(SUPRA_WARNINGS_AS_ERRORS    "Treat all build warnings as errors (NOT on windows)" OFF)
 OPTION(SUPRA_DOWNLOAD_SAMPLEDATA   "Whether sample data should be downloaded" ON)
 OPTION(SUPRA_CUDA                  "Use cuda in SUPRA"                 ON)
 OPTION(SUPRA_BUILD_DOC             "Build doxygen documentation"       OFF)
@@ -62,6 +63,11 @@ SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE PATH "Path to 
 SET( SUPRA_EXTERNALS_TBB      ""  CACHE PATH "Path to the TBB base dir")
 SET( SUPRA_EXTERNALS_TBB_LIBS ""  CACHE PATH "Path to the TBB lib dir")
 
+IF(SUPRA_WARNINGS_AS_ERRORS)
+    IF(CMAKE_COMPILER_IS_GNUCXX)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+ENDIF(SUPRA_WARNINGS_AS_ERRORS)
 	
 ADD_SUBDIRECTORY(src/SupraLib)
 IF(SUPRA_INTERFACE_COMMANDLINE)
