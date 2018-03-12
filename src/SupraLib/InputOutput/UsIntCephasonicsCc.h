@@ -59,10 +59,20 @@ namespace supra
 
 	struct BeamEnsembleTxParameters
 	{
+		enum PulseType {
+			Unipolar,
+			Bipolar
+		};
+
 		double txVoltage;				// voltage applied for pulse
+		PulseType txPulseType;			// configuration of pulse (bipolar or unipolar)
+		bool txPulseInversion;			// inverted pulse starts on negative pulse direction
+
 		double txDutyCycle;				// duty cycle (percent) used for pulse
 		double txFrequency;				// pulse frequency in MHz
 		double txPrf;					// pulse repetition frequency of image in Hz
+
+		
 
 		//Cephasonics allows to automatically repeat the tX pulse from a generated wave table, both options can be chosen/combined
 		size_t txNumCyclesCephasonics;	// Automatic tX pulse repetition using Cephasonics API
@@ -119,8 +129,8 @@ namespace supra
 
 		void readVgaSettings();
 		void applyVgaSettings();
-		void applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool noCheck = false);
-		void checkVoltageSetting(const cs::FrameDef* pFrameDef, double targetVoltage);
+		void applyVoltageSetting(const cs::FrameDef* pFrameDef, double newVoltage, bool isUniPolar, bool noCheck = false);
+		void checkVoltageSetting(const cs::FrameDef* pFrameDef, double targetVoltage, bool isUnipolar);
 		void updateImageProperties();
 
 		std::mutex m_objectMutex;
