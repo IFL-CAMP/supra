@@ -729,70 +729,42 @@ namespace supra
 		// E.G: 2.5MHz Transmit Pulse Signal = 40*4/(32+32)
 		double pulseLength = static_cast<double>(m_systemTxClock)*1e6*csTxOversample / (txParams.txFrequency*1e6);
 
+		// Bipolar pulse with positive and negative half pulses (or the inverse)
+		double pulseQuarterLength = pulseLength/4.0;
+		double pulseQuarterLengthWeighted = weight*pulseQuarterLength;
+
+		// set desired pulsing values depending on pulse inversion.
+		auto pulsingValueLeft = (txParams.txPulseInversion == true) ? NEGV0 : POSV0;
+		auto pulsingValueRight = (txParams.txPulseInversion == true) ? POSV0 : NEGV0;
+
 		// target container for wave table
-		vector<PulseVal> waveDef;
+		vector<PulseVal> waveDef = vector<PulseVal> (ceil(pulseQuarterLength*4 + 3) * txParams.txNumCyclesManual, GND);
 
-		if (BeamEnsembleTxParameters::Unipolar == txParams.txPulseType)
+		for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
 		{
-			
-			// set desired pulsing direction and values if pulse inversion is enabled.
-			auto pulsingValue = (txParams.txPulseInversion == true) ? NEGV0 : POSV0;
+			//Points to element with Leading Ground
+			size_t firstIdx = cycleIdx*(pulseQuarterLength*4 + 3);
 
-			// Unipolar pulse reaching only in positive or negative voltage amplitude
-			double pulseHalflength = pulseLength/2.0;
-			double pulseHalflengthWeighted = weight*pulseHalflength;	
-
-			waveDef = vector<PulseVal>(ceil(pulseHalflength*2 + 2) * txParams.txNumCyclesManual, GND);
-
-			for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
+			//Points to location of left peak (+1 because of leading ground)
+			double leftPeak = firstIdx + 1 + pulseQuarterLength ;
+			for (size_t i = round(leftPeak-pulseQuarterLengthWeighted); 
+				i < round(leftPeak+pulseQuarterLengthWeighted); i++)
 			{
-				//Points to element with Leading Ground
-				size_t firstIdx = cycleIdx*(pulseHalflength*2 + 2);
-
-				//Points to location of left peak (+1 because of leading ground)
-				double peak = firstIdx + 1 + pulseHalflength;
-				for (size_t i = round(peak-pulseHalflengthWeighted); 
-					i < round(peak+pulseHalflengthWeighted); i++)
-				{
-					waveDef[i] = pulsingValue;
-				}
+				waveDef[i] = pulsingValueLeft;
 			}
-		}
-		else if (BeamEnsembleTxParameters::Bipolar == txParams.txPulseType)
-		{
-			// Bipolar pulse with positive and negative half pulses (or the inverse)
-			double pulseQuarterLength = pulseLength/4.0;
-			double pulseQuarterLengthWeighted = weight*pulseQuarterLength;
 
-			// set desired pulsing values depending on pulse inversion.
-			auto pulsingValueLeft = (txParams.txPulseInversion == true) ? NEGV0 : POSV0;
-			auto pulsingValueRight = (txParams.txPulseInversion == true) ? POSV0 : NEGV0;
-
-			waveDef = vector<PulseVal> (ceil(pulseQuarterLength*4 + 3) * txParams.txNumCyclesManual, GND);
-
-			for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
+			// Unipolar pulsing is finished here, for bipolar pulsing, add the second half cycle
+			if (BeamEnsembleTxParameters::Bipolar == txParams.txPulseType)
 			{
-				//Points to element with Leading Ground
-				size_t firstIdx = cycleIdx*(pulseQuarterLength*4 + 3);
-
-				//Points to location of left peak (+1 because of leading ground)
-				double leftPeak = firstIdx + 1 + pulseQuarterLength ;
-				for (size_t i = round(leftPeak-pulseQuarterLengthWeighted); 
-					i < round(leftPeak+pulseQuarterLengthWeighted); i++)
-				{
-					waveDef[i] = pulsingValueLeft;
-				}
-				
 				// Points to location of right peak (+2 because of leading and mid ground)
 				double rightPeak = firstIdx + 2 + (3*pulseQuarterLength);
 				for (size_t i = round(rightPeak-pulseQuarterLengthWeighted); 
 					i < round(rightPeak+pulseQuarterLengthWeighted); i++)
 				{
 					waveDef[i] = pulsingValueRight;
-				}	
-			}	
-		}		
-
+				}
+			}		
+		}
 
 		return waveDef;
 	}
