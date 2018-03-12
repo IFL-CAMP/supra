@@ -1197,11 +1197,6 @@ namespace supra
 
 		double voltage;
 		pFrameDef->update(GetTransmitVoltage(voltage));
-		if(voltage != setVoltage)
-		{
-			logging::log_warn("Transmit voltage requested: ", newVoltage, ", returned: ", voltage);
-			logging::log_warn("Erroneous reporting is known for CUSDK api, but please verify output");
-		}
 
 		if(! noCheck)
 		{
@@ -1227,12 +1222,12 @@ namespace supra
 
 		if(voltage > setVoltage)
 		{
-			logging::log_error("UsIntCephasonics: Voltage requested ", setVoltage, "V, but ", voltage, "V was set!");
+			logging::log_warn("UsIntCephasonics: Transmit voltage requested: ", setVoltage, "V, system reported: ", voltage, "V - Please proceed with care.");
 			//CS_THROW("Applied voltage is higher than requested. Emergency stop!");
 		}
 		if(voltage < setVoltage)
 		{
-			logging::log_warn("UsIntCephasonics: Voltage requested ", setVoltage, "V, but only ", voltage, "V could be set.");
+			logging::log_warn("UsIntCephasonics: Transmit voltage requested: ", setVoltage, "V, system reported: ", voltage, "V were set - Image quality might be deteriorated.");
 		}
 	}
 
@@ -1433,8 +1428,8 @@ namespace supra
 		// TODO extract voltage rail as parameter setting from config
 		PlatformCapabilities pC = USPlatformMgr::getPlatformCapabilities(*m_cPlatformHandle);
 		railType rail = DEFAULT;
-		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailA: ", pC.RAILA_VOLTAGE_MIN, " - ", pC.RAILA_VOLTAGE_MAX, "V");
-		logging::log_warn("UsIntCephasonicsCc: Reported voltage range RailB: ", pC.RAILB_VOLTAGE_MIN, " - ", pC.RAILB_VOLTAGE_MAX, "V");
+		logging::log_log("UsIntCephasonicsCc: Reported voltage range RailA: ", pC.RAILA_VOLTAGE_MIN, " - ", pC.RAILA_VOLTAGE_MAX, "V");
+		logging::log_log("UsIntCephasonicsCc: Reported voltage range RailB: ", pC.RAILB_VOLTAGE_MIN, " - ", pC.RAILB_VOLTAGE_MAX, "V");
 		
 		bool isUniPolar = BeamEnsembleTxParameters::Unipolar == txEnsembleParams.txPulseType;
 		double targetVoltage = txEnsembleParams.txVoltage * (isUniPolar ? 2.0 : 1.0);
@@ -1443,12 +1438,12 @@ namespace supra
 			//TODO Rail B only allows for 110V right now...weird
 			//rail = RAIL_B;
 			rail = RAIL_B;
-			logging::log_warn("UsIntCephasonicsCc Setting rail B");
+			logging::log_log("UsIntCephasonicsCc Setting rail B");
 		}
 		else if(targetVoltage <= pC.RAILA_VOLTAGE_MAX && targetVoltage >= pC.RAILA_VOLTAGE_MIN)
 		{
 			rail = RAIL_A;
-			logging::log_warn("UsIntCephasonicsCc Setting rail A");
+			logging::log_log("UsIntCephasonicsCc Setting rail A");
 		}
 		else {
 			CS_THROW("Voltage not supported. Emergency stop!");
