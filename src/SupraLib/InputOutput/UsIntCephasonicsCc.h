@@ -71,6 +71,7 @@ namespace supra
 		double txDutyCycle;				// duty cycle (percent) used for pulse
 		double txFrequency;				// pulse frequency in MHz
 		double txPrf;					// pulse repetition frequency of image in Hz
+		size_t txRepeatFiring; 			// number of firings for specified pulse before moving to rx
 
 		
 

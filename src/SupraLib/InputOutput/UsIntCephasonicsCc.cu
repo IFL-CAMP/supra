@@ -263,6 +263,7 @@ namespace supra
 				m_valueRangeDictionary.remove(idApp+"txPulseInversion");
 				m_valueRangeDictionary.remove(idApp+"txFrequency");
 				m_valueRangeDictionary.remove(idApp+"txPulseRepetitionFrequency");
+				m_valueRangeDictionary.remove(idApp+"txPulseRepeatFiring");
 				m_valueRangeDictionary.remove(idApp+"txWindowType");
 				m_valueRangeDictionary.remove(idApp+"txWindowParameter");
 				m_valueRangeDictionary.remove(idApp+"txDutyCycle");
@@ -305,7 +306,7 @@ namespace supra
 
 			// overall scan type for sequence
 			m_valueRangeDictionary.set<string>(idApp+"scanType", {"linear", "phased", "biphased", "planewave"}, "linear", descApp+"Scan Type");
-			m_valueRangeDictionary.set<bool>(idApp+"rxModeActive", {true, false}, true, descApp+"Activate Rx [true]]");
+			m_valueRangeDictionary.set<bool>(idApp+"rxModeActive", {false, true}, true, descApp+"Activate Rx mode");
 
 			// beam specific settings
 			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 140, 6, descApp+"Pulse voltage [V]");
@@ -313,6 +314,7 @@ namespace supra
 			m_valueRangeDictionary.set<bool>(idApp+"txPulseInversion", {false, true}, false, descApp+"Pulse Inversion [negative V]");
 			m_valueRangeDictionary.set<double>(idApp+"txFrequency", 0.0, 20.0, 7.0, descApp+"Pulse frequency [MHz]");
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txPulseRepeatFiring", 1, 255, 1, descApp+"Number of Firings");
 			m_valueRangeDictionary.set<double>(idApp+"txDutyCycle", 0.0, 1.0, 1.0, descApp+"Duty cycle [percent]");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 10, 1, descApp+"Number Pulse Cycles (ceph)");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesManual", 1, 10, 1, descApp+"Number Pulse Cycles (manual)");
@@ -638,6 +640,7 @@ namespace supra
 			// setting specific for beam ensemble transmit, not handled not within beamformer
 			newProps->setSpecificParameter("UsIntCepCc.txFrequency",m_beamEnsembleTxParameters.at(numSeq).txFrequency);
 			newProps->setSpecificParameter("UsIntCepCc.txPrf", m_beamEnsembleTxParameters.at(numSeq).txPrf);
+			newProps->setSpecificParameter("UsIntCepCc.txRepeatFiring", m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring);
 			newProps->setSpecificParameter("UsIntCepCc.txVoltage", m_beamEnsembleTxParameters.at(numSeq).txVoltage);
 			newProps->setSpecificParameter("UsIntCepCc.txPulseType", m_beamEnsembleTxParameters.at(numSeq).txPulseType);
 			newProps->setSpecificParameter("UsIntCepCc.txPulseInversion", m_beamEnsembleTxParameters.at(numSeq).txPulseInversion);
@@ -896,7 +899,7 @@ namespace supra
 			std::string scanType = m_configurationDictionary.get<std::string>(seqIdApp+"scanType");
 			bf->setScanType(scanType);
 
-			bf->setRxModeActive(m_valueRangeDictionary.get<bool>(seqIdApp+"rxModeActive"));
+			bf->setRxModeActive(m_configurationDictionary.get<bool>(seqIdApp+"rxModeActive"));
 			bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
 			bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
 			bf->setRxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth")); // currently rx and tx focus are the same
@@ -945,6 +948,7 @@ namespace supra
 
 			// ensemble-specific parameters (valid for a whole image irrespective of whether it is linear, phased, planewave, or push)
 			m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
+			m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring = m_configurationDictionary.get<uint32_t>(seqIdApp+"txPulseRepeatFiring");
 			m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
 
 			std::string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
@@ -1165,6 +1169,10 @@ namespace supra
 				{
 					m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
 				}
+				if(configKey == seqIdApp+"txPulseRepeatFiring")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring = m_configurationDictionary.get<uint32_t>(seqIdApp+"txPulseRepeatFiring");
+				}	
 				if(configKey == seqIdApp+"txNumCyclesCephasonics")
 				{
 					m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
@@ -1461,7 +1469,7 @@ namespace supra
 				LINEAR, //not used for fully custom beams beam creation
 				numScanlines.x*numScanlines.y, npb, txFreq, txEnsembleParams.txNumCyclesCephasonics, m_startDepth/1000, m_endDepth/1000,
 				focalDepth, txFstop, rxFstop, rxWindow, angle, centerAngle,
-				beamEnsembles, false, disableRx);
+				beamEnsembles, -1, -1, false, disableRx);
 		m_pSubframeDefs.push_back(sf);
 		size_t subframeID = sf->getID();
 
@@ -1502,7 +1510,7 @@ namespace supra
 		// add frame to scan to allow proper handling of parent-child structure
 		m_pScan->update(AddFrame(*fdef));
 
-		fdef->update(SetPRF(txEnsembleParams.txPrf,1));
+		fdef->update(SetPRF(txEnsembleParams.txPrf,txEnsembleParams.txRepeatFiring));
 
 		//We cannot check the voltage right now, as the frameDef is not completely determined
 		applyVoltageSetting(fdef, txEnsembleParams.txVoltage, isUniPolar);
