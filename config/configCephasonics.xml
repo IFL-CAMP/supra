@@ -16,7 +16,7 @@
 					0
 				</param>
 				<param name="inputImpedance" type="double">
-					50
+					200
 				</param>
 				<param name="endDepth" type="double">
 					60
@@ -58,7 +58,7 @@
 					1
 				</param>
 				<param name="txWindowType" type="string">
-					Rectangular
+					Hamming
 				</param>
 				<param name="txWindowParameter" type="double">
 					0.5
