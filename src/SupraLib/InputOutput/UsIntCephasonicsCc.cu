@@ -729,41 +729,8 @@ namespace supra
 		// E.G: 2.5MHz Transmit Pulse Signal = 40*4/(32+32)
 		double pulseLength = static_cast<double>(m_systemTxClock)*1e6*csTxOversample / (txParams.txFrequency*1e6);
 
-
-		// Bipolar pulse with positive and negative half pulses (or the inverse)
-		// size_t pulseHalfLength = (pulseLength)/2 - 1;
-		// size_t pulseHalfLengthWeighted = static_cast<size_t>(std::round(
-		// 	std::max((weight*pulseLength)/2.0 - 1.0, 0.0)));
-
-		// vector<PulseVal> waveDef((pulseHalfLength*2 + 2) * txParams.txNumCyclesManual + 1, GND);
-
-		// for(size_t cycleIdx = 0; cycleIdx < txParams.txNumCyclesManual; cycleIdx++)
-		// {
-		// 	//Points to element with Leading Ground
-		// 	size_t firstIdx = cycleIdx*(pulseHalfLength*2 + 2);
-
-		// 	//Points to element with Mid Ground
-		// 	size_t centerIdx = firstIdx + pulseHalfLength + 1;
-
-		// 	// creat waveform with bipolar signals centered around mid ground
-		// 	// and with co-inciding peaks (pos/neg) also for different weight factors
-		// 	for (size_t i = 1; i <= pulseHalfLengthWeighted; i++)
-		// 	{
-		// 		waveDef[centerIdx - i] = POSV0;
-		// 		waveDef[centerIdx + i] = NEGV0;
-		// 	}
-		// }
-
+		// target container for wave table
 		vector<PulseVal> waveDef;
-
-		
-		// set desired pulsing direction and values if pulse inversion is enabled.
-		// std::pair<auto,auto> pulsingValues(POSV0,NEGV0);
-		// if (txParams.txPulseInversion == true)
-		// {
-		// 	pulsingValues.first = NEGV0;
-		// 	pulsingValues.second = POSV0;
-		// }
 
 		if (BeamEnsembleTxParameters::Unipolar == txParams.txPulseType)
 		{
