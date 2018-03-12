@@ -824,7 +824,7 @@ namespace supra
 		size_t numBeamSequences = newConfig.get<uint32_t>("sequenceNumFrames", 1);
 		if (m_numBeamSequences != numBeamSequences)
 		{
-			logging::log_log("UsIntCephasonics: New number of beam sequences ", numBeamSequences, ", was formerly ", m_numBeamSequences);
+			logging::log_log("UsIntCephasonicsCc: New number of beam sequences ", numBeamSequences, ", was formerly ", m_numBeamSequences);
 			size_t oldNumBeamSequences = m_numBeamSequences;
 			m_numBeamSequences = numBeamSequences;
 			setBeamSequenceValueRange(oldNumBeamSequences);
@@ -921,7 +921,7 @@ namespace supra
 				m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 			}
 			else {
-				logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
+				logging::log_warn("UsIntCephasonicsCc: : Incorrect pulse type set, defaulting to Bipolar transmit pulse.");
 			}
 			
 			m_beamEnsembleTxParameters.at(numSeq).txPulseInversion = m_configurationDictionary.get<bool>(seqIdApp+"txPulseInversion");
@@ -1108,7 +1108,7 @@ namespace supra
 						m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 					}
 					else {
-						logging::log_log("Warning: uncorrect pulse type set, defaulting to Bipolar transmit pulse.");
+						logging::log_warn("UsIntCephasonicsCc: Incorrect pulse type set, defaulting to Bipolar transmit pulse.");
 						m_beamEnsembleTxParameters.at(numSeq).txPulseType = BeamEnsembleTxParameters::Bipolar;
 					}
 				}
@@ -1438,12 +1438,12 @@ namespace supra
 			//TODO Rail B only allows for 110V right now...weird
 			//rail = RAIL_B;
 			rail = RAIL_B;
-			logging::log_log("UsIntCephasonicsCc Setting rail B");
+			logging::log_log("UsIntCephasonicsCc: Setting rail B");
 		}
 		else if(targetVoltage <= pC.RAILA_VOLTAGE_MAX && targetVoltage >= pC.RAILA_VOLTAGE_MIN)
 		{
 			rail = RAIL_A;
-			logging::log_log("UsIntCephasonicsCc Setting rail A");
+			logging::log_log("UsIntCephasonicsCc: Setting rail A");
 		}
 		else {
 			CS_THROW("Voltage not supported. Emergency stop!");
