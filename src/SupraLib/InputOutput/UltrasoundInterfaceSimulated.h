@@ -59,6 +59,7 @@ namespace supra
 		size_t m_bmodeNumVectors;
 		size_t m_bmodeNumSamples;
 		double m_gain;
+		double m_txFrequency;
 		double m_depth;
 		double m_width;
 		std::shared_ptr<USImageProperties> m_pImageProperties;

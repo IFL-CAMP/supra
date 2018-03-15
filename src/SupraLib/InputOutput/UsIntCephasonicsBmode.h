@@ -71,6 +71,7 @@ namespace supra
 		std::mutex m_objectMutex;
 
 		std::string m_xmlFileName;
+		double m_endDepth;
 
 		bool m_ready;
 

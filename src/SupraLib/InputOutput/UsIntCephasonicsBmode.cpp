@@ -21,6 +21,8 @@
 #include <AddScanConverter.h>
 #include <EnableScanConverter.h>
 
+#include <cmd/SetEndDepth.h>
+
 #include "UsIntCephasonicsBmodeProc.h"
 #include "UsIntCephasonicsBmode.h"
 
@@ -67,6 +69,7 @@ namespace supra
 		: AbstractInput(graph, nodeID,1)
 		, m_cPlatformHandle(nullptr)
 		, m_cScanDefiniton(nullptr)
+		, m_endDepth(70.0)
 	{
 		m_ready = false;
 
@@ -74,12 +77,12 @@ namespace supra
 		{
 			setenv("CS_SYSCFG_SINGLE", "1", true);
 			setenv("CS_LOGFILE", "", true);
-			setenv("CS_BITFILE_FORCE", "1", true);
 			m_environSet = true;
 		}
 
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<string>("xmlFileName", "", "xScan file");
+		m_valueRangeDictionary.set<double>("endDepth", 0.0, 300.0, 70.0, "End depth [mm]");
 	}
 
 	UsIntCephasonicsBmode::~UsIntCephasonicsBmode()
@@ -135,6 +138,14 @@ namespace supra
 
 	void UsIntCephasonicsBmode::configurationEntryChanged(const std::string & configKey)
 	{
+		if (configKey == "endDepth")
+		{
+			m_endDepth = m_configurationDictionary.get<double>("endDepth");
+			if (getRunning())
+			{
+				m_cScanDefiniton->update(SetEndDepth(m_endDepth / 1000.0));
+			}
+		}
 	}
 
 	void UsIntCephasonicsBmode::configurationChanged()
@@ -167,6 +178,7 @@ namespace supra
 			log_error("Multiple frame sequences are not supported yet.");
 		}
 		else {
+			log_info("UsIntCephasonicsBmode: got new layout");
 			set<uint16_t> frameIDs = layout.getFrameIDs();
 			uint16_t frameID = *(frameIDs.begin());
 
@@ -188,7 +200,6 @@ namespace supra
 		{
 			lock_guard<mutex> lock(m_objectMutex);
 			m.measure();
-
 			size_t numVectors = frameBuffer->getNx();
 			size_t numSamples = frameBuffer->getNy();
 

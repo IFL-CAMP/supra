@@ -50,6 +50,8 @@ namespace supra
 		{};
 
 		std::shared_ptr<const USImageProperties> getImageProperties() const { return m_pImageProperties; };
+		/// Sets the \see USImageProperties that contain the associated metadata
+		void setImageProperties(std::shared_ptr<USImageProperties> & imageProperties) { m_pImageProperties = imageProperties; };
 		std::shared_ptr<const Container<ElementType> > getData() const { return m_pData; };
 		size_t getNumScanlines() const { return m_numScanlines; };
 		size_t getNumElements() const { return m_numElements; };

@@ -14,7 +14,7 @@
 				<param name="createSequences" type="bool">
 					1
 				</param>
-				<param name="maxFrames" type="uint32_t">
+				<param name="maxElements" type="uint32_t">
 					250
 				</param>
 				<param name="filename" type="string">
@@ -25,7 +25,7 @@
 				<param name="createSequences" type="bool">
 					1
 				</param>
-				<param name="maxFrames" type="uint32_t">
+				<param name="maxElements" type="uint32_t">
 					50
 				</param>
 				<param name="filename" type="string">
@@ -45,7 +45,7 @@
 		</connection>
 		<connection>
 			<from id="US-Cep" port="0" />
-			<to id="MHD_Raw" port="0" />
+			<to id="MHD_Beam" port="0" />
 		</connection>
 		<!--<connection>
 			<from id="BEAM" port="0" />
