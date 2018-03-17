@@ -62,7 +62,7 @@ IF(SUPRA_CUDA)
 	include(supraIncludeCuda)
 	set(CUDA_SEPARABLE_COMPILATION ON)
 	MESSAGE(STATUS "Found Cuda Version " ${CUDA_VERSION_STRING})
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--Wno-deprecated-declarations;--use_fast_math;--default-stream=per-thread;-lineinfo")
 	IF(WIN32)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
 	ELSE()
@@ -77,7 +77,7 @@ IF(SUPRA_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
 		
-	IF(DEFINED CUDA_CUBLAS_LIBRARIES AND NOT CUDA_CUBLAS_LIBRARIES STREQUAL "NOTFOUND")
+	IF(CUDA_CUBLAS_LIBRARIES AND CUDA_cublas_LIBRARY AND CUDA_cublas_device_LIBRARY)
 		SET(SUPRA_CUDA_CUBLAS ON)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 			HAVE_CUDA_CUBLAS)
