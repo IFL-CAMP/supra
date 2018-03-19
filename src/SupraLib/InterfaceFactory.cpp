@@ -167,10 +167,6 @@ namespace supra
 		{
 			retVal = make_shared<BeamformingNode>(*pG, nodeID);
 		}
-		if (nodeType == "BeamformingMVNode")
-		{
-			retVal = make_shared<BeamformingMVNode>(*pG, nodeID);
-		}
 		if (nodeType == "IQDemodulatorNode")
 		{
 			retVal = make_shared<IQDemodulatorNode>(*pG, nodeID);
@@ -190,6 +186,12 @@ namespace supra
 		if (nodeType == "RawDelayNode")
 		{
 			retVal = make_shared<RawDelayNode>(*pG, nodeID);
+		}
+#endif
+#ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
+		if (nodeType == "BeamformingMVNode")
+		{
+			retVal = make_shared<BeamformingMVNode>(*pG, nodeID);
 		}
 #endif
 		logging::log_error_if(!((bool)retVal),
