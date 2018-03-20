@@ -17,6 +17,7 @@
 
 #include <utilities/Logging.h>
 #include <utilities/cudaUtility.h>
+#include <utilities/cublasUtility.h>
 using namespace std;
 
 namespace supra

@@ -15,9 +15,6 @@
 #ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
 
 #include <memory>
-//#include <vector>
-//#include <deque>
-//#include <mutex>
 #include <tbb/flow_graph.h>
 
 #include "AbstractNode.h"
@@ -25,13 +22,9 @@
 
 #include <cublas_v2.h>
 
-//#include "SyncRecordObject.h"
-//#include "RxBeamformerParameters.h"
-
 namespace supra
 {
 	//forward declarations
-	//enum WindowType : uint32_t;
 	class USImageProperties;
 
 	class BeamformingMVNode : public AbstractNode {

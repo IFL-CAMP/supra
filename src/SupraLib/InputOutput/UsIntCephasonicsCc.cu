@@ -65,7 +65,6 @@
 
 namespace supra
 {
-	using namespace std;
 	using namespace ::cs;
 	using ::cs::USPlatformMgr;
 	using logging::log_error;
