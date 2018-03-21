@@ -52,7 +52,7 @@ namespace supra
 		m_callFrequency.setName("TrROS");
 
 		m_rosWrapper->subscribe(m_rosTopic, &TrackerInterfaceROS::receiveTransformMessage, this);
-		m_rosWrapper->spin(&AbstractInput<RecordObject>::getRunning, (AbstractInput<RecordObject>*)this);
+		m_rosWrapper->spin(&AbstractInput::getRunning, (AbstractInput<RecordObject>*)this);
 	}
 
 	void TrackerInterfaceROS::receiveTransformMessage(const geometry_msgs::TransformStamped & transform)
