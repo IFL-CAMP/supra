@@ -316,7 +316,7 @@ namespace supra
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txPulseRepeatFiring", 1, 255, 1, descApp+"Number of Firings");
 			m_valueRangeDictionary.set<double>(idApp+"txDutyCycle", 0.0, 1.0, 1.0, descApp+"Duty cycle [percent]");
-			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 10, 1, descApp+"Number Pulse Cycles (ceph)");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 20000, 1, descApp+"Number Pulse Cycles (ceph)");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesManual", 1, 10, 1, descApp+"Number Pulse Cycles (manual)");
 
 			// beam ensemble specific settings
