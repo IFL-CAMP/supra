@@ -1416,10 +1416,12 @@ namespace supra
 		
 		bool isUniPolar = BeamEnsembleTxParameters::Unipolar == txEnsembleParams.txPulseType;
 		double targetVoltage = txEnsembleParams.txVoltage * (isUniPolar ? 2.0 : 1.0);
-		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN)
+		bool alternateRail = m_pSubframeDefs.size() > 1;
+
+		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN && !alternateRail)
 		{
-			//TODO Rail B only allows for 110V right now...weird
-			//rail = RAIL_B;
+			// Beware that Rail B only reports 110V right now...weird
+			// Rail B is 6 times stronger thatn Rail A, thus we use B per default
 			rail = RAIL_B;
 			logging::log_log("UsIntCephasonicsCc: Setting rail B");
 		}
