@@ -44,34 +44,29 @@ namespace supra
 		}
 	}
 
-	template<>
-	shared_ptr<Container<int16_t> > TemporalFilter::filter(
-		const std::queue<std::shared_ptr<const Container<int16_t> > > & inImageData,
+	template <typename InputType, typename OutputType>
+	shared_ptr<Container<OutputType> > TemporalFilter::filter(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
 		vec3s size,
 		const std::vector<double> weights)
 	{
 		assert(inImageData.size() == weights.size());
-
-		if (inImageData.size() == 1)
-		{
-			return make_shared<Container<int16_t> >(LocationGpu, *(inImageData.front()));
-		}
 
 		size_t width = size.x;
 		size_t height = size.y;
 		size_t depth = size.z;
 		size_t numel = width*height*depth;
 
-		auto stream = inImageData.back()->getStream();
-		auto pFiltGpu = make_shared<Container<int16_t> >(LocationGpu, stream, numel);
+		auto stream = std::dynamic_pointer_cast<const Container<InputType> >(inImageData.back())->getStream();
+		auto pFiltGpu = make_shared<Container<OutputType> >(LocationGpu, stream, numel);
 
 		Container<double> weightsContainer(LocationGpu, stream, weights);
-		Container<const int16_t*> imagePointersContainer(LocationHost, stream, inImageData.size());
-		vector<shared_ptr<const Container<int16_t> > > copiedImages;
-		queue<shared_ptr<const Container<int16_t> > > imageData = inImageData;
+		Container<const InputType*> imagePointersContainer(LocationHost, stream, inImageData.size());
+		vector<shared_ptr<const Container<InputType> > > copiedImages;
+		queue<shared_ptr<const ContainerBase> > imageData = inImageData;
 		for (size_t imageIndex = 0; imageIndex < inImageData.size(); imageIndex++)
 		{
-			auto thisImageData = imageData.front();
+			auto thisImageData = std::dynamic_pointer_cast<const Container<InputType> >(imageData.front());
 			imageData.pop();
 			if (thisImageData->isGPU())
 			{
@@ -79,17 +74,17 @@ namespace supra
 			}
 			else
 			{
-				auto copy = make_shared<Container<int16_t> >(LocationGpu, *thisImageData);
+				auto copy = make_shared<Container<InputType> >(LocationGpu, *thisImageData);
 				copiedImages.push_back(copy);
 				imagePointersContainer.get()[imageIndex] = copy->get();
 			}
 		}
-		auto imagePointersContainerGpu = make_shared<Container<const int16_t*> >(LocationGpu, imagePointersContainer);
+		auto imagePointersContainerGpu = make_shared<Container<const InputType*> >(LocationGpu, imagePointersContainer);
 
 		dim3 blockSize(256, 1);
 		dim3 gridSize(static_cast<unsigned int>((numel + blockSize.x - 1) / blockSize.x), 1);
 
-		temporalFilterKernel<int16_t, int16_t, WorkType> <<<gridSize, blockSize, 0, stream>>> (
+		temporalFilterKernel<InputType, OutputType, WorkType> <<<gridSize, blockSize, 0, stream>>> (
 			numel,
 			static_cast<uint32_t>(inImageData.size()),
 			weightsContainer.get(),
@@ -99,4 +94,25 @@ namespace supra
 
 		return pFiltGpu;
 	}
+
+	template
+	shared_ptr<Container<int16_t> > TemporalFilter::filter<int16_t, int16_t>(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+		vec3s size,
+		const std::vector<double> weights);
+	template
+	shared_ptr<Container<float> > TemporalFilter::filter<int16_t, float>(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+		vec3s size,
+		const std::vector<double> weights);
+	template
+	shared_ptr<Container<int16_t> > TemporalFilter::filter<float, int16_t>(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+		vec3s size,
+		const std::vector<double> weights);
+	template
+	shared_ptr<Container<float> > TemporalFilter::filter<float, float>(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+		vec3s size,
+		const std::vector<double> weights);
 }

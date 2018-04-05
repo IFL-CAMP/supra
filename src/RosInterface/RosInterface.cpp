@@ -256,7 +256,7 @@ namespace supra
 			case TypeString:
 				fillParameterMessage<string>(confDict, rangeDict, paramName, pParam);
 				break;
-			case TypeValueUnknown:
+			case TypeUnknown:
 			default:
 				log_warn("Cannot interpret parameter value range of '", paramName, "' because its type is unknown.");
 				break;
@@ -340,7 +340,7 @@ namespace supra
 			case TypeString:
 				wasSuccess = inputNode->changeConfig<string>(paramName, newValue);
 				break;
-			case TypeValueUnknown:
+			case TypeUnknown:
 			default:
 				log_warn("Cannot set parameter '", paramName, "' because its type is unknown.");
 				break;
@@ -395,7 +395,7 @@ namespace supra
 			case TypeString:
 				retVal = "TypeString";
 				break;
-			case TypeValueUnknown:
+			case TypeUnknown:
 			default:
 				retVal = "TypeValueUnknown";
 				log_warn("Encountered unknown parameter type for '", paramName, "'.");
@@ -445,7 +445,7 @@ namespace supra
 			case TypeString:
 				retVal = (config->get<string>(paramName, ""));
 				break;
-			case TypeValueUnknown:
+			case TypeUnknown:
 			default:
 				log_warn("Cannot get parameter '", paramName, "' because its type is unknown.");
 				break;

@@ -19,7 +19,7 @@
 #include "utilities/Logging.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
+#include <cfloat>
 
 
 namespace supra
@@ -37,14 +37,6 @@ namespace supra
 	using std::floor;
 	using std::ceil;
 #endif
-
-	template <typename T>
-	class LimitProxy
-	{
-		public:
-			static const T max = std::numeric_limits<T>::max();
-			static const T min = std::numeric_limits<T>::min();
-	};
 
 #ifdef HAVE_CUDA
 	//define for portable function name resolution
@@ -89,6 +81,44 @@ namespace supra
 	#define __host__
 	#define __device__
 #endif
+
+	template <typename T>
+	class LimitProxy
+	{
+	public:
+		inline __host__ __device__ static T max();
+		inline __host__ __device__ static T min();
+	};
+
+	template <>
+	class LimitProxy<float>
+	{
+	public:
+		inline __host__ __device__ static float max() { return FLT_MAX; }
+		inline __host__ __device__ static float min() { return -FLT_MAX; }
+	};
+
+	template <>
+	class LimitProxy<int16_t>
+	{
+	public:
+		inline __host__ __device__ static int16_t max() { return 32767; }
+		inline __host__ __device__ static int16_t min() { return -32767; }
+	};
+
+	template <>
+	class LimitProxy<uint8_t>
+	{
+	public:
+		inline __host__ __device__ static uint8_t max() { return 0; }
+		inline __host__ __device__ static uint8_t min() { return 255; }
+	};
+
+	template <typename ResultType, typename InputType>
+	__host__ __device__ ResultType clampCast(const InputType& x)
+	{
+		return static_cast<ResultType>(min(max(x, static_cast<InputType>(LimitProxy<ResultType>::min())), static_cast<InputType>(LimitProxy<ResultType>::max())));
+	}
 }
 
 #endif // !__CUDAUTILITY_H__

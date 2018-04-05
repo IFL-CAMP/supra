@@ -205,7 +205,7 @@ namespace supra
 					}
 				}
 			}
-			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(min(max(sInterp, static_cast<float>(LimitProxy<ResultType>::min)), static_cast<float>(LimitProxy<ResultType>::max)));
+			s[scanlineIdx + r * numRxScanlines] = clampCast<ResultType>(sInterp);
 		}
 	}
 
@@ -294,7 +294,7 @@ namespace supra
 			}
 
 
-			s[scanlineIdx + r * numRxScanlines] = static_cast<ResultType>(min(max(sInterp, static_cast<float>(LimitProxy<ResultType>::min)), static_cast<float>(LimitProxy<ResultType>::max)));
+			s[scanlineIdx + r * numRxScanlines] = clampCast<ResultType>(sInterp);
 		}
 	}
 
@@ -423,24 +423,24 @@ namespace supra
 		cudaSafeCall(cudaPeekAtLastError());
 	}
 
-	template <>
-	shared_ptr<USImage<int16_t> > RxBeamformerCuda::performRxBeamforming(
+	template <typename ChannelDataType, typename ImageDataType>
+	shared_ptr<USImage> RxBeamformerCuda::performRxBeamforming(
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
-		shared_ptr<const USRawData<int16_t> > rawData,
+		shared_ptr<const USRawData> rawData,
 		double fNumber,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits) const
 	{
 		//Ensure the raw-data are on the gpu
-		auto gRawData = rawData->getData();
-		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
+		auto gRawData = rawData->getData<ChannelDataType>();
+		if (!gRawData->isGPU() && !gRawData->isBoth())
 		{
-			gRawData = std::make_shared<Container<int16_t> >(LocationGpu, *gRawData);
+			gRawData = std::make_shared<Container<ChannelDataType> >(LocationGpu, *gRawData);
 		}
 
 		size_t numelOut = m_numRxScanlines*m_rxNumDepths;
-		shared_ptr<Container<int16_t> > pData = std::make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
+		shared_ptr<Container<ImageDataType> > pData = std::make_shared<Container<ImageDataType> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
 
 		double dt = 1.0 / rawData->getSamplingFrequency();
 
@@ -449,26 +449,26 @@ namespace supra
 			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
 		}
 
-		auto beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
-		auto beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+		auto beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+		auto beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, ChannelDataType, ImageDataType, LocationType>;
 		switch (sampleBeamformer)
 		{
 		case DelayAndSum:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
-			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, ChannelDataType, ImageDataType, LocationType>;
 			break;
 		case DelayAndStdDev:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
-			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndStdDev, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndStdDev, ChannelDataType, ImageDataType, LocationType>;
 			break;
 		case TestSignal:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
-			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerTestSignal, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerTestSignal, ChannelDataType, ImageDataType, LocationType>;
 			break;
 		case INVALID:
 		default:
-			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, int16_t, int16_t, LocationType>;
-			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, int16_t, int16_t, LocationType>;
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndSum, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndSum, ChannelDataType, ImageDataType, LocationType>;
 		}
 
 
@@ -529,7 +529,7 @@ namespace supra
 			m_editedImageProperties = std::const_pointer_cast<const USImageProperties>(newProps);
 		}
 
-		auto retImage = std::make_shared<USImage<int16_t> >(
+		auto retImage = std::make_shared<USImage>(
 			vec2s{ m_numRxScanlines, m_rxNumDepths },
 			pData,
 			m_editedImageProperties,
@@ -538,4 +538,37 @@ namespace supra
 
 		return retImage;
 	}
+
+	template
+	shared_ptr<USImage> RxBeamformerCuda::performRxBeamforming<int16_t, int16_t>(
+		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameter,
+		bool interpolateBetweenTransmits) const;
+	template
+	shared_ptr<USImage> RxBeamformerCuda::performRxBeamforming<int16_t, float>(
+		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameter,
+		bool interpolateBetweenTransmits) const;
+	template
+	shared_ptr<USImage> RxBeamformerCuda::performRxBeamforming<float, int16_t>(
+		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameter,
+		bool interpolateBetweenTransmits) const;
+	template
+	shared_ptr<USImage> RxBeamformerCuda::performRxBeamforming<float, float>(
+		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameter,
+		bool interpolateBetweenTransmits) const;
 }

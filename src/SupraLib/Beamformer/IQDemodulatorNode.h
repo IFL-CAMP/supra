@@ -24,6 +24,8 @@
 
 namespace supra
 {
+	class USImage;
+
 	class IQDemodulatorNode : public AbstractNode {
 	public:
 		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, TBB_QUEUE_RESOLVER(false)> nodeType;
@@ -56,6 +58,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndDemodulate(std::shared_ptr<RecordObject> mainObj);
+		template <typename InputType>
+		std::shared_ptr<ContainerBase> demodulateTemplated(std::shared_ptr<USImage> inImage);
 		void readFrequencyCompoundingSettings();
 
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
@@ -72,6 +76,7 @@ namespace supra
 		std::vector<double> m_frequencyCompoundingReferenceFrequencies;
 		std::vector<double> m_frequencyCompoundingBandwidths;
 		std::vector<double> m_frequencyCompoundingWeights;
+		DataType m_outputType;
 
 		uint32_t m_decimation;
 		vec3s m_resultingSize;

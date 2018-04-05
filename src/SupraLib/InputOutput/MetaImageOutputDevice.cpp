@@ -213,7 +213,7 @@ namespace supra
 	}
 
 	template <typename ElementType>
-	std::pair<bool, size_t> MetaImageOutputDevice::addImageTemplated(shared_ptr<const USImage<ElementType> > imageData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addImageTemplated(shared_ptr<const USImage> imageData)
 	{
 		bool success = false;
 		size_t frameNum = 0;
@@ -233,12 +233,12 @@ namespace supra
 
 				shared_ptr<Container<ElementType> > pDataCopy;
 				shared_ptr<const Container<ElementType> > pData;
-				if (imageData->getData()->isHost())
+				if (imageData->getData<ElementType>()->isHost())
 				{
-					pData = imageData->getData();
+					pData = imageData->getData<ElementType>();
 				}
 				else {
-					pDataCopy = make_shared<Container<ElementType> >(LocationHost, *(imageData->getData()));
+					pDataCopy = make_shared<Container<ElementType> >(LocationHost, *(imageData->getData<ElementType>()));
 					pData = pDataCopy;
 				}
 
@@ -255,7 +255,7 @@ namespace supra
 	}
 
 	template <typename ElementType>
-	std::pair<bool, size_t> MetaImageOutputDevice::addUSRawDataTemplated(shared_ptr<const USRawData<ElementType> > rawData)
+	std::pair<bool, size_t> MetaImageOutputDevice::addUSRawDataTemplated(shared_ptr<const USRawData> rawData)
 	{
 		bool success = false;
 		size_t frameNum = 0;
@@ -267,12 +267,12 @@ namespace supra
 
 			shared_ptr<Container<ElementType> > pDataCopy;
 			shared_ptr<const Container<ElementType> > pData;
-			if (rawData->getData()->isHost())
+			if (rawData->getData<ElementType>()->isHost())
 			{
-				pData = rawData->getData();
+				pData = rawData->getData<ElementType>();
 			}
 			else {
-				pDataCopy = make_shared<Container<int16_t> >(LocationHost, *(rawData->getData()));
+				pDataCopy = make_shared<Container<ElementType> >(LocationHost, *(rawData->getData<ElementType>()));
 				pData = pDataCopy;
 			}
 			double resolution = rawData->getImageProperties()->getSampleDistance();
@@ -290,16 +290,24 @@ namespace supra
 	std::pair<bool, size_t> MetaImageOutputDevice::addImage(shared_ptr<const RecordObject> _imageData)
 	{
 		std::pair<bool, size_t> successframeNum = std::make_pair(false, 0);
-		auto imageData8Bit = dynamic_pointer_cast<const USImage<uint8_t>>(_imageData);
-		if (imageData8Bit)
+		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
+		if (imageData)
 		{
-			successframeNum = addImageTemplated<uint8_t>(imageData8Bit);
-		}
-
-		auto imageData16Bit = dynamic_pointer_cast<const USImage<int16_t>>(_imageData);
-		if (imageData16Bit)
-		{
-			successframeNum = addImageTemplated<int16_t>(imageData16Bit);
+			switch (imageData->getDataType())
+			{
+			case TypeUint8:
+				successframeNum = addImageTemplated<uint8_t>(imageData);
+				break;
+			case TypeInt16:
+				successframeNum = addImageTemplated<int16_t>(imageData);
+				break;
+			case TypeFloat:
+				successframeNum = addImageTemplated<float>(imageData);
+				break;
+			default:
+				logging::log_error("MetaImageOutputDevice: Image element type not supported");
+				break;
+			}			
 		}
 		return successframeNum;
 	}
@@ -307,10 +315,24 @@ namespace supra
 	std::pair<bool, size_t> MetaImageOutputDevice::addUSRawData(shared_ptr<const RecordObject> _rawData)
 	{
 		std::pair<bool, size_t> successframeNum = std::make_pair(false, 0);
-		auto rawData = dynamic_pointer_cast<const USRawData<int16_t>>(_rawData);
+		auto rawData = dynamic_pointer_cast<const USRawData>(_rawData);
 		if (rawData)
 		{
-			successframeNum = addUSRawDataTemplated<int16_t>(rawData);
+			switch (rawData->getDataType())
+			{
+			case TypeUint8:
+				successframeNum = addUSRawDataTemplated<uint8_t>(rawData);
+				break;
+			case TypeInt16:
+				successframeNum = addUSRawDataTemplated<int16_t>(rawData);
+				break;
+			case TypeFloat:
+				successframeNum = addUSRawDataTemplated<float>(rawData);
+				break;
+			default:
+				logging::log_error("MetaImageOutputDevice: Raw data element type not supported");
+				break;
+			}
 		}
 		return successframeNum;
 	}

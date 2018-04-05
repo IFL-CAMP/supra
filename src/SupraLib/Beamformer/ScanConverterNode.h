@@ -58,7 +58,7 @@ namespace supra
 
 	private:
 		template <typename T>
-		std::shared_ptr<RecordObject> convertTemplated(std::shared_ptr<USImage<T> > pInImage);
+		std::shared_ptr<RecordObject> convertTemplated(std::shared_ptr<USImage> pInImage);
 		std::shared_ptr<RecordObject> checkTypeAndConvert(std::shared_ptr<RecordObject> mainObj);
 		void sendMask(std::shared_ptr<RecordObject> pImage);
 
@@ -71,6 +71,7 @@ namespace supra
 		bool m_parameterChangeRequiresInternalUpdate;
 		bool m_forceImageResolution;
 		double m_imageResolution;
+		DataType m_outputType;
 
 		std::unique_ptr<ScanConverter> m_converter;
 

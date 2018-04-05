@@ -86,21 +86,12 @@ namespace supra
 		{
 			if (inMessage->getType() == TypeUSImage)
 			{
-				auto inImage8Bit = std::dynamic_pointer_cast<USImage<uint8_t>>(inMessage);
-				auto inImage16Bit = std::dynamic_pointer_cast<USImage<int16_t>>(inMessage);
-				logging::log_error_if(!inImage8Bit && !inImage16Bit, "Error casting a record object to USImage, although the type was 'TypeUSImage'");
-				if (inImage8Bit || inImage16Bit)
+				auto inImage = std::dynamic_pointer_cast<USImage>(inMessage);
+				logging::log_error_if(!inImage, "Error casting a record object to USImage, although the type was 'TypeUSImage'");
+				if (inImage)
 				{
-					bool is2D;
-					if (inImage16Bit)
-					{
-						is2D = inImage16Bit->getSize().z == 1;
-					}
-					if (inImage8Bit)
-					{
-						is2D = inImage8Bit->getSize().z == 1;
-					}
-
+					bool is2D = inImage->getSize().z == 1;
+					
 					bool useCampVis = !is2D;
 #ifdef HAVE_CAMPVIS
 					if (useCampVis)
@@ -114,51 +105,62 @@ namespace supra
 					{
 						shared_ptr<QImage> qtimage;
 						tuple<double, double, bool> worldSize;
-						if (inImage8Bit)
+						m_layerToShow = m_layerToShow % inImage->getSize().z;
+
+						qtimage = std::make_shared<QImage>(
+							static_cast<int>(inImage->getSize().x),
+							static_cast<int>(inImage->getSize().y),
+							QImage::Format_Grayscale8);
+
+						if (inImage->getDataType() == TypeUint8)
 						{
-							m_layerToShow = m_layerToShow % inImage8Bit->getSize().z;
-							auto inImageData = inImage8Bit->getData();
+							auto inImageData = inImage->getData<uint8_t>();
 							if (!inImageData->isHost())
 							{
 								inImageData = make_shared<Container<uint8_t> >(LocationHost, *inImageData);
 							}
-							qtimage = std::make_shared<QImage>(
-								static_cast<int>(inImage8Bit->getSize().x),
-								static_cast<int>(inImage8Bit->getSize().y),
-								QImage::Format_Grayscale8);
-							for (size_t row = 0; row < inImage8Bit->getSize().y; row++)
+							for (size_t row = 0; row < inImage->getSize().y; row++)
 							{
 								std::memcpy(qtimage->scanLine(static_cast<int>(row)),
-									inImageData->get() + row*inImage8Bit->getSize().x + m_layerToShow * inImage8Bit->getSize().x*inImage8Bit->getSize().y,
-									inImage8Bit->getSize().x * sizeof(uint8_t));
+									inImageData->get() + row*inImage->getSize().x + m_layerToShow * inImage->getSize().x*inImage->getSize().y,
+									inImage->getSize().x * sizeof(uint8_t));
 							}
-
-							worldSize = computeWorldSize(inImage8Bit);
 						}
-						if (inImage16Bit)
+						else if (inImage->getDataType() == TypeInt16)
 						{
-							m_layerToShow = m_layerToShow % inImage16Bit->getSize().z;
-							auto inImageData = inImage16Bit->getData();
+							auto inImageData = inImage->getData<int16_t>();
 							if (!inImageData->isHost())
 							{
 								inImageData = make_shared<Container<int16_t> >(LocationHost, *inImageData);
 							}
-							qtimage = std::make_shared<QImage>(
-								static_cast<int>(inImage16Bit->getSize().x),
-								static_cast<int>(inImage16Bit->getSize().y),
-								QImage::Format_Grayscale8);
-							for (size_t row = 0; row < inImage16Bit->getSize().y; row++)
+							for (size_t row = 0; row < inImage->getSize().y; row++)
 							{
 								uchar* destRow = qtimage->scanLine(static_cast<int>(row));
-								const int16_t*srcRow = inImageData->get() + row*inImage16Bit->getSize().x + m_layerToShow * inImage16Bit->getSize().x*inImage16Bit->getSize().y;
-								for (size_t col = 0; col < inImage16Bit->getSize().x; col++)
+								const int16_t* srcRow = inImageData->get() + row*inImage->getSize().x + m_layerToShow * inImage->getSize().x*inImage->getSize().y;
+								for (size_t col = 0; col < inImage->getSize().x; col++)
 								{
 									destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col])), 255.0));
 								}
 							}
-
-							worldSize = computeWorldSize(inImage16Bit);
 						}
+						else if (inImage->getDataType() == TypeFloat)
+						{
+							auto inImageData = inImage->getData<float>();
+							if (!inImageData->isHost())
+							{
+								inImageData = make_shared<Container<float> >(LocationHost, *inImageData);
+							}
+							for (size_t row = 0; row < inImage->getSize().y; row++)
+							{
+								uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+								const float* srcRow = inImageData->get() + row*inImage->getSize().x + m_layerToShow * inImage->getSize().x*inImage->getSize().y;
+								for (size_t col = 0; col < inImage->getSize().x; col++)
+								{
+									destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(srcRow[col])), 255.0));
+								}
+							}
+						}
+						worldSize = computeWorldSize(inImage);
 						m_layerToShow++;
 
 						double worldWidth = get<0>(worldSize);
@@ -238,8 +240,7 @@ namespace supra
 		}
 	}
 
-	template <typename T>
-	std::tuple<double, double, bool> previewBuilderQT::computeWorldSize(std::shared_ptr < USImage<T> > image)
+	std::tuple<double, double, bool> previewBuilderQT::computeWorldSize(std::shared_ptr <USImage> image)
 	{
 		double worldWidth;
 		double worldHeight;

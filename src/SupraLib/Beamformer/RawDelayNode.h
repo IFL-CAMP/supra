@@ -62,6 +62,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndDelay(std::shared_ptr<RecordObject> mainObj);
+		template <typename RawElementType>
+		std::shared_ptr<USRawData> delay(std::shared_ptr<const USRawData> mainObj);
 		void readWindowType();
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
 
@@ -76,6 +78,7 @@ namespace supra
 		nodeType m_node;
 		double m_fNumber;
 		WindowType m_windowType;
+		DataType m_outputType;
 		double m_windowParameter;
 	};
 }

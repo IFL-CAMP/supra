@@ -41,20 +41,35 @@ namespace supra
 		}
 	};
 
-	template<>
-	shared_ptr<Container<uint8_t> > LogCompressor::compress(const shared_ptr<const Container<int16_t>>& inImageData, vec3s size, double dynamicRange, double scale, double inMax)
+	template <typename InputType, typename OutputType>
+	shared_ptr<Container<OutputType> > LogCompressor::compress(const shared_ptr<const Container<InputType>>& inImageData, vec3s size, double dynamicRange, double scale, double inMax)
 	{
 		size_t width = size.x;
 		size_t height = size.y;
 		size_t depth = size.z;
 
-		auto pComprGpu = make_shared<Container<uint8_t> >(LocationGpu, inImageData->getStream(), width*height*depth);
+		auto pComprGpu = make_shared<Container<OutputType> >(LocationGpu, inImageData->getStream(), width*height*depth);
 
-		thrustLogcompress<int16_t, uint8_t, WorkType> c(pow(10, (dynamicRange / 20)), static_cast<int16_t>(inMax), std::numeric_limits<uint8_t>::max(), scale);
+		thrustLogcompress<InputType, OutputType, WorkType> c(pow(10, (dynamicRange / 20)), static_cast<InputType>(inMax), 
+			static_cast<OutputType>(min(static_cast<double>(std::numeric_limits<OutputType>::max()), static_cast<double>(std::numeric_limits<uint8_t>::max()))),
+			scale);
 		thrust::transform(thrust::cuda::par.on(inImageData->getStream()), inImageData->get(), inImageData->get() + (width*height*depth),
 			pComprGpu->get(), c);
 		cudaSafeCall(cudaPeekAtLastError());
 
 		return pComprGpu;
 	}
+
+	template
+	shared_ptr<Container<uint8_t> > LogCompressor::compress<int16_t, uint8_t>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
+	template
+	shared_ptr<Container<uint8_t> > LogCompressor::compress<float, uint8_t>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
+	template
+	shared_ptr<Container<uint8_t> > LogCompressor::compress<uint8_t, uint8_t>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
+	template
+	shared_ptr<Container<float> > LogCompressor::compress<int16_t, float>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
+	template
+	shared_ptr<Container<float> > LogCompressor::compress<float, float>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
+	template
+	shared_ptr<Container<float> > LogCompressor::compress<uint8_t, float>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double dynamicRange, double scale, double inMax);
 }

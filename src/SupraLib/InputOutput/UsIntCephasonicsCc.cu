@@ -1733,7 +1733,7 @@ namespace supra
 				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(m_pFrameMap[frameIndex]);
 
 				// we received the data from all necessary platforms, now we can start the beamforming
-				shared_ptr<USRawData<int16_t> > rawData = make_shared<USRawData<int16_t> >
+				shared_ptr<USRawData> rawData = make_shared<USRawData>
 					(numBeams,
 					m_pTransducer->getNumElements(),
 					m_pTransducer->getElementLayout(),
@@ -1748,7 +1748,7 @@ namespace supra
 
 				if(m_writeMockData && !m_mockDataWritten)
 				{
-					rawData->getRxBeamformerParameters()->writeMetaDataForMock(m_mockDataFilename, const_pointer_cast<const USRawData<int16> >(rawData));
+					rawData->getRxBeamformerParameters()->writeMetaDataForMock(m_mockDataFilename, const_pointer_cast<const USRawData>(rawData));
 					m_mockDataWritten = true;
 				}
 

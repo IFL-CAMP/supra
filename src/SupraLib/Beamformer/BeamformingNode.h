@@ -62,6 +62,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
+		template <typename InputType>
+		std::shared_ptr<USImage> beamformTemplated(std::shared_ptr<const USRawData> pRawData);
 		void readWindowType();
 		void readBeamformerType();
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
@@ -78,6 +80,7 @@ namespace supra
 		double m_fNumber;
 		WindowType m_windowType;
 		double m_windowParameter;
+		DataType m_outputType;
 		RxBeamformerCuda::RxSampleBeamformer m_beamformerType;
 		bool m_interpolateTransmits;
 	};

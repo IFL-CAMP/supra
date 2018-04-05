@@ -178,7 +178,7 @@ namespace supra
 						case TypeString:
 							valueGood = checkEntryAndLogTemplated<std::string>(entry.first, nodeID);
 							break;
-						case TypeValueUnknown:
+						case TypeUnknown:
 						default:
 							logging::log_error("cannot check validity of configuration entry '", entry.first, "' as its range type is unknown.");
 						}
