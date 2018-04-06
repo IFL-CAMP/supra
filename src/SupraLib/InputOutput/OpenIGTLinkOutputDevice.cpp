@@ -133,6 +133,12 @@ namespace supra
 	template <typename T>
 	void OpenIGTLinkOutputDevice::sendImageMessageTemplated(shared_ptr<const USImage> imageData)
 	{
+		static_assert(
+			std::is_same<T, uint8_t>::value ||
+			std::is_same<T, int16_t>::value ||
+			std::is_same<T, float>::value,
+			"Image only implemented for uchar, short and float at the moment");
+
 		auto properties = imageData->getImageProperties();
 		if (
 			properties->getImageType() == USImageProperties::BMode ||

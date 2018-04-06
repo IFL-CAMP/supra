@@ -38,7 +38,7 @@ namespace supra
 		RawDelay(const RxBeamformerParameters& parameters);
 		~RawDelay();
 
-		// perform the receive beamforming
+		// apply the receive delay
 		template <typename ChannelDataType, typename OutputType>
 		shared_ptr<USRawData> performDelay(
 			shared_ptr<const USRawData> rawData,

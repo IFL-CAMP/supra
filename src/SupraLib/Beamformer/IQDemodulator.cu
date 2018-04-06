@@ -170,7 +170,7 @@ namespace supra
 				}
 			}
 
-			out[scanlineIdx + sampleIdxOut*numScanlines] = static_cast<OutputType>(accumulator);
+			out[scanlineIdx + sampleIdxOut*numScanlines] = clampCast<OutputType>(accumulator);
 		}
 	}
 

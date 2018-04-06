@@ -110,8 +110,8 @@ namespace supra
 	class LimitProxy<uint8_t>
 	{
 	public:
-		inline __host__ __device__ static uint8_t max() { return 0; }
-		inline __host__ __device__ static uint8_t min() { return 255; }
+		inline __host__ __device__ static uint8_t max() { return 255; }
+		inline __host__ __device__ static uint8_t min() { return 0; }
 	};
 
 	template <typename ResultType, typename InputType>

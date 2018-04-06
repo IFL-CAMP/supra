@@ -21,7 +21,6 @@ namespace supra
 	template <typename In, typename Out, typename WorkType>
 	struct thrustLogcompress : public thrust::unary_function<In, Out>
 	{
-		WorkType _outMax;
 		WorkType _inScale;
 		WorkType _scaleOverDenominator;
 
@@ -29,15 +28,14 @@ namespace supra
 		// signal = log10(1 + a*signal)./log10(1 + a) 
 		// of the downscaled (_inMax) input signal
 		thrustLogcompress(double dynamicRange, In inMax, Out outMax, double scale)
-			: _outMax(static_cast<WorkType>(outMax))
-			, _inScale(static_cast<WorkType>(dynamicRange / inMax))
+			: _inScale(static_cast<WorkType>(dynamicRange / inMax))
 			, _scaleOverDenominator(static_cast<WorkType>(scale * outMax / log10(dynamicRange + 1)))
 		{};
 
 		__host__ __device__ Out operator()(const In& a) const
 		{
-			WorkType val = min(log10(abs(static_cast<WorkType>(a))*_inScale + 1) * _scaleOverDenominator, _outMax);
-			return static_cast<Out>(val);
+			WorkType val = log10(abs(static_cast<WorkType>(a))*_inScale + (WorkType)1) * _scaleOverDenominator;
+			return clampCast<Out>(val);
 		}
 	};
 
@@ -50,9 +48,17 @@ namespace supra
 
 		auto pComprGpu = make_shared<Container<OutputType> >(LocationGpu, inImageData->getStream(), width*height*depth);
 
-		thrustLogcompress<InputType, OutputType, WorkType> c(pow(10, (dynamicRange / 20)), static_cast<InputType>(inMax), 
-			static_cast<OutputType>(min(static_cast<double>(std::numeric_limits<OutputType>::max()), static_cast<double>(std::numeric_limits<uint8_t>::max()))),
-			scale);
+		OutputType outMax;
+		if (std::is_integral<OutputType>::value)
+		{
+			outMax = std::numeric_limits<OutputType>::max();
+		}
+		else if (std::is_floating_point<OutputType>::value)
+		{
+			outMax = static_cast<OutputType>(255.0);
+		}
+
+		thrustLogcompress<InputType, OutputType, WorkType> c(pow(10, (dynamicRange / 20)), static_cast<InputType>(inMax), outMax, scale);
 		thrust::transform(thrust::cuda::par.on(inImageData->getStream()), inImageData->get(), inImageData->get() + (width*height*depth),
 			pComprGpu->get(), c);
 		cudaSafeCall(cudaPeekAtLastError());

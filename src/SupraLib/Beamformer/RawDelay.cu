@@ -191,7 +191,7 @@ namespace supra
 
 				uint32_t elemIdxLocal = (elemIdxX - txParams.firstActiveElementIndex.x) + (elemIdxY - txParams.firstActiveElementIndex.y)*elementLayout.x;
 				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
-					static_cast<ResultType>(sample * weightingScale);
+					clampCast<ResultType>(sample * weightingScale);
 			}
 		}
 	}
@@ -279,7 +279,7 @@ namespace supra
 				}
 			}
 			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
-				static_cast<ResultType>(sample * weightingScale);
+				clampCast<ResultType>(sample * weightingScale);
 
 			localElemIdxX++;
 		}

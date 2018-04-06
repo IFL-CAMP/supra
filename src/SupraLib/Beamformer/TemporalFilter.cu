@@ -40,7 +40,7 @@ namespace supra
 				sumWeights += weight;
 			}
 			sum /= sumWeights;
-			out[linearIdx] = static_cast<OutputType>(sum);
+			out[linearIdx] = clampCast<OutputType>(sum);
 		}
 	}
 

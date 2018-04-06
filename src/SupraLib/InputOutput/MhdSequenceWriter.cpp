@@ -73,7 +73,7 @@ namespace supra
 				{
 					m_mhdFile << d << " ";
 				}
-				//remember where the 3rd dimension = number of images has to be written to
+				//remember where the last dimension = number of images has to be written to
 				m_positionImageCount = m_mhdFile.tellp();
 				//place a few spaces as placeholders, assuming trailing whitespace does not hurt
 				m_mhdFile << "          \n"; // 10 spaces that can be replaced with numbers

@@ -292,8 +292,6 @@ namespace supra
 					}
 				}
 			}
-
-
 			s[scanlineIdx + r * numRxScanlines] = clampCast<ResultType>(sInterp);
 		}
 	}

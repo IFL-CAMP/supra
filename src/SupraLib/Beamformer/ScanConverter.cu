@@ -346,7 +346,7 @@ namespace supra
 					wY *((1 - wX)*scanlines[sIdx + numScanlines] +
 						wX *scanlines[sIdx + 1 + numScanlines]);
 			}
-			image[pixelIdx] = val; //TODO clamp here
+			image[pixelIdx] = clampCast<OutputType>(val);
 		}
 	}
 
@@ -391,7 +391,7 @@ namespace supra
 						wZ *((1 - wX)*scanlines[sIdx + numScanlinesX + numScanlines] +
 							wX *scanlines[sIdx + 1 + numScanlinesX + numScanlines]));
 			}
-			image[pixelIdx] = val; //TODO clamp here
+			image[pixelIdx] = clampCast<OutputType>(val);
 		}
 	}
 
@@ -435,7 +435,6 @@ namespace supra
 		}
 		else
 		{
-			logging::log_error("ScanConverter: Image size: ", m_imageSize.x, ", ", m_imageSize.y, ", ", m_imageSize.z);
 			dim3 blockSize(1, 256, 1);
 			dim3 gridSize(
 				static_cast<unsigned int>((m_imageSize.x + blockSize.x - 1) / blockSize.x),
