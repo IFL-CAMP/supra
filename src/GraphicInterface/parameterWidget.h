@@ -63,7 +63,9 @@ namespace supra
 		// general implementation for scalar types
 		virtual void addElements(QVBoxLayout* targetLayout)
 		{
-			static_assert(std::is_arithmetic<ValueType>::value, "Missing addElements-implementation for type");
+			static_assert(std::is_arithmetic<ValueType>::value ||
+				std::is_enum<ValueType>::value, 
+				"Missing addElements-implementation for type");
 			if (p_range->isUnrestricted())
 			{
 				//Add Spinbox

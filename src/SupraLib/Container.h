@@ -16,6 +16,7 @@
 #ifdef HAVE_CUDA
 #include "utilities/cudaUtility.h"
 #endif
+#include "utilities/DataType.h"
 
 #include <exception>
 #include <memory>
@@ -24,8 +25,15 @@
 
 namespace supra
 {
+	class ContainerBase
+	{
+	public:
+		virtual ~ContainerBase() {};
+		virtual DataType getType() const { return TypeUnknown; };
+	};
+
 	template<typename T>
-	class Container
+	class Container : public ContainerBase
 	{
 	public:
 		typedef ContainerFactory::ContainerStreamType ContainerStreamType;
@@ -209,6 +217,8 @@ namespace supra
 		{
 			return m_associatedStream;
 		}
+		DataType getType() const { return DataTypeGet<T>(); }
+
 	private:
 		void createAndRecordEvent()
 		{

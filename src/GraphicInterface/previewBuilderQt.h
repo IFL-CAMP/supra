@@ -68,8 +68,7 @@ namespace supra
 		void addImagePreviewWidget();
 		void addTrackingPreviewWidget();
 
-		template <typename T>
-		std::tuple<double, double, bool> computeWorldSize(std::shared_ptr < USImage<T> > image);
+		std::tuple<double, double, bool> computeWorldSize(std::shared_ptr <USImage> image);
 
 		bool m_haveImagePreview;
 		bool m_haveTrackingPreview;

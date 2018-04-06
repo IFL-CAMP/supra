@@ -55,6 +55,11 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> filter(std::shared_ptr<RecordObject> mainObj);
+		template <typename InputType>
+		std::shared_ptr<ContainerBase> filterTemplated(
+			const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+			vec3s size,
+			const std::vector<double> weights);
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
 
 		nodeType m_node;
@@ -62,9 +67,11 @@ namespace supra
 		std::mutex m_mutex;
 
 		std::unique_ptr<TemporalFilter> m_temporalFilter;
-		std::queue<std::shared_ptr<const Container<int16_t> > > m_storedImages;
+		std::queue<std::shared_ptr<const ContainerBase> > m_storedImages;
 		uint32_t m_numImages;
+		DataType m_outputType;
 		vec3s m_imageSize;
+		DataType m_imageDataType;
 
 		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
 		std::shared_ptr<const USImageProperties> m_editedImageProperties;

@@ -51,7 +51,7 @@ namespace supra
 			setUpTimer(m_frequency);
 		}
 
-		m_protoRawData = RxBeamformerParameters::readMetaDataForMock<int16_t>(m_mockMetadataFilename);
+		m_protoRawData = RxBeamformerParameters::readMetaDataForMock(m_mockMetadataFilename);
 
 		m_numel = m_protoRawData->getNumReceivedChannels()*m_protoRawData->getNumSamples()*m_protoRawData->getNumScanlines();
 
@@ -123,7 +123,7 @@ namespace supra
 			double timestamp = getCurrentTime();
 
 			m_callFrequency.measure();
-			shared_ptr<USRawData<int16_t> > pRawData = std::make_shared<USRawData<int16_t> >(
+			shared_ptr<USRawData> pRawData = std::make_shared<USRawData>(
 				m_protoRawData->getNumScanlines(),
 				m_protoRawData->getNumElements(),
 				m_protoRawData->getElementLayout(),

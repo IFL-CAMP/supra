@@ -30,7 +30,7 @@ namespace supra
 
 		template<typename InputType, typename OutputType>
 		std::shared_ptr<Container<OutputType> >
-			convert(const std::shared_ptr<USImage<InputType> > & inImage);
+			convert(const std::shared_ptr<USImage> & inImage);
 		std::shared_ptr<Container<uint8_t> > getMask();
 		void updateInternals(const std::shared_ptr<const USImageProperties> & inImageProps);
 		vec3s getImageSize() const { return m_imageSize; }

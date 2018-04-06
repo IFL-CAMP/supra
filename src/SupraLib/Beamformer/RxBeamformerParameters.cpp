@@ -66,8 +66,7 @@ namespace supra
 	using std::setw;
 	using std::setprecision;
 
-	template <>
-	void RxBeamformerParameters::writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData<int16_t> > rawData) const
+	void RxBeamformerParameters::writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData> rawData) const
 	{
 		std::ofstream f(filename);
 		f << "rawDataMockMetadata v 3" << std::endl;
@@ -106,12 +105,17 @@ namespace supra
 		f.close();
 	}
 
-	template<>
-	std::shared_ptr<USRawData<int16_t> > RxBeamformerParameters::readMetaDataForMock(const std::string & mockMetadataFilename)
+	std::shared_ptr<USRawData> RxBeamformerParameters::readMetaDataForMock(const std::string & mockMetadataFilename)
 	{
 		std::ifstream f(mockMetadataFilename);
 
-		std::shared_ptr<USRawData<int16_t> > rawData;
+		if (!f.good())
+		{
+			logging::log_error("RxBeamformerParameters: Error opening mock file ", mockMetadataFilename);
+			return nullptr;
+		}
+
+		std::shared_ptr<USRawData> rawData;
 
 		size_t numElements;
 		size_t numReceivedChannels;
@@ -208,7 +212,7 @@ namespace supra
 			rxElementYs,
 			rxNumDepths));
 
-		auto pRawData = std::make_shared<USRawData<int16_t> >(
+		auto pRawData = std::make_shared<USRawData>(
 			numTxScanlines,
 			numElements,
 			elementLayout,

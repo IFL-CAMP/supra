@@ -58,8 +58,9 @@ namespace supra
 	{
 		static_assert(
 			std::is_same<ValueType, uint8_t>::value ||
-			std::is_same<ValueType, int16_t>::value,
-			"MHD only implemented for uchar and short at the moment");
+			std::is_same<ValueType, int16_t>::value ||
+			std::is_same<ValueType, float>::value,
+			"MHD only implemented for uchar, short and float at the moment");
 		if (w > 0 && h > 0 && d > 0)
 		{
 			if (!m_wroteHeaders)
@@ -72,7 +73,7 @@ namespace supra
 				{
 					m_mhdFile << d << " ";
 				}
-				//remember where the 3rd dimension = number of images has to be written to
+				//remember where the last dimension = number of images has to be written to
 				m_positionImageCount = m_mhdFile.tellp();
 				//place a few spaces as placeholders, assuming trailing whitespace does not hurt
 				m_mhdFile << "          \n"; // 10 spaces that can be replaced with numbers
@@ -84,6 +85,10 @@ namespace supra
 				else if (std::is_same<ValueType, int16_t>::value)
 				{
 					m_mhdFile << "ElementType = MET_SHORT\n";
+				}
+				else if (std::is_same<ValueType, float>::value)
+				{
+					m_mhdFile << "ElementType = MET_FLOAT\n";
 				}
 				m_mhdFile << "ElementSpacing = " << spacing << " " << spacing << " ";
 				if (d > 1)
@@ -142,6 +147,9 @@ namespace supra
 	template
 	std::pair<bool, size_t>MhdSequenceWriter::addImage<int16_t>(const int16_t* imageData, size_t w, size_t h, size_t d,
 		double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
+	template
+		std::pair<bool, size_t>MhdSequenceWriter::addImage<float>(const float* imageData, size_t w, size_t h, size_t d,
+			double timestamp, double spacing, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
 	void MhdSequenceWriter::addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName)
 	{

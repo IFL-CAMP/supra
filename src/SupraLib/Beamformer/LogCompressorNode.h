@@ -53,6 +53,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndCompress(std::shared_ptr<RecordObject> mainObj);
+		template <typename InputType>
+		std::shared_ptr<ContainerBase> compressTemplated(std::shared_ptr<const ContainerBase> imageData, vec3s size);
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
 
 		nodeType m_node;
@@ -63,6 +65,7 @@ namespace supra
 		double m_dynamicRange;
 		double m_gain;
 		double m_inputMax;
+		DataType m_outputType;
 
 		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
 		std::shared_ptr<const USImageProperties> m_editedImageProperties;

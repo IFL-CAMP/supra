@@ -109,7 +109,6 @@ SET(SUPRA_Lib_SOURCE
 	TrackerDataSet.cpp
 	USImageProperties.cpp
 	ConfigurationDictionary.cpp
-	ValueRangeDictionary.cpp
 	StreamSynchronizer.cpp
 	TemporalOffsetNode.cpp
 	InterfaceFactory.cpp
@@ -117,6 +116,7 @@ SET(SUPRA_Lib_SOURCE
 	utilities/Logging.cpp
 	utilities/CallFrequency.cpp
 	utilities/TemplateTypeDefault.cpp
+	utilities/DataType.cpp
 	utilities/SingleThreadTimer.cpp
 	utilities/tinyxml2/tinyxml2.cpp
 	FrequencyLimiterNode.cpp
@@ -146,6 +146,7 @@ SET(SUPRA_Lib_HEADERS
 	utilities/Logging.h
 	utilities/CallFrequency.h
 	utilities/TemplateTypeDefault.h
+	utilities/DataType.h
 	utilities/SingleThreadTimer.h
 	utilities/FirFilterFactory.h
 	utilities/tinyxml2/tinyxml2.h

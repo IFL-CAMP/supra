@@ -55,7 +55,7 @@ namespace supra
 		void sendMessage(std::shared_ptr<const RecordObject> data);
 		void sendSyncRecordMessage(std::shared_ptr<const RecordObject> _syncMessage);
 		template <typename T>
-		void sendImageMessageTemplated(std::shared_ptr<const USImage<T> > imageData);
+		void sendImageMessageTemplated(std::shared_ptr<const USImage> imageData);
 		void sendImageMessage(std::shared_ptr<const RecordObject> imageData);
 		void sendTrackingMessage(std::shared_ptr<const RecordObject> trackingData);
 		void addTrackingData(igtl::TrackingDataMessage::Pointer msg, const TrackerData & trackerData, int targetSensor);
