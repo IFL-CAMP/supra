@@ -29,7 +29,7 @@ namespace supra
 	class MetaImageOutputDevice : public AbstractOutput
 	{
 	public:
-		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID);
+		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 		~MetaImageOutputDevice();
 
 		//Functions to be overwritten

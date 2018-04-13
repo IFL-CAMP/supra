@@ -19,13 +19,22 @@ using namespace std;
 
 namespace supra
 {
-	ScanConverterNode::ScanConverterNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndConvert(inObj); })
-		, m_maskOutputNode(graph)
+	ScanConverterNode::ScanConverterNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_maskSent(false)
 		, m_parameterChangeRequiresInternalUpdate(false)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndConvert(inObj); }));
+		}
+		else
+		{ 
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndConvert(inObj); }));
+		}
+		m_maskOutputNode = unique_ptr<MaskOutputNodeType>(new MaskOutputNodeType(graph));
 		m_converter = unique_ptr<ScanConverter>(new ScanConverter());
 		m_callFrequency.setName("ScanConv");
 
@@ -72,7 +81,7 @@ namespace supra
 				pImage->getReceiveTimestamp(),
 				pImage->getSyncTimestamp());
 
-		m_maskOutputNode.try_put(maskImage);
+		m_maskOutputNode->try_put(maskImage);
 		m_maskSent = true;
 	}
 

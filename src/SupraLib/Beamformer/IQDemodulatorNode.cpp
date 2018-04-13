@@ -22,9 +22,8 @@ using namespace std;
 
 namespace supra
 {
-	IQDemodulatorNode::IQDemodulatorNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+	IQDemodulatorNode::IQDemodulatorNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_samplingFrequency(40 * 1e6)
 		, m_cutoffFrequency(2.5 * 1e6)
 		, m_decimationLowpassFilterLength(51)
@@ -33,6 +32,20 @@ namespace supra
 		, m_frequencyCompoundingBandwidths(6, 1e6)
 		, m_frequencyCompoundingWeights(6)
 	{
+		if (queueing)
+		{
+			m_node = std::unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1,
+					[this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+				);
+		}
+		else
+		{
+			m_node = std::unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1,
+					[this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+				);
+		}
 		m_callFrequency.setName("IQDem");
 
 		//TODO expose bandwidths

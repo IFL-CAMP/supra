@@ -19,10 +19,19 @@ using namespace std;
 
 namespace supra
 {
-	StreamSyncNode::StreamSyncNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); })
+	StreamSyncNode::StreamSyncNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); }));
+		}
 		m_callFrequency.setName(nodeID);
 		configurationChanged();
 	}

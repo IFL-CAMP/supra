@@ -21,13 +21,23 @@ using namespace std;
 
 namespace supra
 {
-	BeamformingNode::BeamformingNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
+	BeamformingNode::BeamformingNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
 		, m_beamformer(nullptr)
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");

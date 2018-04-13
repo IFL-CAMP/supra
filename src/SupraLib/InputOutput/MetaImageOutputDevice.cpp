@@ -31,8 +31,8 @@ namespace supra
 {
 	using namespace logging;
 
-	MetaImageOutputDevice::MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID)
-		: AbstractOutput(graph, nodeID)
+	MetaImageOutputDevice::MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing)
+		: AbstractOutput(graph, nodeID, queueing)
 		, m_filename("output")
 		, m_createSequences(false)
 		, m_isRecording(false)

@@ -22,13 +22,23 @@ using namespace std;
 
 namespace supra
 {
-	RawDelayNode::RawDelayNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); })
+	RawDelayNode::RawDelayNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
 		, m_rawDelayCuda(nullptr)
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); }));
+		}
+
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");

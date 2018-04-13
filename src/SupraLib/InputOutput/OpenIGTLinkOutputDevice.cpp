@@ -28,8 +28,8 @@ namespace supra
 {
 	using namespace logging;
 
-	OpenIGTLinkOutputDevice::OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID)
-		: AbstractOutput(graph, nodeID)
+	OpenIGTLinkOutputDevice::OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing)
+		: AbstractOutput(graph, nodeID, queueing)
 		, m_server(igtl::ServerSocket::New())
 		, m_port(18944)
 		, m_pConnectionThread(nullptr)
