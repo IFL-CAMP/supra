@@ -22,9 +22,8 @@ using namespace std;
 
 namespace supra
 {
-	IQDemodulatorNode::IQDemodulatorNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+	IQDemodulatorNode::IQDemodulatorNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_samplingFrequency(40 * 1e6)
 		, m_cutoffFrequency(2.5 * 1e6)
 		, m_decimationLowpassFilterLength(51)
@@ -33,6 +32,20 @@ namespace supra
 		, m_frequencyCompoundingBandwidths(6, 1e6)
 		, m_frequencyCompoundingWeights(6)
 	{
+		if (queueing)
+		{
+			m_node = std::unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1,
+					[this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+				);
+		}
+		else
+		{
+			m_node = std::unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1,
+					[this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDemodulate(inObj); })
+				);
+		}
 		m_callFrequency.setName("IQDem");
 
 		//TODO expose bandwidths
@@ -55,6 +68,7 @@ namespace supra
 		m_valueRangeDictionary.set<double>("bandwidthAdd2", 0, 20 * 1e6, 1e6, "Bandwidth ADD2");
 		m_valueRangeDictionary.set<double>("bandwidthAdd3", 0, 20 * 1e6, 1e6, "Bandwidth ADD3");
 		m_valueRangeDictionary.set<double>("bandwidthAdd4", 0, 20 * 1e6, 1e6, "Bandwidth ADD4");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		configurationChanged();
 
 		m_demodulator = unique_ptr<IQDemodulator>(new IQDemodulator(m_samplingFrequency, m_referenceFrequency, m_cutoffFrequency, m_decimationLowpassFilterLength, m_frequencyCompoundingBandpassFilterLength));
@@ -64,6 +78,7 @@ namespace supra
 	{
 		m_decimation = m_configurationDictionary.get<uint32_t>("decimation");
 		readFrequencyCompoundingSettings();
+		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
 	void IQDemodulatorNode::configurationEntryChanged(const std::string& configKey)
@@ -73,7 +88,7 @@ namespace supra
 		{
 			m_decimation = m_configurationDictionary.get<uint32_t>("decimation");
 		}
-		if (configKey == "referenceFrequency" ||
+		else if (configKey == "referenceFrequency" ||
 			configKey == "referenceFrequencyAdd0" ||
 			configKey == "referenceFrequencyAdd1" ||
 			configKey == "referenceFrequencyAdd2" ||
@@ -93,6 +108,10 @@ namespace supra
 			configKey == "bandwidthAdd4")
 		{
 			readFrequencyCompoundingSettings();
+		}
+		else if (configKey == "outputType")
+		{
+			m_outputType = m_configurationDictionary.get<DataType>("outputType");
 		}
 
 		if (m_lastSeenImageProperties)
@@ -161,24 +180,58 @@ namespace supra
 		m_editedImageProperties = const_pointer_cast<const USImageProperties>(newProps);
 	}
 
+	template <typename InputType>
+	std::shared_ptr<ContainerBase> IQDemodulatorNode::demodulateTemplated(std::shared_ptr<USImage> inImage)
+	{
+		switch (m_outputType)
+		{
+		case TypeInt16:
+			return m_demodulator->demodulateMagnitudeFrequencyCompounding<InputType, int16_t>(
+				inImage->getData<InputType>(),
+				static_cast<int>(inImage->getSize().x),
+				static_cast<int>(inImage->getSize().y),
+				m_decimation,
+				m_frequencyCompoundingReferenceFrequencies,
+				m_frequencyCompoundingBandwidths,
+				m_frequencyCompoundingWeights);
+		case TypeFloat:
+			return m_demodulator->demodulateMagnitudeFrequencyCompounding<InputType, float>(
+				inImage->getData<InputType>(),
+				static_cast<int>(inImage->getSize().x),
+				static_cast<int>(inImage->getSize().y),
+				m_decimation,
+				m_frequencyCompoundingReferenceFrequencies,
+				m_frequencyCompoundingBandwidths,
+				m_frequencyCompoundingWeights);
+		default:
+			logging::log_error("IQDemodulatorNode: Output image type not supported.");
+		}
+		return nullptr;
+	}
+
 	shared_ptr<RecordObject> IQDemodulatorNode::checkTypeAndDemodulate(shared_ptr<RecordObject> inObj)
 	{
-		shared_ptr<USImage<int16_t> > pImageDemod = nullptr;
+		shared_ptr<USImage> pImageDemod = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)
 		{
-			shared_ptr<USImage<int16_t> > pInImage = dynamic_pointer_cast<USImage<int16_t>>(inObj);
+			shared_ptr<USImage> pInImage = dynamic_pointer_cast<USImage>(inObj);
 			if (pInImage)
 			{
 				unique_lock<mutex> l(m_mutex);
 				m_callFrequency.measure();
-				auto pImageDemodData = m_demodulator->demodulateMagnitudeFrequencyCompounding<int16_t, int16_t>(
-					pInImage->getData(),
-					static_cast<int>(pInImage->getSize().x),
-					static_cast<int>(pInImage->getSize().y),
-					m_decimation,
-					m_frequencyCompoundingReferenceFrequencies,
-					m_frequencyCompoundingBandwidths,
-					m_frequencyCompoundingWeights);
+				std::shared_ptr<ContainerBase> pImageDemodData;
+				switch (pInImage->getDataType())
+				{
+				case TypeInt16:
+					pImageDemodData = demodulateTemplated<int16_t>(pInImage);
+					break;
+				case TypeFloat:
+					pImageDemodData = demodulateTemplated<float>(pInImage);
+					break;
+				default:
+					logging::log_error("IQDemodulatorNode: Input image type not supported.");
+				}
+				
 				m_callFrequency.measureEnd();
 
 				if (pInImage->getImageProperties() != m_lastSeenImageProperties)
@@ -186,7 +239,7 @@ namespace supra
 					updateImageProperties(pInImage->getImageProperties());
 				}
 
-				pImageDemod = make_shared<USImage<int16_t> >(
+				pImageDemod = make_shared<USImage>(
 					m_resultingSize,
 					pImageDemodData,
 					m_editedImageProperties,

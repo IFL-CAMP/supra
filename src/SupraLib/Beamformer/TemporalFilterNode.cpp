@@ -19,21 +19,32 @@ using namespace std;
 
 namespace supra
 {
-	TemporalFilterNode::TemporalFilterNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); })
+	TemporalFilterNode::TemporalFilterNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_editedImageProperties(nullptr)
 		, m_imageSize({ 0,0,0 })
+		, m_imageDataType(TypeUnknown)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); }));
+		}
+
 		m_temporalFilter = unique_ptr<TemporalFilter>(new TemporalFilter());
 		m_callFrequency.setName("Filter");
 		m_valueRangeDictionary.set<uint32_t>("numImages", 1, 50, 3, "Number of Images");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
 		configurationChanged();
 	}
 
 	void TemporalFilterNode::configurationChanged()
 	{
 		m_numImages = m_configurationDictionary.get<uint32_t>("numImages");
+		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
 	void TemporalFilterNode::configurationEntryChanged(const std::string& configKey)
@@ -43,28 +54,66 @@ namespace supra
 		{
 			m_numImages = m_configurationDictionary.get<uint32_t>("numImages");
 		}
+		else if (configKey == "outputType")
+		{
+			m_outputType = m_configurationDictionary.get<DataType>("outputType");
+		}
 		if (m_editedImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
 		}
 	}
+
+	template <typename InputType>
+	std::shared_ptr<ContainerBase> TemporalFilterNode::filterTemplated(
+		const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
+		vec3s size,
+		const std::vector<double> weights)
+	{
+		switch (m_outputType)
+		{
+		case supra::TypeInt16:
+			return m_temporalFilter->filter<InputType, int16_t>(m_storedImages, m_imageSize, weights);
+			break;
+		case supra::TypeFloat:
+			return m_temporalFilter->filter<InputType, float>(m_storedImages, m_imageSize, weights);
+			break;
+		default:
+			logging::log_error("TemporalFilterNode: Image output type not supported");
+			break;
+		}
+		return nullptr;
+	}
+
 	shared_ptr<RecordObject> TemporalFilterNode::filter(shared_ptr<RecordObject> inObj)
 	{
-		shared_ptr<USImage<int16_t> > pImage = nullptr;
+		shared_ptr<USImage> pImage = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)
 		{
-			shared_ptr<USImage<int16_t> > pInImage = dynamic_pointer_cast<USImage<int16_t>>(inObj);
+			shared_ptr<USImage> pInImage = dynamic_pointer_cast<USImage>(inObj);
 			if (pInImage)
 			{
 				unique_lock<mutex> l(m_mutex);
 
-				if (pInImage->getSize() != m_imageSize)
+				if (pInImage->getSize() != m_imageSize || pInImage->getDataType() != m_imageDataType)
 				{
 					m_imageSize = pInImage->getSize();
+					m_imageDataType = pInImage->getDataType();
 					m_storedImages = decltype(m_storedImages)();
 				}
 
-				m_storedImages.push(pInImage->getData());
+				switch (m_imageDataType)
+				{
+				case TypeInt16:
+					m_storedImages.push(pInImage->getData<int16_t>());
+					break;
+				case TypeFloat:
+					m_storedImages.push(pInImage->getData<float>());
+					break;
+				default:
+					break;
+				}
+				
 				while (m_storedImages.size() > m_numImages)
 				{
 					m_storedImages.pop();
@@ -74,7 +123,19 @@ namespace supra
 				vector<double> weights(m_storedImages.size(), 1);
 
 				m_callFrequency.measure();
-				auto pImageFiltered = m_temporalFilter->filter<int16_t, int16_t>(m_storedImages, m_imageSize, weights);
+				std::shared_ptr<ContainerBase> pImageFiltered;
+				switch (m_imageDataType)
+				{
+				case TypeInt16:
+					pImageFiltered = filterTemplated<int16_t>(m_storedImages, m_imageSize, weights);
+					break;
+				case TypeFloat:
+					pImageFiltered = filterTemplated<float>(m_storedImages, m_imageSize, weights);
+					break;
+				default:
+					logging::log_error("TemporalFilterNode: Image input type not supported");
+					break;
+				}
 				m_callFrequency.measureEnd();
 
 				if (pInImage->getImageProperties() != m_lastSeenImageProperties)
@@ -82,7 +143,7 @@ namespace supra
 					updateImageProperties(pInImage->getImageProperties());
 				}
 
-				pImage = make_shared<USImage<int16_t> >(
+				pImage = make_shared<USImage>(
 					pInImage->getSize(),
 					pImageFiltered,
 					m_editedImageProperties,
@@ -90,7 +151,7 @@ namespace supra
 					pInImage->getSyncTimestamp());
 			}
 			else {
-				logging::log_error("TemporalFilterNode: could not cast object to USImage type, is it in supported ElementType?");
+				logging::log_error("TemporalFilterNode: could not cast object to USImage type");
 			}
 		}
 		return pImage;

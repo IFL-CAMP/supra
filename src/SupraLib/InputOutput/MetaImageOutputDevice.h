@@ -23,15 +23,13 @@ namespace supra
 {
 	//forward declarations
 	class MhdSequenceWriter;
-	template <typename T>
 	class USImage;
-	template <typename T>
 	class USRawData;
 
 	class MetaImageOutputDevice : public AbstractOutput
 	{
 	public:
-		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID);
+		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 		~MetaImageOutputDevice();
 
 		//Functions to be overwritten
@@ -54,15 +52,15 @@ namespace supra
 	private:
 		void initializeSequence();
 		void addData(std::shared_ptr<const RecordObject> data);
-		void addSyncRecord(std::shared_ptr<const RecordObject> _syncMessage);
+		std::pair<bool, size_t> addSyncRecord(std::shared_ptr<const RecordObject> _syncMessage);
 		std::pair<bool, size_t> addImage(std::shared_ptr<const RecordObject> imageData);
 		std::pair<bool, size_t> addUSRawData(std::shared_ptr<const RecordObject> _rawData);
 		void addTracking(std::shared_ptr<const RecordObject> trackingData, size_t frameNum);
 
 		template <typename ElementType>
-		std::pair<bool, size_t> addImageTemplated(std::shared_ptr<const USImage<ElementType> > imageData);
+		std::pair<bool, size_t> addImageTemplated(std::shared_ptr<const USImage> imageData);
 		template <typename ElementType>
-		std::pair<bool, size_t> addUSRawDataTemplated(std::shared_ptr < const USRawData<ElementType> > rawData);
+		std::pair<bool, size_t> addUSRawDataTemplated(std::shared_ptr <const USRawData> rawData);
 
 		MhdSequenceWriter* m_pWriter;
 
@@ -71,6 +69,10 @@ namespace supra
 		bool m_active;
 		std::atomic_bool m_isRecording;
 		size_t m_sequencesWritten;
+
+		// maximum number of individual elements (frames,sequences,trackingSets) to be written
+		size_t m_maxElementNumber;
+		size_t m_lastElementNumber;
 
 		std::mutex m_writerMutex;
 

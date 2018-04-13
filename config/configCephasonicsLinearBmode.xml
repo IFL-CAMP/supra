@@ -9,10 +9,13 @@
 			</input>
 		</inputs>
 		<outputs>
-			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
+			<!--<output type="OpenIGTLinkOutputDevice" id="IGTL" />-->
 			<output type="MetaImageOutputDevice" id="MHD_Raw">
 				<param name="createSequences" type="bool">
 					1
+				</param>
+				<param name="maxElements" type="uint32_t">
+					250
 				</param>
 				<param name="filename" type="string">
 					rawData
@@ -21,6 +24,9 @@
 			<output type="MetaImageOutputDevice" id="MHD_Beam">
 				<param name="createSequences" type="bool">
 					1
+				</param>
+				<param name="maxElements" type="uint32_t">
+					50
 				</param>
 				<param name="filename" type="string">
 					beamformed
@@ -39,7 +45,7 @@
 		</connection>
 		<connection>
 			<from id="US-Cep" port="0" />
-			<to id="MHD_Raw" port="0" />
+			<to id="MHD_Beam" port="0" />
 		</connection>
 		<!--<connection>
 			<from id="BEAM" port="0" />

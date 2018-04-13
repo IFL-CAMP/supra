@@ -22,11 +22,21 @@ using namespace std;
 
 namespace supra
 {
-	BeamformingMVNode::BeamformingMVNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
+	BeamformingMVNode::BeamformingMVNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+
 		m_callFrequency.setName("BeamformingMV");
 		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 0, "Sub-array size");
 		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
@@ -69,10 +79,10 @@ namespace supra
 	{
 		unique_lock<mutex> l(m_mutex);
 
-		shared_ptr<USImage<int16_t> > pImageRF = nullptr;
+		shared_ptr<USImage> pImageRF = nullptr;
 		if (inObj->getType() == TypeUSRawData)
 		{
-			shared_ptr<const USRawData<int16_t> > pRawData = dynamic_pointer_cast<const USRawData<int16_t>>(inObj);
+			shared_ptr<const USRawData> pRawData = dynamic_pointer_cast<const USRawData>(inObj);
 			if (pRawData)
 			{
 				if (pRawData->getImageProperties()->getImageState() == USImageProperties::RawDelayed)
@@ -81,7 +91,7 @@ namespace supra
 
 					cudaSafeCall(cudaDeviceSynchronize());
 
-					cublasSafeCall(cublasSetStream(m_cublasH, pRawData->getData()->getStream()));
+					cublasSafeCall(cublasSetStream(m_cublasH, pRawData->getData<int16_t>()->getStream()));
 					pImageRF = performRxBeamforming<int16_t, int16_t>(
 						pRawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
 					m_callFrequency.measureEnd();

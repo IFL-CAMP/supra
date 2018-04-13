@@ -40,10 +40,17 @@ namespace supra
 	*/
 	class AbstractNode
 	{
+	protected:
+		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, tbb::flow::rejecting> NodeTypeDiscarding;
+		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, tbb::flow::queueing> NodeTypeQueueing;
+		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg, tbb::flow::rejecting> NodeTypeOneSidedDiscarding;
+		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg, tbb::flow::queueing> NodeTypeOneSidedQueueing;
+
 	public:
 		/// Base constructor for all nodes
-		AbstractNode(const std::string & nodeID)
-			:m_nodeID(nodeID)
+		AbstractNode(const std::string & nodeID, bool queueing)
+			: m_nodeID(nodeID)
+			, m_queueing(queueing)
 		{
 			m_configurationDictionary.setValueRangeDictionary(&m_valueRangeDictionary);
 		}
@@ -58,13 +65,13 @@ namespace supra
 		virtual size_t getNumOutputs() = 0;
 
 		/// Returns a pointer to the input port with the given number
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > *
+		virtual tbb::flow::graph_node *
 			getInput(size_t index) {
 			return nullptr;
 		}
 
 		/// Returns a pointer to the output port with the given number
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > *
+		virtual tbb::flow::graph_node *
 			getOutput(size_t index) {
 			return nullptr;
 		}
@@ -139,6 +146,8 @@ namespace supra
 		/// \see CallFrequency can be used by the node implementation to monitor its
 		/// timings (frequency of activation and run-time)
 		CallFrequency m_callFrequency;
+
+		bool m_queueing;
 
 	protected:
 		/// Callback for the node implementation to be notified of the change of parameters.

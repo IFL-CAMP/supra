@@ -170,7 +170,7 @@ namespace supra
 				}
 			}
 
-			out[scanlineIdx + sampleIdxOut*numScanlines] = static_cast<OutputType>(accumulator);
+			out[scanlineIdx + sampleIdxOut*numScanlines] = clampCast<OutputType>(accumulator);
 		}
 	}
 
@@ -211,9 +211,9 @@ namespace supra
 		return samplesAfterDecimation;
 	}
 
-	template<>
-	shared_ptr<Container<int16_t> > IQDemodulator::demodulateMagnitudeFrequencyCompounding(
-		const shared_ptr<const Container<int16_t>>& inImageData,
+	template<typename InputType, typename OutputType>
+	shared_ptr<Container<OutputType> > IQDemodulator::demodulateMagnitudeFrequencyCompounding(
+		const shared_ptr<const Container<InputType>>& inImageData,
 		int numScanlines, int numSamples, uint32_t decimation,
 		const std::vector<double>& referenceFrequencies,
 		const std::vector<double>& bandwidths,
@@ -323,7 +323,7 @@ namespace supra
 
 		//Apply the decimation lowpass filter on all bank outputs at the same time
 		int numSamplesDecimated = decimatedSignalLength(numSamples, decimation);
-		auto pEnv = make_shared<Container<int16_t> >(LocationGpu, inImageData->getStream(), numScanlines*numSamplesDecimated);
+		auto pEnv = make_shared<Container<OutputType> >(LocationGpu, inImageData->getStream(), numScanlines*numSamplesDecimated);
 
 		uint32_t stride = std::max(decimation, (uint32_t)1);
 		dim3 blockSizeDecimation(16, 8);
@@ -343,4 +343,33 @@ namespace supra
 
 		return pEnv;
 	}
+
+	template 
+	shared_ptr<Container<int16_t> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<int16_t, int16_t>(
+		const shared_ptr<const Container<int16_t> >& inImageData,
+		int numScanlines, int numSamples, uint32_t decimation,
+		const std::vector<double>& referenceFrequencies,
+		const std::vector<double>& bandwidths,
+		const std::vector<double>& weights);
+	template
+		shared_ptr<Container<int16_t> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<float, int16_t>(
+			const shared_ptr<const Container<float> >& inImageData,
+			int numScanlines, int numSamples, uint32_t decimation,
+			const std::vector<double>& referenceFrequencies,
+			const std::vector<double>& bandwidths,
+			const std::vector<double>& weights);
+	template
+		shared_ptr<Container<float> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<int16_t, float>(
+			const shared_ptr<const Container<int16_t> >& inImageData,
+			int numScanlines, int numSamples, uint32_t decimation,
+			const std::vector<double>& referenceFrequencies,
+			const std::vector<double>& bandwidths,
+			const std::vector<double>& weights);
+	template
+		shared_ptr<Container<float> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<float, float>(
+			const shared_ptr<const Container<float> >& inImageData,
+			int numScanlines, int numSamples, uint32_t decimation,
+			const std::vector<double>& referenceFrequencies,
+			const std::vector<double>& bandwidths,
+			const std::vector<double>& weights);
 }

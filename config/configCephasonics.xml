@@ -6,6 +6,18 @@
 				<param name="txVoltage" type="double">
 					60
 				</param>
+				<param name="txFrequency" type="double">
+					7
+				</param>
+				<param name="txPulseType" type="string">
+					bipolar
+				</param>
+				<param name="txPulseInversion" type="bool">
+					0
+				</param>
+				<param name="inputImpedance" type="double">
+					200
+				</param>
 				<param name="endDepth" type="double">
 					60
 				</param>
@@ -40,7 +52,7 @@
 					linear
 				</param> 
 				<param name="probeName" type="string">
-					Linear
+					CPLA12875
 				</param>
 				<param name="txCorrectMatchingLayers" type="bool">
 					1

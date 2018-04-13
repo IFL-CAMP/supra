@@ -192,7 +192,7 @@ namespace supra
 
 				uint32_t elemIdxLocal = (elemIdxX - txParams.firstActiveElementIndex.x) + (elemIdxY - txParams.firstActiveElementIndex.y)*elementLayout.x;
 				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
-					static_cast<ResultType>(sample * weightingScale);
+					clampCast<ResultType>(sample * weightingScale);
 			}
 		}
 	}
@@ -281,7 +281,7 @@ namespace supra
 				}
 			}
 			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
-				static_cast<ResultType>(sample * weightingScale);
+				clampCast<ResultType>(sample * weightingScale);
 
 			localElemIdxX++;
 		}
@@ -443,7 +443,7 @@ namespace supra
 		}
 	}
 
-	template <unsigned int maxWindowFunctionNumel, typename RFType, typename LocationType>
+	template <unsigned int maxWindowFunctionNumel, typename RFType, typename OutputType, typename LocationType>
 	void rxDelayDTspaceCuda3D(
 		bool interpolateRFlines,
 		size_t numTransducerElements,
@@ -463,7 +463,7 @@ namespace supra
 		LocationType F,
 		const WindowFunctionGpu windowFunction,
 		cudaStream_t stream,
-		RFType* s)
+		OutputType* s)
 	{
 		dim3 blockSize(1, 256);
 		dim3 gridSize(
@@ -488,7 +488,7 @@ namespace supra
 		cudaSafeCall(cudaPeekAtLastError());
 	}
 
-	template <typename RFType, typename LocationType>
+	template <typename RFType, typename OutputType, typename LocationType>
 	void rxDelayDTspaceCuda(
 		bool interpolateRFlines,
 		size_t numTransducerElements,
@@ -506,7 +506,7 @@ namespace supra
 		LocationType F,
 		const WindowFunctionGpu windowFunction,
 		cudaStream_t stream,
-		RFType* s)
+		OutputType* s)
 	{
 		dim3 blockSize(1, 256);
 		dim3 gridSize(
@@ -528,23 +528,23 @@ namespace supra
 		cudaSafeCall(cudaPeekAtLastError());
 	}
 
-	template <>
-	shared_ptr<USRawData<int16_t> > RawDelay::performDelay(
-		shared_ptr<const USRawData<int16_t> > rawData,
+	template <typename ChannelDataType, typename OutputType>
+	shared_ptr<USRawData> RawDelay::performDelay(
+		shared_ptr<const USRawData> rawData,
 		double fNumber,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter) const
 	{
 		//Ensure the raw-data are on the gpu
-		auto gRawData = rawData->getData();
-		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
+		auto gRawData = rawData->getData<ChannelDataType>();
+		if (!rawData->getData<ChannelDataType>()->isGPU() && !rawData->getData<ChannelDataType>()->isBoth())
 		{
-			gRawData = std::make_shared<Container<int16_t> >(LocationGpu, *gRawData);
+			gRawData = std::make_shared<Container<ChannelDataType> >(LocationGpu, *gRawData);
 		}
 
 		size_t numelOut = m_numRxScanlines*m_rxNumDepths*rawData->getNumReceivedChannels();
-		shared_ptr<Container<int16_t> > pData = 
-			std::make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
+		shared_ptr<Container<OutputType> > pData = 
+			std::make_shared<Container<OutputType> >(ContainerLocation::LocationGpu, gRawData->getStream(), numelOut);
 
 		double dt = 1.0 / rawData->getSamplingFrequency();
 
@@ -552,14 +552,11 @@ namespace supra
 		{
 			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
 		}
-
-		auto beamformingFunction3D = &rxDelayDTspaceCuda3D<m_windowFunctionNumEntries, int16_t, LocationType>;
-		auto beamformingFunction2D = &rxDelayDTspaceCuda<int16_t, LocationType>;
 		
 		convertToDtSpace(dt, rawData->getNumElements());
 		if (m_is3D)
 		{
-			beamformingFunction3D(
+			rxDelayDTspaceCuda3D<m_windowFunctionNumEntries, ChannelDataType, OutputType, LocationType>(
 				true,
 				rawData->getNumElements(),
 				rawData->getElementLayout(),
@@ -581,7 +578,7 @@ namespace supra
 				);
 		}
 		else {
-			beamformingFunction2D(
+			rxDelayDTspaceCuda<ChannelDataType, OutputType, LocationType>(
 				true,
 				rawData->getNumElements(),
 				rawData->getNumReceivedChannels(),
@@ -611,7 +608,7 @@ namespace supra
 			m_editedImageProperties = std::const_pointer_cast<const USImageProperties>(newProps);
 		}
 
-		shared_ptr<USRawData<int16_t> > rawDataDelayed = std::make_shared<USRawData<int16_t> >
+		shared_ptr<USRawData> rawDataDelayed = std::make_shared<USRawData>
 			   (m_numRxScanlines,
 				rawData->getNumElements(),
 				rawData->getElementLayout(),
@@ -626,4 +623,29 @@ namespace supra
 
 		return rawDataDelayed;
 	}
+
+	template
+	shared_ptr<USRawData> RawDelay::performDelay<int16_t, int16_t>(
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameters) const;
+	template
+	shared_ptr<USRawData> RawDelay::performDelay<int16_t, float>(
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameters) const;
+	template
+	shared_ptr<USRawData> RawDelay::performDelay<float, int16_t>(
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameters) const;
+	template
+	shared_ptr<USRawData> RawDelay::performDelay<float, float>(
+		shared_ptr<const USRawData> rawData,
+		double fNumber,
+		WindowType windowType,
+		WindowFunction::ElementType windowParameters) const;
 }

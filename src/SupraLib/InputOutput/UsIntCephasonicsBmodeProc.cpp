@@ -14,6 +14,8 @@
 
 #include "UsIntCephasonicsBmodeProc.h"
 
+#include "utilities/Logging.h"
+
 namespace supra
 {
 	using namespace ::cs;
@@ -36,6 +38,7 @@ namespace supra
 
 	int UsIntCephasonicsBmodeProc::layoutChanged(ImageLayout & layout)
 	{
+		logging::log_info("UsIntCephasonicsBmodeProc: got new layout");
 		m_imageLayout = ImageLayout(layout);
 		m_pInputNode->layoutChanged(layout);
 		return CS_SUCCESS;

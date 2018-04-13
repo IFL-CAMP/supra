@@ -53,7 +53,7 @@ namespace supra
 	{
 	public:
 		/// Base constructor for the input node. Initializes its output ports.
-		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID) : AbstractNode(nodeID)
+		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID) : AbstractNode(nodeID, false)
 		{
 			for (size_t i = 0; i < sizeof...(InputTypes); i++)
 			{
@@ -119,7 +119,7 @@ namespace supra
 		virtual size_t getNumOutputs() { return m_pOutputNodes.size(); }
 
 		/// returns a pointer to the output port with the given index
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index < m_pOutputNodes.size())
 			{
 				return m_pOutputNodes[index].get();

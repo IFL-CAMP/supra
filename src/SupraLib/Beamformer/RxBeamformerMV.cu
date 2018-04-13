@@ -204,16 +204,16 @@ namespace supra
 				{
 					beamformedSample = 0.0f;
 				}
-				beamformed[scanlineIdx + sampleIdx * numScanlines] = 
-					static_cast<ImageDataType>(min(max(beamformedSample * numChannels, static_cast<float>(LimitProxy<ImageDataType>::min)), static_cast<float>(LimitProxy<ImageDataType>::max)));
+				beamformed[scanlineIdx + sampleIdx * numScanlines] =
+					clampCast<ImageDataType>(beamformedSample * numChannels);
 			}
 		}
 	}
 
 	// perform the receive beamforming
 	template <typename ChannelDataType, typename ImageDataType>
-	shared_ptr<USImage<ImageDataType> > performRxBeamforming(
-		shared_ptr<const USRawData<ChannelDataType> > rawData,
+	shared_ptr<USImage> performRxBeamforming(
+		shared_ptr<const USRawData> rawData,
 		uint32_t subArraySize,
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH)
@@ -221,8 +221,8 @@ namespace supra
 		int sampleBlockSize = 2000;//128;
 
 		//Ensure the raw-data are on the gpu
-		auto gRawData = rawData->getData();
-		if (!rawData->getData()->isGPU() && !rawData->getData()->isBoth())
+		auto gRawData = rawData->getData<ChannelDataType>();
+		if (!gRawData->isGPU() && !gRawData->isBoth())
 		{
 			gRawData = std::make_shared<Container<ChannelDataType> >(LocationGpu, *gRawData);
 		}
@@ -386,7 +386,7 @@ namespace supra
 			}
 		}
 
-		auto retImage = std::make_shared<USImage<ImageDataType> >(
+		auto retImage = std::make_shared<USImage>(
 			vec2s{ numScanlines, numSamples },
 			pData,
 			rawData->getImageProperties(),
@@ -397,8 +397,8 @@ namespace supra
 	}
 
 	template 
-	shared_ptr<USImage<int16_t> > performRxBeamforming(
-		shared_ptr<const USRawData<int16_t> > rawData,
+	shared_ptr<USImage> performRxBeamforming<int16_t, int16_t>(
+		shared_ptr<const USRawData> rawData,
 		uint32_t subArraySize,
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH);

@@ -19,10 +19,19 @@ using namespace std;
 
 namespace supra
 {
-	StreamSyncNode::StreamSyncNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); })
+	StreamSyncNode::StreamSyncNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndSynchronize(inObj); }));
+		}
 		m_callFrequency.setName(nodeID);
 		configurationChanged();
 	}
@@ -40,20 +49,45 @@ namespace supra
 #ifdef HAVE_CUDA
 		if (inObj && (inObj->getType() == TypeUSImage || inObj->getType() == TypeUSRawData))
 		{
-			shared_ptr<USImage<int16_t> >   pInImageInt16 = dynamic_pointer_cast<USImage<int16_t>>(inObj);
-			shared_ptr<USImage<uint8_t> >   pInImageUint8 = dynamic_pointer_cast<USImage<uint8_t>>(inObj);
-			shared_ptr<USRawData<int16_t> > pInImageRaw = dynamic_pointer_cast<USRawData<int16_t>>(inObj);
-			if (pInImageInt16)
+			shared_ptr<USImage>   pInImage= dynamic_pointer_cast<USImage>(inObj);
+			shared_ptr<USRawData> pInRaw = dynamic_pointer_cast<USRawData>(inObj);
+
+			Container<int16_t>::ContainerStreamType stream;
+			if (pInImage)
 			{
-				cudaSafeCall(cudaStreamSynchronize(pInImageInt16->getData()->getStream()));
+				switch (pInImage->getDataType())
+				{
+				case TypeFloat:
+					stream = pInImage->getData<float>()->getStream();
+					break;
+				case TypeInt16:
+					stream = pInImage->getData<int16_t>()->getStream();
+					break;
+				case TypeUint8:
+					stream = pInImage->getData<uint8_t>()->getStream();
+					break;
+				default:
+					logging::log_error("StreamSyncNode: Image data type not supported");
+				}
+				cudaSafeCall(cudaStreamSynchronize(stream));
 			}
-			else if (pInImageUint8)
+			else if (pInRaw)
 			{
-				cudaSafeCall(cudaStreamSynchronize(pInImageUint8->getData()->getStream()));
-			}
-			else if (pInImageRaw)
-			{
-				cudaSafeCall(cudaStreamSynchronize(pInImageRaw->getData()->getStream()));
+				switch (pInRaw->getDataType())
+				{
+				case TypeFloat:
+					stream = pInRaw->getData<float>()->getStream();
+					break;
+				case TypeInt16:
+					stream = pInRaw->getData<int16_t>()->getStream();
+					break;
+				case TypeUint8:
+					stream = pInRaw->getData<uint8_t>()->getStream();
+					break;
+				default:
+					logging::log_error("StreamSyncNode: Image data type not supported");
+				}
+				cudaSafeCall(cudaStreamSynchronize(stream));
 			}
 		}
 #endif

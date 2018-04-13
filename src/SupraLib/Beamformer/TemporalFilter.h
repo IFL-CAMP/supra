@@ -27,7 +27,7 @@ namespace supra
 		template<typename InputType, typename OutputType>
 		std::shared_ptr<Container<OutputType> >
 			filter(
-				const std::queue<std::shared_ptr<const Container<InputType> > > & inImageData,
+				const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
 				vec3s size,
 				const std::vector<double> weights);
 	};

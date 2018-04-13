@@ -847,8 +847,8 @@ namespace supra
 					}
 				}
 
-				shared_ptr<USImage<uint8_t> > pImage;
-				pImage = make_shared<USImage<uint8_t> >(
+				shared_ptr<USImage> pImage;
+				pImage = make_shared<USImage>(
 					vec2s{ numVectors, numSamples }, pData, m_pImageProperties, timestamp, timestamp);
 				addData<0>(pImage);
 			}
@@ -883,8 +883,8 @@ namespace supra
 					}
 				}
 
-				shared_ptr<USImage<uint8_t> > pImage;
-				pImage = make_shared<USImage<uint8_t> >(
+				shared_ptr<USImage> pImage;
+				pImage = make_shared<USImage>(
 					vec2s{ numChans, numRows }, pData, m_pImageProperties, timestamp, timestamp);
 				addData<0>(pImage);
 			}

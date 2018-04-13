@@ -32,53 +32,47 @@ namespace supra
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<uint8_t>(nodeID.toStdString(), paramName, this));
 			break;
-			break;
 		case TypeInt16:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<int16_t>(nodeID.toStdString(), paramName, this));
-			break;
 			break;
 		case TypeUint16:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<uint16_t>(nodeID.toStdString(), paramName, this));
 			break;
-			break;
 		case TypeInt32:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<int32_t>(nodeID.toStdString(), paramName, this));
-			break;
 			break;
 		case TypeUint32:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<uint32_t>(nodeID.toStdString(), paramName, this));
 			break;
-			break;
 		case TypeInt64:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<uint64_t>(nodeID.toStdString(), paramName, this));
-			break;
 			break;
 		case TypeUint64:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<uint64_t>(nodeID.toStdString(), paramName, this));
 			break;
-			break;
 		case TypeFloat:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<float>(nodeID.toStdString(), paramName, this));
-			break;
 			break;
 		case TypeDouble:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<double>(nodeID.toStdString(), paramName, this));
 			break;
-			break;
 		case TypeString:
 			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
 				new parameterWidgetTypeHandler<string>(nodeID.toStdString(), paramName, this));
 			break;
+		case TypeDataType:
+			m_pTypeHandler = unique_ptr<parameterWidgetTypeHandlerGeneral>(
+				new parameterWidgetTypeHandler<DataType>(nodeID.toStdString(), paramName, this));
 			break;
-		case TypeValueUnknown:
+		case TypeUnknown:
 		default:
 			logging::log_error("Could not create parameter widget for '", nodeID.toStdString(), "', '",
 				paramName, "'");

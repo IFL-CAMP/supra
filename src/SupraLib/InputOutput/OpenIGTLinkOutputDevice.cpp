@@ -28,8 +28,8 @@ namespace supra
 {
 	using namespace logging;
 
-	OpenIGTLinkOutputDevice::OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID)
-		: AbstractOutput(graph, nodeID)
+	OpenIGTLinkOutputDevice::OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing)
+		: AbstractOutput(graph, nodeID, queueing)
 		, m_server(igtl::ServerSocket::New())
 		, m_port(18944)
 		, m_pConnectionThread(nullptr)
@@ -131,8 +131,14 @@ namespace supra
 	}
 
 	template <typename T>
-	void OpenIGTLinkOutputDevice::sendImageMessageTemplated(shared_ptr<const USImage<T> > imageData)
+	void OpenIGTLinkOutputDevice::sendImageMessageTemplated(shared_ptr<const USImage> imageData)
 	{
+		static_assert(
+			std::is_same<T, uint8_t>::value ||
+			std::is_same<T, int16_t>::value ||
+			std::is_same<T, float>::value,
+			"Image only implemented for uchar, short and float at the moment");
+
 		auto properties = imageData->getImageProperties();
 		if (
 			properties->getImageType() == USImageProperties::BMode ||
@@ -152,6 +158,10 @@ namespace supra
 			{
 				pImageMsg->SetScalarTypeToInt16();
 			}
+			if (is_same<T, float>::value)
+			{
+				pImageMsg->SetScalarType(igtl::ImageMessage::TYPE_FLOAT32);
+			}
 
 			pImageMsg->SetNumComponents(1);
 			pImageMsg->SetDeviceName("SUPRA");
@@ -162,7 +172,7 @@ namespace supra
 			pTimestamp->SetTime((uint32_t)timestampSeconds, (uint32_t)(timestampFrac*1e9));
 			pImageMsg->SetTimeStamp(pTimestamp);
 
-			auto imageContainer = imageData->getData();
+			auto imageContainer = imageData->getData<T>();
 			if (!imageContainer->isHost())
 			{
 				imageContainer = make_shared<Container<T> >(LocationHost, *imageContainer);
@@ -185,15 +195,21 @@ namespace supra
 
 	void OpenIGTLinkOutputDevice::sendImageMessage(shared_ptr<const RecordObject> _imageData)
 	{
-		auto imageData8Bit = dynamic_pointer_cast<const USImage<uint8_t>>(_imageData);
-		if (imageData8Bit)
+		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
+		switch (imageData->getDataType())
 		{
-			sendImageMessageTemplated(imageData8Bit);
-		}
-		auto imageData16Bit = dynamic_pointer_cast<const USImage<int16_t>>(_imageData);
-		if (imageData16Bit)
-		{
-			sendImageMessageTemplated(imageData16Bit);
+		case TypeFloat:
+			sendImageMessageTemplated<float>(imageData);
+			break;
+		case TypeInt16:
+			sendImageMessageTemplated<int16_t>(imageData);
+			break;
+		case TypeUint8:
+			sendImageMessageTemplated<uint8_t>(imageData);
+			break;
+		default:
+			logging::log_error("OpenIGTLinkOutputDevice: Input image data type not supported");
+			break;
 		}
 	}
 

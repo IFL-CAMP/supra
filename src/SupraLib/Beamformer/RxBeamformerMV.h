@@ -20,14 +20,12 @@
 
 namespace supra
 {
-	template <typename T>
 	class USRawData;
-	template <typename T>
 	class USImage;
 
 	template <typename ChannelDataType, typename ImageDataType>
-	std::shared_ptr<USImage<ImageDataType> > performRxBeamforming(
-		std::shared_ptr<const USRawData<ChannelDataType> > rawData,
+	std::shared_ptr<USImage> performRxBeamforming(
+		std::shared_ptr<const USRawData> rawData,
 		uint32_t subArraySize,
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH);

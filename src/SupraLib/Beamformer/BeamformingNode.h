@@ -32,26 +32,23 @@ namespace supra
 
 	class BeamformingNode : public AbstractNode {
 	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, TBB_QUEUE_RESOLVER(false)> nodeType;
-
-	public:
-		BeamformingNode(tbb::flow::graph& graph, const std::string & nodeID);
+		BeamformingNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			return nullptr;
 		};
@@ -62,6 +59,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
+		template <typename InputType>
+		std::shared_ptr<USImage> beamformTemplated(std::shared_ptr<const USRawData> pRawData);
 		void readWindowType();
 		void readBeamformerType();
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
@@ -74,10 +73,11 @@ namespace supra
 
 		std::mutex m_mutex;
 
-		nodeType m_node;
+		std::unique_ptr<tbb::flow::graph_node> m_node;
 		double m_fNumber;
 		WindowType m_windowType;
 		double m_windowParameter;
+		DataType m_outputType;
 		RxBeamformerCuda::RxSampleBeamformer m_beamformerType;
 		bool m_interpolateTransmits;
 	};
