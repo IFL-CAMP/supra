@@ -23,7 +23,7 @@ namespace supra
 
 	previewBuilderQT::previewBuilderQT(graph & g, const std::string & nodeID, string name, QWidget* parentWidget, QVBoxLayout* targetLayout, QSize imageMaxSize, bool linearInterpolation)
 		: QObject()
-		, AbstractNode(nodeID)
+		, AbstractNode(nodeID, false)
 		, m_nodeIn(g, 1,
 			[this](const shared_ptr<RecordObject> & inMessage)
 	{ processRecordObject(inMessage); })
@@ -260,7 +260,7 @@ namespace supra
 		return make_tuple(worldWidth, worldHeight, keepRatio);
 	}
 
-	tbb::flow::receiver<std::shared_ptr<RecordObject> > *
+	tbb::flow::graph_node *
 		previewBuilderQT::getInput(size_t index) {
 		if (index == 0)
 		{

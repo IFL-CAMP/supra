@@ -23,36 +23,35 @@
 namespace supra
 {
 	class FrequencyLimiterNode : public AbstractNode {
-	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg, TBB_QUEUE_RESOLVER(false)> inputNodeType;
+	private:
 		typedef tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > outputNodeType;
 
 	public:
-		FrequencyLimiterNode(tbb::flow::graph& graph, const std::string & nodeID);
+		FrequencyLimiterNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_inputNode;
+				return m_inputNode.get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index == 0)
 			{
-				return &m_outputNode;
+				return m_outputNode.get();
 			}
 			return nullptr;
 		};
 	private:
 		void forwardMessage(std::shared_ptr<RecordObject> obj);
 
-		inputNodeType m_inputNode;
-		outputNodeType m_outputNode;
+		std::unique_ptr<tbb::flow::graph_node> m_inputNode;
+		std::unique_ptr<outputNodeType> m_outputNode;
 
 		double m_maxFrequency;
 		double m_lastMessageTimestamp;

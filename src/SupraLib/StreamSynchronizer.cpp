@@ -18,11 +18,23 @@ using namespace std;
 
 namespace supra
 {
-	StreamSynchronizer::StreamSynchronizer(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_mainNode(graph, 1, [this](shared_ptr<RecordObject> mainObj) -> shared_ptr<SyncRecordObject> { return findSynced(mainObj); })
+	StreamSynchronizer::StreamSynchronizer(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_graphHandle(graph)
 	{
+		if (queueing)
+		{
+			m_mainNode = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, 
+					[this](shared_ptr<RecordObject> mainObj) -> shared_ptr<SyncRecordObject> { return findSynced(mainObj); }));
+		}
+		else
+		{
+			m_mainNode = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1,
+					[this](shared_ptr<RecordObject> mainObj) -> shared_ptr<SyncRecordObject> { return findSynced(mainObj); }));
+		}
+
 		m_callFrequency.setName("Sync");
 
 		m_valueRangeDictionary.set<uint32_t>("numStreamsToSync", 1, "Num synced streams");
@@ -120,8 +132,16 @@ namespace supra
 		for (size_t i = 0; i < m_numStreamsToSync; i++)
 		{
 			m_syncListMutexes.push_back(unique_ptr<mutex>(new mutex()));
-			m_toSyncNodes.emplace_back(m_graphHandle, 1,
-				[this, i](shared_ptr<RecordObject> objToSync) { addToSyncList(i, objToSync); });
+			if (m_queueing)
+			{
+				m_toSyncNodes.push_back(unique_ptr<NodeTypeOneSidedQueueing>(new NodeTypeOneSidedQueueing(m_graphHandle, 1,
+					[this, i](shared_ptr<RecordObject> objToSync) { addToSyncList(i, objToSync); })));
+			}
+			else
+			{
+				m_toSyncNodes.push_back(unique_ptr<NodeTypeOneSidedDiscarding>(new NodeTypeOneSidedDiscarding(m_graphHandle, 1,
+					[this, i](shared_ptr<RecordObject> objToSync) { addToSyncList(i, objToSync); })));
+			}
 		}
 	}
 

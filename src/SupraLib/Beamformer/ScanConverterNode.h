@@ -23,32 +23,31 @@
 namespace supra
 {
 	class ScanConverterNode : public AbstractNode {
-	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, TBB_QUEUE_RESOLVER(false)> NodeType;
+	private:
 		typedef tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > MaskOutputNodeType;
 
 	public:
-		ScanConverterNode(tbb::flow::graph& graph, const std::string & nodeID);
+		ScanConverterNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 2; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			if (index == 1)
 			{
-				return &m_maskOutputNode;
+				return m_maskOutputNode.get();
 			}
 			return nullptr;
 		};
@@ -62,8 +61,8 @@ namespace supra
 		std::shared_ptr<RecordObject> checkTypeAndConvert(std::shared_ptr<RecordObject> mainObj);
 		void sendMask(std::shared_ptr<RecordObject> pImage);
 
-		NodeType m_node;
-		MaskOutputNodeType m_maskOutputNode;
+		std::unique_ptr<tbb::flow::graph_node> m_node;
+		std::unique_ptr<MaskOutputNodeType> m_maskOutputNode;
 
 		std::mutex m_mutex;
 		bool m_maskSent;

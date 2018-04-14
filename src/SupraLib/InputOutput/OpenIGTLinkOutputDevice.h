@@ -35,7 +35,7 @@ namespace supra
 	class OpenIGTLinkOutputDevice : public AbstractOutput
 	{
 	public:
-		OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID);
+		OpenIGTLinkOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 		~OpenIGTLinkOutputDevice();
 
 		//Functions to be overwritten

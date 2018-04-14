@@ -18,11 +18,20 @@ using namespace std;
 
 namespace supra
 {
-	AutoQuitNode::AutoQuitNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_inputNode(graph, 1, [this](shared_ptr<RecordObject> obj) { countMessage(obj); })
+	AutoQuitNode::AutoQuitNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_messagesReceived(0)
 	{
+		if (queueing)
+		{
+			m_inputNode = unique_ptr<NodeTypeOneSidedQueueing>(
+				new NodeTypeOneSidedQueueing(graph, 1, [this](shared_ptr<RecordObject> obj) { countMessage(obj); }));
+		}
+		else
+		{
+			m_inputNode = unique_ptr<NodeTypeOneSidedDiscarding>(
+				new NodeTypeOneSidedDiscarding(graph, 1, [this](shared_ptr<RecordObject> obj) { countMessage(obj); }));
+		}
 		m_callFrequency.setName("AutoQuit");
 
 		m_valueRangeDictionary.set<uint32_t>("maxMessage", 0, 1000000, 1000, "Maximum number of messages");

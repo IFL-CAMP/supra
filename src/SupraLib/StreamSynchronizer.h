@@ -26,31 +26,27 @@ namespace supra
 {
 	class StreamSynchronizer : public AbstractNode {
 	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>> mainNodeType;
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg> toSyncNodeType;
-
-	public:
-		StreamSynchronizer(tbb::flow::graph& graph, const std::string & nodeID);
+		StreamSynchronizer(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return m_toSyncNodes.size() + 1; }
 		virtual size_t getNumOutputs() { return 1; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_mainNode;
+				return m_mainNode.get();
 			}
 			else if (index <= m_toSyncNodes.size())
 			{
-				return &m_toSyncNodes[index - 1];
+				return m_toSyncNodes[index - 1].get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index == 0)
 			{
-				return &m_mainNode;
+				return m_mainNode.get();
 			}
 			return nullptr;
 		};
@@ -60,8 +56,8 @@ namespace supra
 		std::shared_ptr<SyncRecordObject> findSynced(std::shared_ptr<RecordObject> mainObj);
 		void addToSyncList(size_t channel, std::shared_ptr<RecordObject> syncObj);
 
-		mainNodeType m_mainNode;
-		std::vector<toSyncNodeType> m_toSyncNodes;
+		std::unique_ptr<tbb::flow::graph_node> m_mainNode;
+		std::vector<std::unique_ptr<tbb::flow::graph_node> > m_toSyncNodes;
 
 		std::vector<std::deque<std::shared_ptr<RecordObject>>> m_syncLists;
 		std::vector<std::unique_ptr<std::mutex> > m_syncListMutexes;

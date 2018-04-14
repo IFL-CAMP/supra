@@ -19,14 +19,24 @@ using namespace std;
 
 namespace supra
 {
-	LogCompressorNode::LogCompressorNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndCompress(inObj); })
+	LogCompressorNode::LogCompressorNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_dynamicRange(80)
 		, m_gain(1)
 		, m_inputMax(1024)
 		, m_editedImageProperties(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndCompress(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndCompress(inObj); }));
+		}
+
 		m_compressor = unique_ptr<LogCompressor>(new LogCompressor());
 		m_callFrequency.setName("Comp");
 		m_valueRangeDictionary.set<double>("dynamicRange", 1, 200, 80, "Dynamic Range");

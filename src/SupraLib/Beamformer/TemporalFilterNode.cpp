@@ -19,13 +19,21 @@ using namespace std;
 
 namespace supra
 {
-	TemporalFilterNode::TemporalFilterNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); })
+	TemporalFilterNode::TemporalFilterNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_editedImageProperties(nullptr)
 		, m_imageSize({ 0,0,0 })
 		, m_imageDataType(TypeUnknown)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return filter(inObj); }));
+		}
+
 		m_temporalFilter = unique_ptr<TemporalFilter>(new TemporalFilter());
 		m_callFrequency.setName("Filter");
 		m_valueRangeDictionary.set<uint32_t>("numImages", 1, 50, 3, "Number of Images");
