@@ -32,6 +32,7 @@ namespace supra
 		, m_frameIndex(0)
 		, m_numel(0)
 		, m_frozen(false)
+		, m_lastFrame(false)
 	{
 		m_callFrequency.setName("RawMock");
 		//Setup allowed values for parameters
@@ -139,7 +140,14 @@ namespace supra
 
 			if (!m_singleImage)
 			{
-				readNextFrame();
+				if (m_lastFrame)
+				{
+					setRunning(false);
+				}
+				else
+				{
+					readNextFrame();
+				}
 			}
 			m_callFrequency.measureEnd();
 		}
@@ -175,7 +183,7 @@ namespace supra
 			m_sequenceIndex = (m_sequenceIndex + 1) % m_sequenceLengths.size();
 			if (m_sequenceIndex == 0 && m_streamSequenceOnce)
 			{
-				setRunning(false);
+				m_lastFrame = true;
 			}
 		}
 	}
