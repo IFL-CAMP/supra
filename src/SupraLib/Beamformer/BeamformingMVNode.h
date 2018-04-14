@@ -26,6 +26,8 @@ namespace supra
 {
 	//forward declarations
 	class USImageProperties;
+	class USImage;
+	class USRawData;
 
 	class BeamformingMVNode : public AbstractNode {
 	public:
@@ -57,6 +59,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
+		template <typename RawDataType>
+		std::shared_ptr<USImage> beamformTemplated(std::shared_ptr<const USRawData> rawData);
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
 
 		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
@@ -69,6 +73,7 @@ namespace supra
 
 		uint32_t m_subArraySize;
 		uint32_t m_temporalSmoothing;
+		DataType m_outputType;
 	};
 }
 

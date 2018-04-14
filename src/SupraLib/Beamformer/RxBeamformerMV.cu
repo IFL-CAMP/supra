@@ -402,4 +402,22 @@ namespace supra
 		uint32_t subArraySize,
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH);
+	template
+		shared_ptr<USImage> performRxBeamforming<int16_t, float>(
+			shared_ptr<const USRawData> rawData,
+			uint32_t subArraySize,
+			uint32_t temporalSmoothing,
+			cublasHandle_t cublasH);
+	template
+		shared_ptr<USImage> performRxBeamforming<float, int16_t>(
+			shared_ptr<const USRawData> rawData,
+			uint32_t subArraySize,
+			uint32_t temporalSmoothing,
+			cublasHandle_t cublasH);
+	template
+		shared_ptr<USImage> performRxBeamforming<float, float>(
+			shared_ptr<const USRawData> rawData,
+			uint32_t subArraySize,
+			uint32_t temporalSmoothing,
+			cublasHandle_t cublasH);
 }

@@ -25,6 +25,7 @@ namespace supra
 	BeamformingMVNode::BeamformingMVNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
 		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
+		, m_outputType(TypeUnknown)
 	{
 		if (queueing)
 		{
@@ -40,6 +41,7 @@ namespace supra
 		m_callFrequency.setName("BeamformingMV");
 		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 0, "Sub-array size");
 		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
 		
 		configurationChanged();
 
@@ -56,6 +58,7 @@ namespace supra
 	{
 		m_subArraySize = m_configurationDictionary.get<uint32_t>("subArraySize");
 		m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
+		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
 	void BeamformingMVNode::configurationEntryChanged(const std::string& configKey)
@@ -69,10 +72,38 @@ namespace supra
 		{
 			m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
 		}
+		else if (configKey == "outputType")
+		{
+			m_outputType = m_configurationDictionary.get<DataType>("outputType");
+		}
 		if (m_lastSeenImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
 		}
+	}
+
+	template <typename RawDataType>
+	std::shared_ptr<USImage> BeamformingMVNode::beamformTemplated(shared_ptr<const USRawData> rawData)
+	{
+		shared_ptr<USImage> pImageRF = nullptr;
+		cudaSafeCall(cudaDeviceSynchronize());
+		cublasSafeCall(cublasSetStream(m_cublasH, rawData->getData<RawDataType>()->getStream()));
+		switch (m_outputType)
+		{
+		case supra::TypeInt16:
+			pImageRF = performRxBeamforming<RawDataType, int16_t>(
+				rawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
+			break;
+		case supra::TypeFloat:
+			pImageRF = performRxBeamforming<RawDataType, float>(
+				rawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
+			break;
+		default:
+			logging::log_error("BeamformingMVNode: Output image type not supported:");
+			break;
+		}
+		cudaSafeCall(cudaDeviceSynchronize());
+		return pImageRF;
 	}
 
 	shared_ptr<RecordObject> BeamformingMVNode::checkTypeAndBeamform(shared_ptr<RecordObject> inObj)
@@ -88,14 +119,19 @@ namespace supra
 				if (pRawData->getImageProperties()->getImageState() == USImageProperties::RawDelayed)
 				{
 					m_callFrequency.measure();
-
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					cublasSafeCall(cublasSetStream(m_cublasH, pRawData->getData<int16_t>()->getStream()));
-					pImageRF = performRxBeamforming<int16_t, int16_t>(
-						pRawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
+					switch (pRawData->getDataType())
+					{
+					case TypeInt16:
+						pImageRF = beamformTemplated<int16_t>(pRawData);
+						break;
+					case TypeFloat:
+						pImageRF = beamformTemplated<float>(pRawData);
+						break;
+					default:
+						logging::log_error("BeamformingMVNode: Input rawdata type is not supported.");
+						break;
+					}
 					m_callFrequency.measureEnd();
-					cudaSafeCall(cudaDeviceSynchronize());
 
 					if (m_lastSeenImageProperties != pImageRF->getImageProperties())
 					{
