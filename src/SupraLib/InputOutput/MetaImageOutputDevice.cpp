@@ -57,7 +57,7 @@ namespace supra
 
 		if (m_pWriter)
 		{
-			m_pWriter->closeWhenEverythingWritten();
+			m_pWriter->closeWhenEverythingWritten(true);
 		}
 	}
 
