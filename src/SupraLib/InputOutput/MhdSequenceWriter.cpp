@@ -22,6 +22,7 @@ namespace supra
 		, m_nextFrameNumber(0)
 		, m_memoryBufferSize(0)
 		, m_closing(false)
+		, m_closingBlocking(false)
 	{};
 
 	MhdSequenceWriter::~MhdSequenceWriter()
@@ -171,12 +172,24 @@ namespace supra
 		}
 	}
 
-	void MhdSequenceWriter::closeWhenEverythingWritten()
+	void MhdSequenceWriter::closeWhenEverythingWritten(bool blocking)
 	{
+		m_closingBlocking = blocking;
 		m_closing = true;
-		std::unique_lock<std::mutex> l(m_queueMutex);
+		
 		m_queueConditionVariable.notify_one();
-		m_writerThread.detach();
+		if (blocking)
+		{
+			if (m_writerThread.joinable())
+			{
+				m_writerThread.join();
+			}
+			delete this;
+		}
+		else
+		{
+			m_writerThread.detach();
+		}
 	}
 
 	void MhdSequenceWriter::closeFiles()
@@ -232,7 +245,7 @@ namespace supra
 				std::unique_lock<std::mutex> l(m_queueMutex);
 				if (m_writeQueue.size() == 0)
 				{
-					m_queueConditionVariable.wait(l);
+					m_queueConditionVariable.wait_for(l, std::chrono::seconds(2));
 				}
 			}
 		}
@@ -249,7 +262,10 @@ namespace supra
 		}
 
 		// Now that everything has been written, this object can be destroyed
-		delete this;
+		if (!m_closingBlocking)
+		{
+			delete this;
+		}
 	}
 
 	void MhdSequenceWriter::addImageInternal(const uint8_t * imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback)
