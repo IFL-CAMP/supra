@@ -907,6 +907,11 @@ namespace supra
 			m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
 			m_beamEnsembleTxParameters.at(numSeq).txDutyCycle = m_configurationDictionary.get<double>(seqIdApp+"txDutyCycle");
 			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
+			if (m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics > 20)
+			{
+				logging::log_warn("UsIntCephasonicsCc: : Selected more than 20 cycles for pulse - Too long pulsing can damage hardware permanently!");
+			}
+
 			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
 		}
 		
