@@ -12,6 +12,8 @@
 #ifndef __IMAGEPROCESSINGCUDANODE_H__
 #define __IMAGEPROCESSINGCUDANODE_H__
 
+#ifdef HAVE_CUDA
+
 #include <memory>
 #include <mutex>
 #include <tbb/flow_graph.h>
@@ -64,5 +66,7 @@ namespace supra
 		DataType m_outputType;
 	};
 }
+
+#endif //HAVE_CUDA
 
 #endif //!__IMAGEPROCESSINGCUDANODE_H__

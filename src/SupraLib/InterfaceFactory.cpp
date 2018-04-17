@@ -167,10 +167,12 @@ namespace supra
 		{
 			retVal = make_shared<ImageProcessingCpuNode>(*pG, nodeID, queueing);
 		}
+#ifdef HAVE_CUDA
 		if (nodeType == "ImageProcessingCudaNode")
 		{
 			retVal = make_shared<ImageProcessingCudaNode>(*pG, nodeID, queueing);
 		}
+#endif
 #ifdef HAVE_BEAMFORMER
 		if (nodeType == "BeamformingNode")
 		{
