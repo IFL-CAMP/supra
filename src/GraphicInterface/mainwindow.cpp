@@ -6,13 +6,16 @@
 #include <QString>
 #include <QScrollBar>
 #include <QTimer>
+#include <QListWidget>
 
 #include <parametersWidget.h>
 #include <previewBuilderQt.h>
+#include "NodeExplorerDataModel.h"
 
 #include <utilities/utility.h>
 #include <utilities/Logging.h>
 #include <SupraManager.h>
+#include <InterfaceFactory.h>
 
 using namespace std;
 
@@ -51,7 +54,7 @@ namespace supra
 		QTimer *timer = new QTimer(this);
 		QTimer *timerFreeze = new QTimer(this);
 
-		setMinMaxWidthAdaptive(ui->list_allNodes);
+		//setMinMaxWidthAdaptive(ui->list_allNodes);
 
 		connect(ui->actionLoadConfig, SIGNAL(triggered()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonLoad, SIGNAL(clicked()), this, SLOT(loadConfigFileAction()));
@@ -74,7 +77,7 @@ namespace supra
 
 		connect(ui->comboBoxPreviewNode, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(previewSelected(const QString &)));
 
-		connect(ui->list_allNodes, SIGNAL(itemSelectionChanged()), this, SLOT(showParametersFromList()));
+		//connect(ui->list_allNodes, SIGNAL(itemSelectionChanged()), this, SLOT(showParametersFromList()));
 		connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeTimings()));
 		connect(timerFreeze, SIGNAL(timeout()), this, SLOT(updateFreezeTimer()));
 		connect(ui->pushButtonFreeze, SIGNAL(clicked()), this, SLOT(toogleFreeze()));
@@ -91,6 +94,25 @@ namespace supra
 
 		timer->start(2000);
 		timerFreeze->start(1000);
+
+		//ui->group_allNodes->layout
+		shared_ptr<QtNodes::DataModelRegistry> flowRegistry = make_shared<QtNodes::DataModelRegistry>();
+		for (auto nodeType : InterfaceFactory::getNodeTypes())
+		{
+			flowRegistry->registerModel(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(nodeType, nodeType)));
+		}
+
+		m_pNodeScene = new QtNodes::FlowScene(flowRegistry);
+		m_pNodeScene->setParent(this);
+		m_pNodeView = new QtNodes::FlowView(m_pNodeScene, ui->group_allNodes);
+		
+		ui->group_allNodes->layout()->addWidget(m_pNodeView);
+
+		connect(m_pNodeScene, &QtNodes::FlowScene::selectionChanged, this, &MainWindow::nodeSceneSelectionChanged);
+		connect(m_pNodeScene, &QtNodes::FlowScene::connectionCreated, this, &MainWindow::connectionCreated);
+		connect(m_pNodeScene, &QtNodes::FlowScene::connectionDeleted, this, &MainWindow::connectionDeleted);
+
+		
 	}
 
 	MainWindow::~MainWindow()
@@ -132,24 +154,52 @@ namespace supra
 
 	void MainWindow::loadConfigFile(const QString & filename)
 	{
+		m_loadingConfig = true;
 		p_manager->readFromXml(filename.toStdString().c_str());
 
 		for (string node : p_manager->getNodeIDs())
 		{
-			QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(node));
-			item->setData(Qt::UserRole, QVariant(QString::fromStdString(node)));
-			//ui->list_allNodes->addItem(QString::fromStdString(node));
-			ui->list_allNodes->addItem(item);
+			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, "")));
+			m_NodeSceneNodeIDs[node] = sceneNode.id();
+
 			if (p_manager->getNode(node)->getNumOutputs() > 0)
 			{
 				ui->comboBoxPreviewNode->addItem(QString::fromStdString(node));
 			}
 		}
-		setMinMaxWidthAdaptive(ui->list_allNodes);
+
+		m_pNodeScene->iterateOverNodes([this](QtNodes::Node* node) {
+			this->m_NodeSceneNodes[node->id()] = node;
+		});
+		string prevNodeID = "";
+		if (m_preview)
+		{
+			prevNodeID = m_preview->getNodeID();
+		}
+
+		for (auto connection : p_manager->getNodeConnections())
+		{
+			string fromNodeID = get<0>(connection);
+			string toNodeID = get<2>(connection);
+			if (prevNodeID == "" || toNodeID != prevNodeID)
+			{
+				m_pNodeScene->createConnection(
+					*(m_NodeSceneNodes[m_NodeSceneNodeIDs[toNodeID]]),
+					static_cast<QtNodes::PortIndex>(get<3>(connection)),
+					*(m_NodeSceneNodes[m_NodeSceneNodeIDs[fromNodeID]]),
+					static_cast<QtNodes::PortIndex>(get<1>(connection))
+				);
+			}
+		}
+
+
+		//setMinMaxWidthAdaptive(ui->list_allNodes);
 
 		ui->pushButtonLoad->setDisabled(true);
 		ui->actionLoadConfig->setDisabled(true);
-		ui->pushButtonStart->setEnabled(true);
+		ui->pushButtonStart->setEnabled(true);		
+
+		m_loadingConfig = false;
 	}
 
 	void MainWindow::keyPressEvent(QKeyEvent * keyEvent)
@@ -158,28 +208,65 @@ namespace supra
 		QMainWindow::keyPressEvent(keyEvent);
 	}
 
-	void MainWindow::showParametersFromList()
+	void MainWindow::showParametersFromList(QString nodeID)
 	{
-		QListWidget* pSender = dynamic_cast<QListWidget*>(sender());
-		if (pSender)
+		if (m_pParametersWidget)
 		{
-			if (m_pParametersWidget)
-				delete m_pParametersWidget;
+			delete m_pParametersWidget;
+		}
 
-			auto item = pSender->item(pSender->currentRow());
-			QVariant data = item->data(Qt::UserRole);
-			if (data.type() == data.String)
+		ui->group_parameters->setTitle(QString("Parameters: ") + nodeID);
+
+		m_pParametersWidget = new parametersWidget(nodeID, ui->group_parameters);
+		ui->scrollArea_parameters->setWidget(m_pParametersWidget);
+		int widthBefore = ui->scrollArea_parameters->width();
+		ui->scrollArea_parameters->setMinimumWidth(0);
+		ui->scrollArea_parameters->resize(10, ui->scrollArea_parameters->height());
+		int scrollbarWidth = qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+		ui->scrollArea_parameters->setMinimumWidth(max(m_pParametersWidget->width() + scrollbarWidth, widthBefore));
+	}
+
+	void MainWindow::nodeSceneSelectionChanged()
+	{
+		auto nodes = m_pNodeScene->selectedNodes();
+		if (nodes.size() >= 1)
+		{
+			showParametersFromList(nodes[0]->nodeDataModel()->caption());
+		}
+	}
+
+	void MainWindow::connectionCreated(QtNodes::Connection & connection)
+	{
+		if (!m_loadingConfig)
+		{
+			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
+			auto nodeTo = connection.getNode(QtNodes::PortType::In);
+			if (nodeFrom && nodeTo)
 			{
-				QString newID = data.toString();
-				ui->group_parameters->setTitle(QString("Parameters: ") + newID);
+				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
+				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
+				logging::log_always("Connection created: ", nodeFromID, " -> ", nodeToID);
+				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
+				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
+				p_manager->connect(nodeFromID, portFrom, nodeToID, portTo);
+			}
+		}
+	}
 
-				m_pParametersWidget = new parametersWidget(newID, ui->group_parameters);
-				ui->scrollArea_parameters->setWidget(m_pParametersWidget);
-				int widthBefore = ui->scrollArea_parameters->width();
-				ui->scrollArea_parameters->setMinimumWidth(0);
-				ui->scrollArea_parameters->resize(10, ui->scrollArea_parameters->height());
-				int scrollbarWidth = qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
-				ui->scrollArea_parameters->setMinimumWidth(max(m_pParametersWidget->width() + scrollbarWidth, widthBefore));
+	void MainWindow::connectionDeleted(QtNodes::Connection & connection)
+	{
+		if (!m_loadingConfig)
+		{
+			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
+			auto nodeTo = connection.getNode(QtNodes::PortType::In);
+			if (nodeFrom && nodeTo)
+			{
+				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
+				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
+				logging::log_always("Connection deleted: ", nodeFromID, " -> ", nodeToID);
+				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
+				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
+				p_manager->disconnect(nodeFromID, portFrom, nodeToID, portTo);
 			}
 		}
 	}
@@ -326,26 +413,26 @@ namespace supra
 
 	void MainWindow::updateNodeTimings()
 	{
-		for (int itemIdx = 0; itemIdx < ui->list_allNodes->count(); itemIdx++)
-		{
-			auto item = ui->list_allNodes->item(itemIdx);
-			QVariant data = item->data(Qt::UserRole);
-			if (data.type() == data.String)
-			{
-				QString nodeID = data.toString();
+		//for (int itemIdx = 0; itemIdx < ui->list_allNodes->count(); itemIdx++)
+		//{
+		//	auto item = ui->list_allNodes->item(itemIdx);
+		//	QVariant data = item->data(Qt::UserRole);
+		//	if (data.type() == data.String)
+		//	{
+		//		QString nodeID = data.toString();
 
-				auto node = p_manager->getNode(nodeID.toStdString());
+		//		auto node = p_manager->getNode(nodeID.toStdString());
 
-				string timingInfo = node->getTimingInfo();
-				QString newText = nodeID;
-				if (timingInfo != "")
-				{
-					newText += " (" + QString::fromStdString(timingInfo) + ")";
-				}
-				item->setText(newText);
-			}
-		}
-		setMinMaxWidthAdaptive(ui->list_allNodes, true);
+		//		string timingInfo = node->getTimingInfo();
+		//		QString newText = nodeID;
+		//		if (timingInfo != "")
+		//		{
+		//			newText += " (" + QString::fromStdString(timingInfo) + ")";
+		//		}
+		//		item->setText(newText);
+		//	}
+		//}
+		//setMinMaxWidthAdaptive(ui->list_allNodes, true);
 	}
 
 	void MainWindow::updateFreezeTimer()

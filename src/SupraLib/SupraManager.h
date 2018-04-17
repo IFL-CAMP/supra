@@ -48,11 +48,13 @@ namespace supra
 		std::shared_ptr<AbstractInput<RecordObject> > getInputDevice(std::string nodeID);
 		std::shared_ptr<AbstractOutput> getOutputDevice(std::string nodeID);
 		bool nodeExists(std::string nodeID);
+		std::vector<std::tuple<std::string, size_t, std::string, size_t> > getNodeConnections();
 		std::map<std::string, std::vector<size_t> > getImageOutputPorts();
 		std::map<std::string, std::vector<size_t> > getTrackingOutputPorts();
 
 		//Node modifications
 		bool addNode(std::string nodeID, std::shared_ptr<AbstractNode> node);
+		std::string addNode(std::string nodeType, bool queueing = false);
 
 		template <class nodeToConstruct, typename... constructorArgTypes>
 		bool addNodeConstruct(std::string nodeID, constructorArgTypes... constructorArgs)
@@ -93,11 +95,13 @@ namespace supra
 	private:
 		SupraManager();
 		void freezeThread();
+		std::string findUnusedID(std::string prefix);
 
 		std::shared_ptr<tbb::flow::graph> m_graph;
 		std::map<std::string, std::shared_ptr<AbstractInput<RecordObject> > > m_inputDevices;
 		std::map<std::string, std::shared_ptr<AbstractOutput> > m_outputDevices;
 		std::map<std::string, std::shared_ptr<AbstractNode> > m_nodes;
+		std::map<std::tuple<std::string, size_t, std::string, size_t>, bool> m_nodeConnections;
 		std::vector<std::shared_ptr<AbstractNode> > m_removedNodes;
 
 		std::unique_ptr<std::thread> m_freezeThread;

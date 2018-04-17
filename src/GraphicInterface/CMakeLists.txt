@@ -7,6 +7,8 @@ include(supraIncludeITK)
 # Widgets finds its own dependencies.
 find_package(Qt5Widgets REQUIRED)
 
+find_package(NodeEditor REQUIRED)
+
 OPTION(SUPRA_USE_CAMPVIS "Use CAMPVis for data previews" OFF)
 if(${SUPRA_USE_CAMPVIS})
 	# The CAMPVis package should be found automatically if you built CAMPVis through CMake
@@ -28,6 +30,7 @@ set ( SOURCES
  previewBuilderQt.cpp
  QImagePreviewReciever.cpp
  QTrackerPreviewReciever.cpp
+ NodeExplorerDataModel.cpp
  ${CAMPVIS_SOURCES}
 )
 
@@ -36,6 +39,7 @@ set ( HEADERS
  previewBuilderQt.h
  QImagePreviewReciever.h
  QTrackerPreviewReciever.h
+ NodeExplorerDataModel.h
  ${CAMPVIS_HEADERS}
 )
 
@@ -113,6 +117,7 @@ endif(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 TARGET_LINK_LIBRARIES(SUPRA_GUI
 	${SUPRA_Lib_LIBRARIES}
 	${CAMPVIS_LIB}
+	${NodeEditor_LIBRARIES}
 )
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD 11)
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD_REQUIRED ON)

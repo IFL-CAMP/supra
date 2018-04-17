@@ -12,13 +12,14 @@
 #ifndef __INTERFACEFACTORY_H__
 #define __INTERFACEFACTORY_H__
 
-#include <memory>
-
-#include <tbb/flow_graph.h>
-
 #include "AbstractNode.h"
 #include "AbstractInput.h"
 #include "AbstractOutput.h"
+
+#include <tbb/flow_graph.h>
+
+#include <functional>
+#include <memory>
 
 namespace supra
 {
@@ -28,6 +29,12 @@ namespace supra
 		static std::shared_ptr<AbstractInput<RecordObject> > createInputDevice(std::shared_ptr<tbb::flow::graph> pG, const std::string& nodeID, std::string deviceType);
 		static std::shared_ptr<AbstractOutput> createOutputDevice(std::shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType, bool queueing);
 		static std::shared_ptr<AbstractNode> createNode(std::shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string nodeType, bool queueing);
+		static std::vector<std::string> getNodeTypes();
+
+	private:
+		typedef std::function<std::shared_ptr<AbstractNode>(tbb::flow::graph&, std::string, bool)> nodeCreationFunctionType;
+
+		static std::map<std::string, nodeCreationFunctionType> m_nodeCreators;
 	};
 }
 
