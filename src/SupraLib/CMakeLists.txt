@@ -121,7 +121,8 @@ SET(SUPRA_Lib_SOURCE
 	utilities/tinyxml2/tinyxml2.cpp
 	FrequencyLimiterNode.cpp
 	StreamSyncNode.cpp
-	AutoQuitNode.cpp)
+	AutoQuitNode.cpp
+	ExampleNodes/ImageProcessingCpuNode.cpp)
 SET(SUPRA_Lib_HEADERS
 	vec.h
 	Container.h
@@ -152,7 +153,19 @@ SET(SUPRA_Lib_HEADERS
 	utilities/tinyxml2/tinyxml2.h
 	FrequencyLimiterNode.h
 	StreamSyncNode.h
-	AutoQuitNode.h)
+	AutoQuitNode.h
+	ExampleNodes/ImageProcessingCpuNode.h)
+	
+IF(SUPRA_CUDA)
+	SET(SUPRA_Lib_SOURCE
+		${SUPRA_Lib_SOURCE}
+		ExampleNodes/ImageProcessingCudaNode.cpp
+		ExampleNodes/ImageProcessingCuda.cu)
+	SET(SUPRA_Lib_HEADERS
+		${SUPRA_Lib_HEADERS}
+		ExampleNodes/ImageProcessingCudaNode.h
+		ExampleNodes/ImageProcessingCuda.h)
+ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
 	${SUPRA_Lib_INCLUDEDIRS}
