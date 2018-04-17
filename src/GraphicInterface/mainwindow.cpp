@@ -111,8 +111,8 @@ namespace supra
 		connect(m_pNodeScene, &QtNodes::FlowScene::selectionChanged, this, &MainWindow::nodeSceneSelectionChanged);
 		connect(m_pNodeScene, &QtNodes::FlowScene::connectionCreated, this, &MainWindow::connectionCreated);
 		connect(m_pNodeScene, &QtNodes::FlowScene::connectionDeleted, this, &MainWindow::connectionDeleted);
-
-		
+		connect(m_pNodeScene, &QtNodes::FlowScene::nodeCreated, this, &MainWindow::nodeCreated);
+		connect(m_pNodeScene, &QtNodes::FlowScene::nodeDeleted, this, &MainWindow::nodeDeleted);
 	}
 
 	MainWindow::~MainWindow()
@@ -122,6 +122,7 @@ namespace supra
 
 	void MainWindow::prepareForClose()
 	{
+		m_nodeSignalsDeactivated = true;
 		//remove the previews
 		if (m_preview)
 		{
@@ -154,12 +155,16 @@ namespace supra
 
 	void MainWindow::loadConfigFile(const QString & filename)
 	{
-		m_loadingConfig = true;
+		m_nodeSignalsDeactivated = true;
 		p_manager->readFromXml(filename.toStdString().c_str());
+		auto positions = computeNodePositions();
+		float gridSpacing = 100;
 
 		for (string node : p_manager->getNodeIDs())
 		{
 			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, "")));
+			auto position = static_cast<vec2f>(positions[node]) * 100;
+			m_pNodeScene->setNodePosition(sceneNode, QPointF(position.x, position.y));
 			m_NodeSceneNodeIDs[node] = sceneNode.id();
 
 			if (p_manager->getNode(node)->getNumOutputs() > 0)
@@ -199,7 +204,7 @@ namespace supra
 		ui->actionLoadConfig->setDisabled(true);
 		ui->pushButtonStart->setEnabled(true);		
 
-		m_loadingConfig = false;
+		m_nodeSignalsDeactivated = false;
 	}
 
 	void MainWindow::keyPressEvent(QKeyEvent * keyEvent)
@@ -237,7 +242,7 @@ namespace supra
 
 	void MainWindow::connectionCreated(QtNodes::Connection & connection)
 	{
-		if (!m_loadingConfig)
+		if (!m_nodeSignalsDeactivated)
 		{
 			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
 			auto nodeTo = connection.getNode(QtNodes::PortType::In);
@@ -245,7 +250,6 @@ namespace supra
 			{
 				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
 				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
-				logging::log_always("Connection created: ", nodeFromID, " -> ", nodeToID);
 				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
 				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
 				p_manager->connect(nodeFromID, portFrom, nodeToID, portTo);
@@ -255,7 +259,7 @@ namespace supra
 
 	void MainWindow::connectionDeleted(QtNodes::Connection & connection)
 	{
-		if (!m_loadingConfig)
+		if (!m_nodeSignalsDeactivated)
 		{
 			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
 			auto nodeTo = connection.getNode(QtNodes::PortType::In);
@@ -263,12 +267,103 @@ namespace supra
 			{
 				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
 				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
-				logging::log_always("Connection deleted: ", nodeFromID, " -> ", nodeToID);
 				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
 				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
 				p_manager->disconnect(nodeFromID, portFrom, nodeToID, portTo);
 			}
 		}
+	}
+
+	void MainWindow::nodeCreated(QtNodes::Node & node)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			string nodeID = node.nodeDataModel()->caption().toStdString();
+			if (p_manager->getNode(nodeID)->getNumOutputs() > 0)
+			{
+				ui->comboBoxPreviewNode->addItem(QString::fromStdString(nodeID));
+			}
+		}
+	}
+
+	void MainWindow::nodeDeleted(QtNodes::Node & node)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			QString nodeID = node.nodeDataModel()->caption();
+			int index = ui->comboBoxPreviewNode->findText(nodeID);
+			bool currentlyActive = ui->comboBoxPreviewNode->currentIndex() == index;
+			ui->comboBoxPreviewNode->removeItem(index);
+			if (currentlyActive)
+			{
+				ui->comboBoxPreviewNode->setCurrentIndex(0);
+			}
+		}
+	}
+
+	std::map<std::string, vec2i> MainWindow::computeNodePositions()
+	{
+		auto nodeIDs = p_manager->getNodeIDs();
+		auto connections = p_manager->getNodeConnections();
+
+		map <string, vector<string> > nodePredecessors;
+		map <string, int> nodeLevel;
+
+		for (auto node : nodeIDs)
+		{
+			nodeLevel[node] = -1;
+			nodePredecessors[node].resize(0);
+		}
+		for (auto connection : connections)
+		{
+			string nodeFrom = get<0>(connection);
+			string nodeTo = get<2>(connection);
+			nodePredecessors[nodeTo].push_back(nodeFrom);
+		}
+
+		for (auto nodePredecessor : nodePredecessors)
+		{
+			if (nodePredecessor.second.size() == 0)
+			{
+				nodeLevel[nodePredecessor.first] = 0;
+			}
+		}
+		for (size_t i = 0; i < nodeIDs.size(); i++)
+		{
+			for (auto& nodePredecessor : nodePredecessors)
+			{
+				if (nodePredecessor.second.size() != 0)
+				{
+					for (int pred = 0; pred < nodePredecessor.second.size(); pred++)
+					{
+						if (nodePredecessors[nodePredecessor.second[pred]].size() == 0)
+						{
+							nodeLevel[nodePredecessor.first] = max(nodeLevel[nodePredecessor.second[pred]] + 1, nodeLevel[nodePredecessor.first]);
+							nodePredecessor.second.erase(nodePredecessor.second.begin() + pred);
+							pred--;
+						}
+					}
+				}
+			}
+		}
+
+		int nodeLevels = -1;
+		for (auto node : nodeIDs)
+		{
+			nodeLevels = max(nodeLevels, nodeLevel[node]);
+		}
+		nodeLevels++;
+
+		vector<int> usedColumnsPerLevel(nodeLevels, 0);
+		map<string, vec2i> positionMap;
+		for(auto node : nodeIDs)
+		{
+			int column = usedColumnsPerLevel[nodeLevel[node]];
+			usedColumnsPerLevel[nodeLevel[node]]++;
+			positionMap[node] = { column, nodeLevel[node] };
+		}
+
+		return positionMap;
 	}
 
 	void MainWindow::setLogLevel()

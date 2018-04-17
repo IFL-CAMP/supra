@@ -15,6 +15,8 @@
 #include <nodes/FlowView>
 #include <nodes/Node>
 
+#include <vec.h>
+
 namespace Ui {
 	class MainWindow;
 }
@@ -59,13 +61,17 @@ namespace supra
 		void nodeSceneSelectionChanged();
 		void connectionCreated(QtNodes::Connection& connection);
 		void connectionDeleted(QtNodes::Connection& connection);
+		void nodeCreated(QtNodes::Node& node);
+		void nodeDeleted(QtNodes::Node& node);
+
+		std::map<std::string, vec2i> computeNodePositions();
 
 		Ui::MainWindow *ui;
 
 		QShortcut* m_pSequenceShortcut;
 
 		std::shared_ptr<SupraManager> p_manager;
-		std::atomic_bool m_loadingConfig;
+		std::atomic_bool m_nodeSignalsDeactivated;
 		bool m_started;
 		bool m_sequenceStarted;
 		QSize m_previewSize;
