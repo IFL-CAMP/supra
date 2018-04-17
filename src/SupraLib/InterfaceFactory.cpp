@@ -35,6 +35,8 @@
 #include "StreamSynchronizer.h"
 #include "FrequencyLimiterNode.h"
 #include "AutoQuitNode.h"
+#include "ExampleNodes/ImageProcessingCpuNode.h"
+#include "ExampleNodes/ImageProcessingCudaNode.h"
 
 using namespace std;
 
@@ -160,6 +162,14 @@ namespace supra
 		if (nodeType == "StreamSyncNode")
 		{
 			retVal = make_shared<StreamSyncNode>(*pG, nodeID, queueing);
+		}
+		if (nodeType == "ImageProcessingCpuNode")
+		{
+			retVal = make_shared<ImageProcessingCpuNode>(*pG, nodeID, queueing);
+		}
+		if (nodeType == "ImageProcessingCudaNode")
+		{
+			retVal = make_shared<ImageProcessingCudaNode>(*pG, nodeID, queueing);
 		}
 #ifdef HAVE_BEAMFORMER
 		if (nodeType == "BeamformingNode")
