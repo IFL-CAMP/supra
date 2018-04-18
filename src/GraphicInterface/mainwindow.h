@@ -58,6 +58,7 @@ namespace supra
 		/// Slot that is called on selection in the node list.
 		/// Shows a parameter widget for the currently selected node
 		void showParametersFromList(QString nodeID);
+		void hideParameters();
 		void nodeSceneSelectionChanged();
 		void connectionCreated(QtNodes::Connection& connection);
 		void connectionDeleted(QtNodes::Connection& connection);

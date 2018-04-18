@@ -34,7 +34,7 @@ namespace supra
 	}
 	unsigned int NodeExplorerDataModel::nPorts(QtNodes::PortType portType) const
 	{
-		unsigned int numPorts = 0;
+		size_t numPorts = 0;
 		auto node = SupraManager::Get()->getNode(m_nodeID);
 		if (node)
 		{
@@ -52,7 +52,7 @@ namespace supra
 				break;
 			}
 		}
-		return numPorts;
+		return static_cast<unsigned int>(numPorts);
 	}
 	QtNodes::NodeDataType NodeExplorerDataModel::dataType(QtNodes::PortType portType, QtNodes::PortIndex portIndex) const
 	{
@@ -68,5 +68,6 @@ namespace supra
 	QWidget * NodeExplorerDataModel::embeddedWidget()
 	{
 		return nullptr;
+		//QLabel * _label;
 	}
 }

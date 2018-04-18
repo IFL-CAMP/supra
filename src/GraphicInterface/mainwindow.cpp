@@ -77,7 +77,6 @@ namespace supra
 
 		connect(ui->comboBoxPreviewNode, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(previewSelected(const QString &)));
 
-		//connect(ui->list_allNodes, SIGNAL(itemSelectionChanged()), this, SLOT(showParametersFromList()));
 		connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeTimings()));
 		connect(timerFreeze, SIGNAL(timeout()), this, SLOT(updateFreezeTimer()));
 		connect(ui->pushButtonFreeze, SIGNAL(clicked()), this, SLOT(toogleFreeze()));
@@ -230,6 +229,15 @@ namespace supra
 		int scrollbarWidth = qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
 		ui->scrollArea_parameters->setMinimumWidth(max(m_pParametersWidget->width() + scrollbarWidth, widthBefore));
 	}
+	void MainWindow::hideParameters()
+	{
+		if (m_pParametersWidget)
+		{
+			delete m_pParametersWidget;
+			m_pParametersWidget = nullptr;
+			ui->group_parameters->setTitle(QString("Parameters: Select Node"));
+		}
+	}
 
 	void MainWindow::nodeSceneSelectionChanged()
 	{
@@ -297,6 +305,10 @@ namespace supra
 			if (currentlyActive)
 			{
 				ui->comboBoxPreviewNode->setCurrentIndex(0);
+			}
+			if (m_pParametersWidget && m_pParametersWidget->getNodeID() == nodeID)
+			{
+				hideParameters();
 			}
 		}
 	}
@@ -594,16 +606,18 @@ namespace supra
 		}
 
 		string nodeID = text.toStdString();
-
-		string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
-		p_manager->addNodeConstruct<previewBuilderQT>(
-			previewNodeID, "Preview " + nodeID + stringify(0), ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
-		p_manager->connect(nodeID, 0, previewNodeID, 0);
-
-		previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
-		if (pPreview)
+		if (nodeID != "")
 		{
-			m_preview = pPreview;
+			string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
+			p_manager->addNodeConstruct<previewBuilderQT>(
+				previewNodeID, "Preview " + nodeID + stringify(0), ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
+			p_manager->connect(nodeID, 0, previewNodeID, 0);
+
+			previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
+			if (pPreview)
+			{
+				m_preview = pPreview;
+			}
 		}
 	}
 }
