@@ -90,6 +90,19 @@ namespace supra
 				string val = trim(parameterElement->GetText());
 				set<string>(paramName, val);
 			}
+			else if (paramType == "DataType")
+			{
+				string val = trim(parameterElement->GetText());
+				bool success;
+				DataType valTyped = DataTypeFromString(val, &success);
+				if (!success)
+				{
+					log_error("Error parsing parameter '", paramName, "' of type '", paramType, "'.");
+				}
+				else {
+					set<DataType>(paramName, valTyped);
+				}
+			}
 			else
 			{
 				log_error("Unknown parameter type for '", paramName, "'. Type '", paramType, "'.");
