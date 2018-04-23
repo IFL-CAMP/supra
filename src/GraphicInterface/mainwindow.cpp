@@ -159,9 +159,10 @@ namespace supra
 		auto positions = computeNodePositions();
 		float gridSpacing = 100;
 
+		auto nodeTypes = p_manager->getNodeTypes();
 		for (string node : p_manager->getNodeIDs())
 		{
-			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, "")));
+			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, nodeTypes[node])));
 			auto position = static_cast<vec2f>(positions[node]) * 100;
 			m_pNodeScene->setNodePosition(sceneNode, QPointF(position.x, position.y));
 			m_NodeSceneNodeIDs[node] = sceneNode.id();
@@ -520,26 +521,23 @@ namespace supra
 
 	void MainWindow::updateNodeTimings()
 	{
-		//for (int itemIdx = 0; itemIdx < ui->list_allNodes->count(); itemIdx++)
-		//{
-		//	auto item = ui->list_allNodes->item(itemIdx);
-		//	QVariant data = item->data(Qt::UserRole);
-		//	if (data.type() == data.String)
-		//	{
-		//		QString nodeID = data.toString();
+		m_pNodeScene->iterateOverNodeData(
+			[this](QtNodes::NodeDataModel* nodeDataModel) {
+			NodeExplorerDataModel* specific = dynamic_cast<NodeExplorerDataModel*>(nodeDataModel);
+			if (specific)
+			{
+				string nodeID = nodeDataModel->caption().toStdString();
+				auto node = p_manager->getNode(nodeID);
 
-		//		auto node = p_manager->getNode(nodeID.toStdString());
-
-		//		string timingInfo = node->getTimingInfo();
-		//		QString newText = nodeID;
-		//		if (timingInfo != "")
-		//		{
-		//			newText += " (" + QString::fromStdString(timingInfo) + ")";
-		//		}
-		//		item->setText(newText);
-		//	}
-		//}
-		//setMinMaxWidthAdaptive(ui->list_allNodes, true);
+				string timingInfo = node->getTimingInfo();
+				string newText;
+				if (timingInfo != "")
+				{
+					newText += "(" + timingInfo + ")";
+				}
+				specific->setTimingText(newText);
+			}
+		});
 	}
 
 	void MainWindow::updateFreezeTimer()
@@ -610,7 +608,8 @@ namespace supra
 		{
 			string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
 			p_manager->addNodeConstruct<previewBuilderQT>(
-				previewNodeID, "Preview " + nodeID + stringify(0), ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
+				previewNodeID, "Preview " + nodeID + stringify(0), "previewBuilderQT", 
+				ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
 			p_manager->connect(nodeID, 0, previewNodeID, 0);
 
 			previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());

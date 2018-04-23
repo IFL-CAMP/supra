@@ -102,7 +102,7 @@ namespace supra
 				in->changeConfig(dict);
 
 				//store input node
-				bool couldAdd = addNode(inputID, in);
+				bool couldAdd = addNode(inputID, in, inputType);
 				logging::log_warn_if(!couldAdd, "SupraManager: Node '", inputID, "' already existed. Did not add it to collection.");
 				if (couldAdd)
 				{
@@ -134,7 +134,7 @@ namespace supra
 				out->changeConfig(dict);
 
 				//store output node
-				bool couldAdd = addNode(outputID, out);
+				bool couldAdd = addNode(outputID, out, outputType);
 				logging::log_warn_if(!couldAdd, "SupraManager: Node '", outputID, "' already existed. Did not add it to collection.");
 				if (couldAdd)
 				{
@@ -166,7 +166,7 @@ namespace supra
 				node->changeConfig(dict);
 
 				//store node
-				bool couldAdd = addNode(nodeID, node);
+				bool couldAdd = addNode(nodeID, node, nodeType);
 				logging::log_warn_if(!couldAdd, "SupraManager: Node '", nodeID, "' already existed. Did not add it to collection.");
 			}
 
@@ -230,6 +230,11 @@ namespace supra
 		return nodeIDs;
 	}
 
+	std::map<std::string, std::string> SupraManager::getNodeTypes()
+	{
+		return m_nodeTypes;
+	}
+
 	shared_ptr<AbstractNode> SupraManager::getNode(string nodeID)
 	{
 		shared_ptr<AbstractNode> retVal = shared_ptr<AbstractNode>(nullptr);
@@ -260,7 +265,7 @@ namespace supra
 		return retVal;
 	}
 
-	bool SupraManager::addNode(string nodeID, shared_ptr<AbstractNode> node)
+	bool SupraManager::addNode(string nodeID, shared_ptr<AbstractNode> node, string nodeType)
 	{
 		if (nodeExists(nodeID))
 		{
@@ -269,6 +274,7 @@ namespace supra
 		else
 		{
 			m_nodes[nodeID] = node;
+			m_nodeTypes[nodeID] = nodeType;
 			logging::log_log("SupraManager: Added Node '", nodeID, "'.");
 			return true;
 		}
@@ -285,7 +291,7 @@ namespace supra
 		if (node)
 		{
 			//store node
-			couldAdd = addNode(newID, node);
+			couldAdd = addNode(newID, node, nodeType);
 			logging::log_warn_if(!couldAdd, "SupraManager: Node '", newID, "' already existed. Did not add it to collection.");
 		}
 		if (!couldAdd)

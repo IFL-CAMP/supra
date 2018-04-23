@@ -18,7 +18,10 @@ namespace supra
 	NodeExplorerDataModel::NodeExplorerDataModel(std::string nodeID, std::string nodeType)
 		: m_nodeID(nodeID)
 		, m_nodeType(nodeType)
-	{}
+		, m_label(new QLabel())
+	{
+		setTimingText("");
+	}
 	QString NodeExplorerDataModel::caption() const
 	{
 		return QString::fromStdString(m_nodeID);
@@ -67,7 +70,10 @@ namespace supra
 	}
 	QWidget * NodeExplorerDataModel::embeddedWidget()
 	{
-		return nullptr;
-		//QLabel * _label;
+		return m_label;
+	}
+	void NodeExplorerDataModel::setTimingText(const std::string& text)
+	{
+		m_label->setText(QString::fromStdString(m_nodeType + "\n" + text));
 	}
 }

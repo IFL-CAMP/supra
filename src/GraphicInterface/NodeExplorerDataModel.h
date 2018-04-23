@@ -13,7 +13,7 @@
 #define __NODEEXPLORERDATAMODEL_H__
 
 #include <nodes/NodeDataModel>
-//#include <nodes/NodeData>
+#include <QLabel>
 
 namespace supra
 {
@@ -32,10 +32,13 @@ namespace supra
 		virtual void setInData(std::shared_ptr<QtNodes::NodeData> nodeData, QtNodes::PortIndex port);
 		virtual std::shared_ptr<QtNodes::NodeData> outData(QtNodes::PortIndex port);
 		virtual QWidget * embeddedWidget();
+		void setTimingText(const std::string& text);
 
 	private:
 		std::string m_nodeID;
 		std::string m_nodeType;
+
+		QLabel * m_label;
 	};
 }
 
