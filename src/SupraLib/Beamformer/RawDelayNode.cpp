@@ -89,7 +89,7 @@ namespace supra
 			return m_rawDelayCuda->performDelay<RawElementType, float>(
 				pRawData, m_fNumber,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
-		case TypeUint16:
+		case TypeInt16:
 			return m_rawDelayCuda->performDelay<RawElementType, int16_t>(
 				pRawData, m_fNumber,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
