@@ -541,13 +541,22 @@ namespace supra
 			vec2s bfTxApertureSize = bf->getTxApertureSize();
 			vec2s bfApertureSize = bf->getApertureSize();
 
-			if(bfTxApertureSize.x == 0 || bfTxApertureSize.y == 0)
+			if(bfTxApertureSize.x == 0)
 			{
-				bfTxApertureSize = maxAperture;
+				bfTxApertureSize.x = maxAperture.x;
 			}
-			if(bfApertureSize.x == 0 || bfApertureSize.y == 0)
+			if(bfTxApertureSize.y == 0)
 			{
-				bfApertureSize = maxAperture;
+				bfTxApertureSize.y = maxAperture.y;
+			}
+
+			if(bfApertureSize.x == 0)
+			{
+				bfApertureSize.x = maxAperture.x;
+			}
+			if(bfApertureSize.y == 0)
+			{
+				bfApertureSize.y = maxAperture.y;
 			}
 			bfApertureSize = min(bfApertureSize, maxAperture);
 			bfTxApertureSize = min(bfTxApertureSize, maxAperture);
