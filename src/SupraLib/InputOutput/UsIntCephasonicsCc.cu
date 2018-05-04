@@ -574,7 +574,7 @@ namespace supra
 
 			// Check if start and end tx scanlines positions were set
 			vec2s bfTxScanlineStart = bf->getTxScanlineStartElement();
-			vec2s bfTxScanlineEnd = bf->getTxScanlineStartElement();
+			vec2s bfTxScanlineEnd = bf->getTxScanlineEndElement();
 
 			if (bfTxScanlineEnd.x == 0)
 			{
