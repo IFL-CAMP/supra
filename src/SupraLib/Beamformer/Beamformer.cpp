@@ -191,6 +191,24 @@ namespace supra
 		}
 		m_txMaxApertureSize = txApertureSize;
 	}
+	
+	void Beamformer::setTxScanlineStartElement(const vec2s txScanlineStartElement)
+	{
+		if (txScanlineStartElement != m_txScanlineStartElement)
+		{
+			m_ready = false;
+			m_txScanlineStartElement = txScanlineStartElement;
+		}
+	}
+
+	void Beamformer::setTxScanlineEndElement(const vec2s txScanlineEndElement)
+	{
+		if (txScanlineEndElement != m_txScanlineEndElement)
+		{
+			m_ready = false;
+			m_txScanlineEndElement = txScanlineEndElement;
+		}
+	}
 
 	void Beamformer::setTxWindowType(const std::string windowType)
 	{
@@ -358,6 +376,17 @@ namespace supra
 	vec2s Beamformer::getTxApertureSize () const
 	{
 		return m_txMaxApertureSize;
+	}
+
+	vec2s Beamformer::getTxScanlineStartElement() const
+	{
+		return m_txScanlineStartElement;
+	}
+
+
+	vec2s Beamformer::getTxScanlineEndElement() const
+	{
+		return m_txScanlineEndElement;
 	}
 
 	bool Beamformer::getTxFocusActive() const

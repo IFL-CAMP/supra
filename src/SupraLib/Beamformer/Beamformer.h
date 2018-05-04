@@ -102,6 +102,12 @@ namespace supra
 		/// Specify the maximum transmit aperture to be used for beamforming [channels x/y] 
 		void setTxMaxApertureSize (const vec2s txApertureSize);
 
+		/// Set the start element (x,y) for the first transmit scanline, must be lower than end element
+		void setTxScanlineStartElement(const vec2s txScanlineStartElement);
+
+		/// Set the end element (x,y) for the last transmit scanline, must be higher than start element
+		void setTxScanlineEndElement(const vec2s txScanlineEndElement);
+
 		/// Activate transmit focusing
 		void setTxFocusActive(const bool txFocusActive);
 
@@ -132,6 +138,8 @@ namespace supra
 		vec2s getMaxTxElements() const;
 		vec2s getApertureSize () const;
 		vec2s getTxApertureSize () const;
+		vec2s getTxScanlineStartElement() const;
+		vec2s getTxScanlineEndElement() const;
 		bool getTxFocusActive() const;
 		double getTxFocusDepth() const;
 		double getTxFocusWidth() const;
@@ -190,6 +198,10 @@ namespace supra
 		vec2s m_numRxScanlines;     // updated internally
 		vec2s m_maxApertureSize;
 		vec2s m_txMaxApertureSize;
+
+		vec2s m_txScanlineStartElement; // first elements (x,y) to be used as centerpoints for scanlines
+		vec2s m_txScanlineEndElement;	// last elements (x,y) to be used as centerpoints for scanlines
+
 
 		WindowType m_txWindow;
 		WindowFunction::ElementType m_txWindowParameter;

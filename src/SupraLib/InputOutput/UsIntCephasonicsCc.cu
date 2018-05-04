@@ -281,6 +281,10 @@ namespace supra
 				m_valueRangeDictionary.remove(idApp+"apertureSizeY");
 				m_valueRangeDictionary.remove(idApp+"txApertureSizeX");
 				m_valueRangeDictionary.remove(idApp+"txApertureSizeY");
+				m_valueRangeDictionary.remove(idApp+"txScanlineStartElementX");
+				m_valueRangeDictionary.remove(idApp+"txScanlineStartElementY");
+				m_valueRangeDictionary.remove(idApp+"txScanlineEndElementX");
+				m_valueRangeDictionary.remove(idApp+"txScanlineEndElementY");
 				m_valueRangeDictionary.remove(idApp+"txFocusActive");
 				m_valueRangeDictionary.remove(idApp+"txFocusDepth");
 				m_valueRangeDictionary.remove(idApp+"txFocusWidth");
@@ -332,6 +336,10 @@ namespace supra
 			m_valueRangeDictionary.set<uint32_t>(idApp+"apertureSizeY", 0, 384, 0, descApp+"Aperture Y");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txApertureSizeX", 0, 384, 0, descApp+"TX Aperture X");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txApertureSizeY", 0, 384, 0, descApp+"TX Aperture Y");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txScanlineStartElementX", 0, 512, 0, descApp+"Element number of first scanline");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txScanlineStartElementY", 0, 512, 0, descApp+"Element number of first scanline");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txScanlineEndElementX", 0, 512, 0, descApp+"Element number of last scanline");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txScanlineEndElementY", 0, 512, 0, descApp+"Element number of last scanline");
 			m_valueRangeDictionary.set<string>(idApp+"txWindowType", {"Rectangular", "Hann", "Hamming","Gauss"}, "Rectangular", descApp+"TX apodization");
 			m_valueRangeDictionary.set<double>(idApp+"txWindowParameter", 0.0, 10.0, 0.0, descApp+"TxWindow parameter");			
 			m_valueRangeDictionary.set<bool>(idApp+"txFocusActive", {false, true}, true, descApp+"TX focus");
@@ -532,7 +540,7 @@ namespace supra
 		m_pSequencer->setTransducer(m_pTransducer.get());
 
 
-		// TODO: currently all beamformers share same aperture
+		// Check and update aperture and scanline start/end settings based on available aperture of set probe
 		for (auto numSeq = 0; numSeq < m_numBeamSequences; ++numSeq)
 		{
 			
@@ -564,6 +572,21 @@ namespace supra
 			bf->setTxMaxApertureSize(bfTxApertureSize);
 			bf->setMaxApertureSize(bfApertureSize);
 
+			// Check if start and end tx scanlines positions were set
+			vec2s bfTxScanlineStart = bf->getTxScanlineStartElement();
+			vec2s bfTxScanlineEnd = bf->getTxScanlineStartElement();
+
+			if (bfTxScanlineEnd.x == 0)
+			{
+				bfTxScanlineEnd.x = maxAperture.x;
+			}
+			if (bfTxScanlineEnd.y == 0)
+			{
+				bfTxScanlineEnd.y = maxAperture.y;
+			}
+			bf->setTxScanlineStartElement(bfTxScanlineStart);
+			bf->setTxScanlineEndElement(bfTxScanlineEnd);
+	
 
 			// (re)compute the internal TX parameters for a beamformer if any parameter changed
 			if (!bf->isReady())
@@ -590,6 +613,8 @@ namespace supra
 			vec2 sectorAngle = bf->getTxSectorAngle();
 			vec2s apertureSize = bf->getApertureSize();
 			vec2s txApertureSize = bf->getTxApertureSize();
+			vec2s txScanlineStartEl = bf->getTxScanlineStartElement();
+			vec2s txScanlineEndEl = bf->getTxScanlineEndElement();
 
 
 			auto newProps = make_shared<USImageProperties>(
@@ -636,6 +661,10 @@ namespace supra
 			newProps->setSpecificParameter("UsIntCepCc.apertureSize.y", apertureSize.y);
 			newProps->setSpecificParameter("UsIntCepCc.txApertureSize.x", txApertureSize.x);
 			newProps->setSpecificParameter("UsIntCepCc.txApertureSize.y", txApertureSize.y);
+			newProps->setSpecificParameter("txScanlineStartElementX", txScanlineStartEl.x);
+			newProps->setSpecificParameter("txScanlineStartElementY", txScanlineStartEl.y);
+			newProps->setSpecificParameter("txScanlineEndElementX", txScanlineEndEl.x);
+			newProps->setSpecificParameter("txScanlineEndElementY", txScanlineEndEl.y);
 			newProps->setSpecificParameter("UsIntCepCc.txFocusActive", bf->getTxFocusActive());
 			newProps->setSpecificParameter("UsIntCepCc.txFocusDepth", bf->getTxFocusDepth());
 			newProps->setSpecificParameter("UsIntCepCc.txFocusWidth", bf->getTxFocusWidth());
@@ -887,6 +916,16 @@ namespace supra
 			txApertureSize.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeX");
 			txApertureSize.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txApertureSizeY");
 			bf->setTxMaxApertureSize(txApertureSize);
+
+			vec2s txScanlineStartEl;
+			txScanlineStartEl.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txScanlineStartElementX");
+			txScanlineStartEl.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txScanlineStartElementY");
+			bf->setTxScanlineStartElement(txScanlineStartEl);
+
+			vec2s txScanlineEndEl;
+			txScanlineEndEl.x = m_configurationDictionary.get<uint32_t>(seqIdApp+"txScanlineEndElementX");
+			txScanlineEndEl.y = m_configurationDictionary.get<uint32_t>(seqIdApp+"txScanlineEndElementY");
+			bf->setTxScanlineEndElement(txScanlineEndEl);
 			
 			string windowType = m_configurationDictionary.get<string>(seqIdApp+"txWindowType");
 			bf->setTxWindowType(windowType);
