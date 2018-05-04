@@ -578,11 +578,11 @@ namespace supra
 
 			if (bfTxScanlineEnd.x == 0)
 			{
-				bfTxScanlineEnd.x = maxAperture.x;
+				bfTxScanlineEnd.x = maxAperture.x-1;
 			}
 			if (bfTxScanlineEnd.y == 0)
 			{
-				bfTxScanlineEnd.y = maxAperture.y;
+				bfTxScanlineEnd.y = maxAperture.y-1;
 			}
 			bf->setTxScanlineStartElement(bfTxScanlineStart);
 			bf->setTxScanlineEndElement(bfTxScanlineEnd);

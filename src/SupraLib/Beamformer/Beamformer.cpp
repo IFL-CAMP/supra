@@ -469,8 +469,8 @@ namespace supra
 				size_t numScanlines = m_numScanlines.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
-				vec firstElement = elementCenterpoints->at(0);
-				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
+				vec firstElement = elementCenterpoints->at(m_txScanlineStartElement.x);
+				vec lastElement = elementCenterpoints->at(m_txScanlineEndElement.x);
 				
 				//evenly space the scanlines between the first and last element
 				for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
@@ -580,9 +580,8 @@ namespace supra
 				size_t numPlanewaves = m_numScanlines.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
-				vec firstElement = elementCenterpoints->at(0);
-				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
-
+				vec firstElement = elementCenterpoints->at(m_txScanlineStartElement.x);
+				vec lastElement = elementCenterpoints->at(m_txScanlineEndElement.x);
 				
 				// the position of the scanline on the x axis is by default at center for planwave imaging
 				double scanlinePosition = firstElement.x + 0.5 * (lastElement.x - firstElement.x);
