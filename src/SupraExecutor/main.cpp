@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 		manager->setQuitCallback(quitCallback);
 
 		// create and run the nodes
-		manager->readFromXml(argv[1]);
+		manager->readFromXml(argv[1], true);
 
 		manager->startOutputs();
 		manager->startInputs();

@@ -31,21 +31,36 @@ namespace supra
 	*/
 	class AbstractOutput : public AbstractNode
 	{
-	private:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg, TBB_QUEUE_RESOLVER(false)> inputNodeType;
-
 	public:
 		/// Base constructor for output nodes
-		AbstractOutput(tbb::flow::graph& graph, const std::string & nodeID)
-			: AbstractNode(nodeID)
-			, m_inputNode(graph, 1,
-				[this](const std::shared_ptr<RecordObject> & inMessage) {
-			if (this->m_running)
+		AbstractOutput(tbb::flow::graph& graph, const std::string & nodeID, bool queueing)
+			: AbstractNode(nodeID, queueing)
+		{ 	
+			if (queueing)
 			{
-				writeData(inMessage);
+				m_inputNode = std::unique_ptr<NodeTypeOneSidedQueueing>(
+					new NodeTypeOneSidedQueueing(graph, 1,
+						[this](const std::shared_ptr<RecordObject> & inMessage) {
+						if (this->m_running)
+						{
+							writeData(inMessage);
+						}
+					})
+				);
 			}
-		})
-		{ 	}
+			else
+			{
+				m_inputNode = std::unique_ptr<NodeTypeOneSidedDiscarding>(
+					new NodeTypeOneSidedDiscarding(graph, 1,
+						[this](const std::shared_ptr<RecordObject> & inMessage) {
+						if (this->m_running)
+						{
+							writeData(inMessage);
+						}
+					})
+				);
+			}
+		}
 
 		/// Set the state of the output node, if newState is false, the node is stopped
 		virtual bool setRunning(bool newState)
@@ -65,11 +80,6 @@ namespace supra
 			return m_running;
 		}
 
-		/// returns the input port
-		inputNodeType& getInputNode() {
-			return m_inputNode;
-		}
-
 		/// returns the number of input ports of this node
 		virtual size_t getNumInputs() { return 1; }
 		/// returns the number of output ports of this node.
@@ -77,10 +87,10 @@ namespace supra
 		virtual size_t getNumOutputs() { return 0; }
 
 		/// returns a pointer to the input port with the given index
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_inputNode;
+				return m_inputNode.get();
 			}
 			return nullptr;
 		}
@@ -92,7 +102,7 @@ namespace supra
 		}
 
 	private:
-		inputNodeType m_inputNode;
+		std::unique_ptr<tbb::flow::graph_node> m_inputNode;
 		std::atomic_bool m_running;
 
 		//Functions to be overwritten

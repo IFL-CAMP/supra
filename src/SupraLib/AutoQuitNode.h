@@ -24,29 +24,26 @@ namespace supra
 {
 	class AutoQuitNode : public AbstractNode {
 	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, tbb::flow::continue_msg, TBB_QUEUE_RESOLVER(false)> inputNodeType;
-
-	public:
-		AutoQuitNode(tbb::flow::graph& graph, const std::string & nodeID);
+		AutoQuitNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 0; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_inputNode;
+				return m_inputNode.get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			return nullptr;
 		};
 	private:
 		void countMessage(std::shared_ptr<RecordObject> obj);
 
-		inputNodeType m_inputNode;
+		std::unique_ptr<tbb::flow::graph_node> m_inputNode;
 
 		double m_maxMessageNum;
 		double m_messagesReceived;

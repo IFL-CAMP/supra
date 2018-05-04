@@ -16,22 +16,34 @@
 #include "RxBeamformerCuda.h"
 
 #include <utilities/Logging.h>
+#include <utilities/DataType.h>
 #include <algorithm>
 using namespace std;
 
 namespace supra
 {
-	RawDelayNode::RawDelayNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); })
+	RawDelayNode::RawDelayNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
 		, m_rawDelayCuda(nullptr)
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeDiscarding>(
+				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndDelay(inObj); }));
+		}
+
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
 		configurationChanged();
 	}
 
@@ -40,6 +52,7 @@ namespace supra
 		m_fNumber = m_configurationDictionary.get<double>("fNumber");
 		readWindowType();
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
+		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
 	void RawDelayNode::configurationEntryChanged(const std::string& configKey)
@@ -57,9 +70,32 @@ namespace supra
 		{
 			m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
 		}
+		else if (configKey == "outputType")
+		{
+			m_outputType = m_configurationDictionary.get<DataType>("outputType");
+		}
 		if (m_lastSeenImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
+		}
+	}
+
+	template <typename RawElementType>
+	shared_ptr<USRawData> RawDelayNode::delay(std::shared_ptr<const USRawData> pRawData)
+	{
+		switch (m_outputType)
+		{
+		case TypeFloat:
+			return m_rawDelayCuda->performDelay<RawElementType, float>(
+				pRawData, m_fNumber,
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
+		case TypeUint16:
+			return m_rawDelayCuda->performDelay<RawElementType, int16_t>(
+				pRawData, m_fNumber,
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
+		default:
+			logging::log_error("RawDelayNode: Output type not supported");
+			return nullptr;
 		}
 	}
 
@@ -67,10 +103,10 @@ namespace supra
 	{
 		unique_lock<mutex> l(m_mutex);
 
-		shared_ptr<USRawData<int16_t> > pImageRF = nullptr;
+		shared_ptr<USRawData> pRawDelayed = nullptr;
 		if (inObj->getType() == TypeUSRawData)
 		{
-			shared_ptr<const USRawData<int16_t> > pRawData = dynamic_pointer_cast<const USRawData<int16_t>>(inObj);
+			shared_ptr<const USRawData> pRawData = dynamic_pointer_cast<const USRawData>(inObj);
 			if (pRawData)
 			{
 				m_callFrequency.measure();
@@ -86,22 +122,38 @@ namespace supra
 				{
 					m_rawDelayCuda = std::make_shared<RawDelay>(*m_lastSeenBeamformerParameters);
 				}
-				pImageRF = m_rawDelayCuda->performDelay<int16_t>(
-					pRawData, m_fNumber, 
-					m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
+
+				switch (pRawData->getDataType())
+				{
+					case TypeInt16:
+					{
+						pRawDelayed = delay<int16_t>(pRawData);
+						break;
+					}
+					case TypeFloat:
+					{
+						pRawDelayed = delay<float>(pRawData);
+						break;
+					}
+					default:
+					{
+						logging::log_error("RawDelayNode: Input element type not supported");
+						break;
+					}
+				}
 				m_callFrequency.measureEnd();
 
-				if (m_lastSeenImageProperties != pImageRF->getImageProperties())
+				if (m_lastSeenImageProperties != pRawDelayed->getImageProperties())
 				{
-					updateImageProperties(pImageRF->getImageProperties());
+					updateImageProperties(pRawDelayed->getImageProperties());
 				}
-				pImageRF->setImageProperties(m_editedImageProperties);
+				pRawDelayed->setImageProperties(m_editedImageProperties);
 			}
 			else {
-				logging::log_error("BeamformingNode: could not cast object to USRawData type, is it in supported ElementType?");
+				logging::log_error("BeamformingNode: could not cast object to USRawData type");
 			}
 		}
-		return pImageRF;
+		return pRawDelayed;
 	}
 
 	void RawDelayNode::readWindowType()

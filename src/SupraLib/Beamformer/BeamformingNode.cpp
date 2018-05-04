@@ -21,19 +21,30 @@ using namespace std;
 
 namespace supra
 {
-	BeamformingNode::BeamformingNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); })
+	BeamformingNode::BeamformingNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 		, m_lastSeenImageProperties(nullptr)
 		, m_beamformer(nullptr)
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
+		if (queueing)
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+		else
+		{
+			m_node = unique_ptr<NodeTypeQueueing>(
+				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
+		}
+
 		m_callFrequency.setName("Beamforming");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
 		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "TestSignal"}, "DelayAndSum", "RxBeamformer");
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		configurationChanged();
 	}
 
@@ -44,6 +55,7 @@ namespace supra
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
 		readBeamformerType();
 		m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
+		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
 	void BeamformingNode::configurationEntryChanged(const std::string& configKey)
@@ -69,20 +81,46 @@ namespace supra
 		{
 			m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
 		}
+		else if (configKey == "outputType")
+		{
+			m_outputType = m_configurationDictionary.get<DataType>("outputType");
+		}
 		if (m_lastSeenImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
 		}
 	}
 
+	template <typename InputType>
+	std::shared_ptr<USImage> BeamformingNode::beamformTemplated(std::shared_ptr<const USRawData> pRawData)
+	{
+		switch (m_outputType)
+		{
+		case supra::TypeInt16:
+			return m_beamformer->performRxBeamforming<InputType, int16_t>(
+				m_beamformerType, pRawData, m_fNumber,
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
+			break;
+		case supra::TypeFloat:
+			return m_beamformer->performRxBeamforming<InputType, float>(
+				m_beamformerType, pRawData, m_fNumber,
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
+			break;
+		default:
+			logging::log_error("BeamformingNode: Output image type not supported");
+			break;
+		}
+		return nullptr;
+	}
+
 	shared_ptr<RecordObject> BeamformingNode::checkTypeAndBeamform(shared_ptr<RecordObject> inObj)
 	{
 		unique_lock<mutex> l(m_mutex);
 
-		shared_ptr<USImage<int16_t> > pImageRF = nullptr;
+		shared_ptr<USImage> pImageRF = nullptr;
 		if (inObj->getType() == TypeUSRawData)
 		{
-			shared_ptr<const USRawData<int16_t> > pRawData = dynamic_pointer_cast<const USRawData<int16_t>>(inObj);
+			shared_ptr<const USRawData> pRawData = dynamic_pointer_cast<const USRawData>(inObj);
 			if (pRawData)
 			{
 				m_callFrequency.measure();
@@ -98,9 +136,19 @@ namespace supra
 				{
 					m_beamformer = std::make_shared<RxBeamformerCuda>(*m_lastSeenBeamformerParameters);
 				}
-				pImageRF = m_beamformer->performRxBeamforming<int16_t, int16_t>(
-					m_beamformerType, pRawData, m_fNumber, 
-					m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
+
+				switch (pRawData->getDataType())
+				{
+				case TypeFloat:
+					pImageRF = beamformTemplated<float>(pRawData);
+					break;
+				case TypeInt16:
+					pImageRF = beamformTemplated<int16_t>(pRawData);
+					break;
+				default:
+					logging::log_error("BeamformingNode: Input rawdata type not supported");
+				}
+
 				m_callFrequency.measureEnd();
 
 				if (m_lastSeenImageProperties != pImageRF->getImageProperties())

@@ -11,7 +11,7 @@
 
 #include <string>
 #include <stdint.h>
-
+#include <utilities/DataType.h>
 #include "TemplateTypeDefault.h"
 
 namespace supra
@@ -87,5 +87,11 @@ namespace supra
 	std::string TemplateTypeDefault<std::string>::getDefault()
 	{
 		return "";
+	}
+	/// Returns the default value for this type
+	template <>
+	DataType TemplateTypeDefault<DataType>::getDefault()
+	{
+		return TypeUnknown;
 	}
 }

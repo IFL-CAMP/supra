@@ -18,10 +18,21 @@ using namespace std;
 
 namespace supra
 {
-	TemporalOffsetNode::TemporalOffsetNode(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractNode(nodeID)
-		, m_node(graph, 1, [this](shared_ptr<RecordObject> mainObj) -> shared_ptr<RecordObject> { return addOffset(mainObj); })
+	TemporalOffsetNode::TemporalOffsetNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+		: AbstractNode(nodeID, queueing)
 	{
+		if (queueing)
+		{
+			m_node = shared_ptr<NodeTypeQueueing>(new NodeTypeQueueing(
+				graph, 1, [this](shared_ptr<RecordObject> mainObj) -> shared_ptr<RecordObject> { return addOffset(mainObj); }));
+		}
+		else
+		{
+			m_node = shared_ptr<NodeTypeDiscarding>(new NodeTypeDiscarding(
+				graph, 1, [this](shared_ptr<RecordObject> mainObj) -> shared_ptr<RecordObject> { return addOffset(mainObj); }));
+		}
+		
+
 		m_callFrequency.setName("TempOffset");
 
 		m_valueRangeDictionary.set<double>("offset", -10.0, 10.0, 0.0, "Temporal offset [s]");

@@ -25,7 +25,6 @@ namespace supra
 	/// A compute graph object that represents an ultrasound image with elements of type ElementType.
 	/// Can contain 2D and 3D images and both before scansconversion (that is samples aling scanlines) and
 	/// images / volumes after scanconversion are supported
-	template <typename ElementType>
 	class USImage : public RecordObject
 	{
 	public:
@@ -34,7 +33,7 @@ namespace supra
 		USImage(size_t size1,
 			size_t size2,
 			size_t size3,
-			std::shared_ptr<Container<ElementType> > pData,
+			std::shared_ptr<ContainerBase> pData,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp,
 			double syncTimestamp)
@@ -46,7 +45,7 @@ namespace supra
 		/// Constructs a 2D Image
 		USImage(size_t size1,
 			size_t size2,
-			std::shared_ptr<Container<ElementType> > pData,
+			std::shared_ptr<ContainerBase> pData,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp, double syncTimestamp)
 			: RecordObject(receiveTimestamp, syncTimestamp)
@@ -57,7 +56,7 @@ namespace supra
 		/// Constructs a 3D or 2D Image.
 		/// If size.z == 1, the image is 2D.
 		USImage(vec3s size,
-			std::shared_ptr<Container<ElementType> > pData,
+			std::shared_ptr<ContainerBase> pData,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp, double syncTimestamp)
 			: RecordObject(receiveTimestamp, syncTimestamp)
@@ -73,7 +72,7 @@ namespace supra
 		};
 		/// Constructs a 2D Image
 		USImage(vec2s size,
-			std::shared_ptr<Container<ElementType> > pData,
+			std::shared_ptr<ContainerBase> pData,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp,
 			double syncTimestamp)
@@ -95,7 +94,7 @@ namespace supra
 			, m_pImageProperties(a.m_pImageProperties) {};
 		/// Special copy constructor, copies image metadata from the given image,
 		/// but uses the given Container for data
-		USImage(const USImage& a, std::shared_ptr<Container<ElementType> > pData)
+		USImage(const USImage& a, std::shared_ptr<ContainerBase> pData)
 			: RecordObject(a)
 			, m_dimensions(a.m_dimensions)
 			, m_size(a.m_size)
@@ -110,14 +109,19 @@ namespace supra
 		/// Returns the size of the image. If it is 2D, `getSize().z == 1`
 		vec3s getSize() const { return m_size; };
 		/// Returns a pointer to the image data
-		std::shared_ptr<const Container<ElementType> > getData() const { return m_pData; };
+		template <typename ElementType>
+		std::shared_ptr<const Container<ElementType> > getData() const
+		{
+			return std::dynamic_pointer_cast<const Container<ElementType> >(m_pData);
+		}
 
 		virtual RecordObjectType getType() const { return TypeUSImage; }
+		DataType getDataType() const { return m_pData->getType(); }
 
 	private:
 		std::shared_ptr<const USImageProperties> m_pImageProperties;
 
-		std::shared_ptr<Container<ElementType> > m_pData;
+		std::shared_ptr<ContainerBase> m_pData;
 
 		//number of image dimensions
 		int m_dimensions;

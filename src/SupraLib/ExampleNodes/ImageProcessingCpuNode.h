@@ -1,6 +1,6 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
+// If not explicitly stated: Copyright (C) 2018, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
@@ -9,22 +9,28 @@
 // 
 // ================================================================================================
 
-#ifndef __LOGCOMPRESSORNODE_H__
-#define __LOGCOMPRESSORNODE_H__
+#ifndef __IMAGEPROCESSINGCPUNODE_H__
+#define __IMAGEPROCESSINGCPUNODE_H__
 
 #include <memory>
 #include <mutex>
 #include <tbb/flow_graph.h>
 
-#include "AbstractNode.h"
-#include "RecordObject.h"
-#include "LogCompressor.h"
+#include <AbstractNode.h>
+#include <RecordObject.h>
+#include <Container.h>
+#include <vec.h>
+
+// To include the node fully, add it in src/SupraLib/CMakeLists.txt and "InterfaceFactory::createNode"!
 
 namespace supra
 {
-	class LogCompressorNode : public AbstractNode {
+	class ImageProcessingCpuNode : public AbstractNode {
+	private:
+		typedef float WorkType;
+
 	public:
-		LogCompressorNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
+		ImageProcessingCpuNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
@@ -49,24 +55,19 @@ namespace supra
 		void configurationChanged();
 
 	private:
-		std::shared_ptr<RecordObject> checkTypeAndCompress(std::shared_ptr<RecordObject> mainObj);
+		std::shared_ptr<RecordObject> checkTypeAndProcess(std::shared_ptr<RecordObject> mainObj);
 		template <typename InputType>
-		std::shared_ptr<ContainerBase> compressTemplated(std::shared_ptr<const ContainerBase> imageData, vec3s size);
-		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
+		std::shared_ptr<ContainerBase> processTemplateSelection(std::shared_ptr<const Container<InputType> > imageData, vec3s size);
+		template <typename InputType, typename OutputType>
+		std::shared_ptr<ContainerBase> processTemplated(std::shared_ptr<const Container<InputType> > imageData, vec3s size);
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
 
 		std::mutex m_mutex;
 
-		std::unique_ptr<LogCompressor> m_compressor;
-		double m_dynamicRange;
-		double m_gain;
-		double m_inputMax;
+		double m_factor;
 		DataType m_outputType;
-
-		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
-		std::shared_ptr<const USImageProperties> m_editedImageProperties;
 	};
 }
 
-#endif //!__LOGCOMPRESSORNODE_H__
+#endif //!__IMAGEPROCESSINGCPUNODE_H__

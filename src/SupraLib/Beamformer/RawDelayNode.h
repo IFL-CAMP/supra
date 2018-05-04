@@ -32,26 +32,23 @@ namespace supra
 
 	class RawDelayNode : public AbstractNode {
 	public:
-		typedef tbb::flow::function_node<std::shared_ptr<RecordObject>, std::shared_ptr<RecordObject>, TBB_QUEUE_RESOLVER(false)> nodeType;
-
-	public:
-		RawDelayNode(tbb::flow::graph& graph, const std::string & nodeID);
+		RawDelayNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > * getInput(size_t index) {
+		virtual tbb::flow::graph_node * getInput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			return nullptr;
 		};
 
-		virtual tbb::flow::sender<std::shared_ptr<RecordObject> > * getOutput(size_t index) {
+		virtual tbb::flow::graph_node * getOutput(size_t index) {
 			if (index == 0)
 			{
-				return &m_node;
+				return m_node.get();
 			}
 			return nullptr;
 		};
@@ -62,6 +59,8 @@ namespace supra
 
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndDelay(std::shared_ptr<RecordObject> mainObj);
+		template <typename RawElementType>
+		std::shared_ptr<USRawData> delay(std::shared_ptr<const USRawData> mainObj);
 		void readWindowType();
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
 
@@ -73,9 +72,10 @@ namespace supra
 
 		std::mutex m_mutex;
 
-		nodeType m_node;
+		std::unique_ptr<tbb::flow::graph_node> m_node;
 		double m_fNumber;
 		WindowType m_windowType;
+		DataType m_outputType;
 		double m_windowParameter;
 	};
 }
