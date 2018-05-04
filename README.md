@@ -38,20 +38,20 @@ see [LICENSE](LICENSE)
 Publication
 ----------------
 If you use SUPRA for your research, please cite our work
-https://arxiv.org/abs/1711.06127
+[https://doi.org/10.1007/s11548-018-1750-6](https://doi.org/10.1007/s11548-018-1750-6)
 
-G&ouml;bl, R. and Navab, N. and Hennersperger, C., SUPRA: Open Source Software Defined Ultrasound Processing for Real-Time Applications, eprint arXiv:1711.06127, Nov 2017
+G&ouml;bl, R., Navab, N. & Hennersperger, C. , "SUPRA: Open Source Software Defined Ultrasound Processing for Real-Time Applications" Int J CARS (2018). https://doi.org/10.1007/s11548-018-1750-6
 
-	@ARTICLE{2017goeblArxiv,
-	   author = {{G{\"o}bl}, R. and {Navab}, N. and {Hennersperger}, C.},
-		title = "{{SUPRA}: Open Source {S}oftware Defined {U}ltrasound {P}rocessing for {R}eal-Time {A}pplications}",
-	  journal = {ArXiv e-prints},
-	archivePrefix = "arXiv",
-	   eprint = {1711.06127},
-	 primaryClass = "cs.CV",
-	 keywords = {Computer Science - Computer Vision and Pattern Recognition, Computer Science - Distributed, Parallel, and Cluster Computing},
-		 year = 2017,
-		month = nov
+	@Article{Goebl2018supra,
+		author="G{\"o}bl, R{\"u}diger and Navab, Nassir and Hennersperger, Christoph",
+		title="SUPRA: open-source software-defined ultrasound processing for real-time applications",
+		journal="International Journal of Computer Assisted Radiology and Surgery",
+		year="2018",
+		month="Mar",
+		day="28",
+		issn="1861-6429",
+		doi="10.1007/s11548-018-1750-6",
+		url="https://doi.org/10.1007/s11548-018-1750-6"
 	}
 
 Building
