@@ -480,7 +480,8 @@ namespace supra
 						static_cast<double>(scanlineIdx) / (numScanlines - 1) * (lastElement.x - firstElement.x);
 					
 					// the scanline position in terms of elementIndices
-					double scanlinePositionRelative = static_cast<double>(scanlineIdx) / (numScanlines - 1) * (m_pTransducer->getNumElements() - 1);
+					double scanlinePositionRelative = m_txScanlineStartElement.x + 
+						static_cast<double>(scanlineIdx) / (numScanlines - 1) * (m_txScanlineEndElement.x - m_txScanlineStartElement.x);
 
 					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
@@ -580,8 +581,8 @@ namespace supra
 				size_t numPlanewaves = m_numScanlines.x;
 
 				auto elementCenterpoints = m_pTransducer->getElementCenterPoints();
-				vec firstElement = elementCenterpoints->at(m_txScanlineStartElement.x);
-				vec lastElement = elementCenterpoints->at(m_txScanlineEndElement.x);
+				vec firstElement = elementCenterpoints->at(0);
+				vec lastElement = elementCenterpoints->at(m_pTransducer->getNumElements() - 1);
 				
 				// the position of the scanline on the x axis is by default at center for planwave imaging
 				double scanlinePosition = firstElement.x + 0.5 * (lastElement.x - firstElement.x);
