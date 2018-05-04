@@ -41,7 +41,7 @@ namespace supra
 			std::function<void(const uint8_t*, size_t)> deleteCallback = std::function<void(const uint8_t*, size_t)>());
 
 		void addTracking(size_t frameNumber, std::array<double, 16> T, bool transformValid, std::string transformName);
-		void closeWhenEverythingWritten();
+		void closeWhenEverythingWritten(bool blocking = false);
 	private:
 		~MhdSequenceWriter();
 
@@ -68,6 +68,7 @@ namespace supra
 		std::queue<std::tuple<const uint8_t*, size_t, std::function<void(const uint8_t*, size_t)> > > m_writeQueue;
 
 		std::atomic_bool m_closing;
+		std::atomic_bool m_closingBlocking;
 		std::mutex m_rawFileMutex;
 		std::mutex m_queueMutex;
 		std::condition_variable m_queueConditionVariable;

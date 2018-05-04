@@ -23,15 +23,13 @@ namespace supra
 {
 	//forward declarations
 	class MhdSequenceWriter;
-	template <typename T>
 	class USImage;
-	template <typename T>
 	class USRawData;
 
 	class MetaImageOutputDevice : public AbstractOutput
 	{
 	public:
-		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID);
+		MetaImageOutputDevice(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 		~MetaImageOutputDevice();
 
 		//Functions to be overwritten
@@ -60,9 +58,9 @@ namespace supra
 		void addTracking(std::shared_ptr<const RecordObject> trackingData, size_t frameNum);
 
 		template <typename ElementType>
-		std::pair<bool, size_t> addImageTemplated(std::shared_ptr<const USImage<ElementType> > imageData);
+		std::pair<bool, size_t> addImageTemplated(std::shared_ptr<const USImage> imageData);
 		template <typename ElementType>
-		std::pair<bool, size_t> addUSRawDataTemplated(std::shared_ptr < const USRawData<ElementType> > rawData);
+		std::pair<bool, size_t> addUSRawDataTemplated(std::shared_ptr <const USRawData> rawData);
 
 		MhdSequenceWriter* m_pWriter;
 

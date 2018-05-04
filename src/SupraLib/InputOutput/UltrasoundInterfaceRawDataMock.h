@@ -26,7 +26,6 @@
 namespace supra
 {
 	//forward declaration
-	template <typename T>
 	class USRawData;
 
 	class UltrasoundInterfaceRawDataMock : public AbstractInput
@@ -65,7 +64,7 @@ namespace supra
 		bool m_singleImage;
 		bool m_streamSequenceOnce;
 		int m_frequency;
-		std::shared_ptr<USRawData<int16_t> > m_protoRawData;
+		std::shared_ptr<USRawData> m_protoRawData;
 		std::shared_ptr<Container<int16_t> > m_pMockData;
 
 		std::vector<std::shared_ptr<std::ifstream>> m_mockDataStreams;
@@ -76,6 +75,7 @@ namespace supra
 		size_t m_frameIndex;
 		size_t m_numel;
 		std::atomic_bool m_frozen;
+		bool m_lastFrame;
 
 		std::mutex m_objectMutex;
 	};

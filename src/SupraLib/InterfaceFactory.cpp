@@ -35,6 +35,8 @@
 #include "StreamSynchronizer.h"
 #include "FrequencyLimiterNode.h"
 #include "AutoQuitNode.h"
+#include "ExampleNodes/ImageProcessingCpuNode.h"
+#include "ExampleNodes/ImageProcessingCudaNode.h"
 
 using namespace std;
 
@@ -110,25 +112,25 @@ namespace supra
 		return retVal;
 	}
 
-	shared_ptr<AbstractOutput> InterfaceFactory::createOutputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType)
+	shared_ptr<AbstractOutput> InterfaceFactory::createOutputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType, bool queueing)
 	{
 		shared_ptr<AbstractOutput> retVal = shared_ptr<AbstractOutput>(nullptr);
 #ifdef HAVE_DEVICE_IGTL_OUTPUT
 		if (deviceType == "OpenIGTLinkOutputDevice")
 		{
-			retVal = make_shared<OpenIGTLinkOutputDevice>(*pG, nodeID);
+			retVal = make_shared<OpenIGTLinkOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_IGTL_OUTPUT
 #ifdef HAVE_DEVICE_METAIMAGE_OUTPUT
 		if (deviceType == "MetaImageOutputDevice")
 		{
-			retVal = make_shared<MetaImageOutputDevice>(*pG, nodeID);
+			retVal = make_shared<MetaImageOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_METAIMAGE_OUTPUT
 #ifdef HAVE_DEVICE_ROSIMAGE_OUTPUT
 		if (deviceType == "RosImageOutputDevice")
 		{
-			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID);
+			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
 		logging::log_error_if(!((bool)retVal),
@@ -138,53 +140,63 @@ namespace supra
 		return retVal;
 	}
 
-	shared_ptr<AbstractNode> InterfaceFactory::createNode(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string nodeType)
+	shared_ptr<AbstractNode> InterfaceFactory::createNode(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string nodeType, bool queueing)
 	{
 		shared_ptr<AbstractNode> retVal = shared_ptr<AbstractNode>(nullptr);
 		if (nodeType == "StreamSynchronizer")
 		{
-			retVal = make_shared<StreamSynchronizer>(*pG, nodeID);
+			retVal = make_shared<StreamSynchronizer>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "TemporalOffsetNode")
 		{
-			retVal = make_shared<TemporalOffsetNode>(*pG, nodeID);
+			retVal = make_shared<TemporalOffsetNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "FrequencyLimiterNode")
 		{
-			retVal = make_shared<FrequencyLimiterNode>(*pG, nodeID);
+			retVal = make_shared<FrequencyLimiterNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "AutoQuitNode")
 		{
-			retVal = make_shared<AutoQuitNode>(*pG, nodeID);
+			retVal = make_shared<AutoQuitNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "StreamSyncNode")
 		{
-			retVal = make_shared<StreamSyncNode>(*pG, nodeID);
+			retVal = make_shared<StreamSyncNode>(*pG, nodeID, queueing);
 		}
+		if (nodeType == "ImageProcessingCpuNode")
+		{
+			retVal = make_shared<ImageProcessingCpuNode>(*pG, nodeID, queueing);
+		}
+#ifdef HAVE_CUDA
+		if (nodeType == "ImageProcessingCudaNode")
+		{
+			retVal = make_shared<ImageProcessingCudaNode>(*pG, nodeID, queueing);
+		}
+#endif
 #ifdef HAVE_BEAMFORMER
 		if (nodeType == "BeamformingNode")
 		{
-			retVal = make_shared<BeamformingNode>(*pG, nodeID);
+			retVal = make_shared<BeamformingNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "IQDemodulatorNode")
 		{
-			retVal = make_shared<IQDemodulatorNode>(*pG, nodeID);
+			retVal = make_shared<IQDemodulatorNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "LogCompressorNode")
 		{
-			retVal = make_shared<LogCompressorNode>(*pG, nodeID);
+			retVal = make_shared<LogCompressorNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "ScanConverterNode")
 		{
-			retVal = make_shared<ScanConverterNode>(*pG, nodeID);
+			retVal = make_shared<ScanConverterNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "TemporalFilterNode")
 		{
-			retVal = make_shared<TemporalFilterNode>(*pG, nodeID);
+			retVal = make_shared<TemporalFilterNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "RawDelayNode")
 		{
-			retVal = make_shared<RawDelayNode>(*pG, nodeID);
+			retVal = make_shared<RawDelayNode>(*pG, nodeID, queueing);
 		}
 #endif
 		logging::log_error_if(!((bool)retVal),

@@ -37,7 +37,7 @@ namespace supra
 		return instance;
 	}
 
-	void SupraManager::readFromXml(const char * configXmlFilename)
+	void SupraManager::readFromXml(const char * configXmlFilename, bool queueing)
 	{
 		tinyxml2::XMLDocument doc;
 		XMLError errLoad = doc.LoadFile(configXmlFilename);
@@ -64,13 +64,13 @@ namespace supra
 				XMLElement* outputsElement = devicesElement->FirstChildElement("outputs");
 				if (outputsElement)
 				{
-					readOutputDevicesFromXml(outputsElement);
+					readOutputDevicesFromXml(outputsElement, queueing);
 				}
 				//Other nodes
 				XMLElement* nodesElement = devicesElement->FirstChildElement("nodes");
 				if (nodesElement)
 				{
-					readNodesFromXml(nodesElement);
+					readNodesFromXml(nodesElement, queueing);
 				}
 			}
 
@@ -115,7 +115,7 @@ namespace supra
 		}
 	}
 
-	void SupraManager::readOutputDevicesFromXml(tinyxml2::XMLElement * outputsElement)
+	void SupraManager::readOutputDevicesFromXml(tinyxml2::XMLElement * outputsElement, bool queueing)
 	{
 		XMLElement* nextOutput = outputsElement->FirstChildElement("output");
 		while (nextOutput)
@@ -125,7 +125,7 @@ namespace supra
 			string outputID = nextOutput->Attribute("id");
 
 			//create input element
-			auto out = InterfaceFactory::createOutputDevice(m_graph, outputID, outputType);
+			auto out = InterfaceFactory::createOutputDevice(m_graph, outputID, outputType, queueing);
 
 			if (out)
 			{
@@ -147,7 +147,7 @@ namespace supra
 		}
 	}
 
-	void SupraManager::readNodesFromXml(tinyxml2::XMLElement * nodesElement)
+	void SupraManager::readNodesFromXml(tinyxml2::XMLElement * nodesElement, bool queueing)
 	{
 		XMLElement* nextNode = nodesElement->FirstChildElement("node");
 		while (nextNode)
@@ -157,7 +157,7 @@ namespace supra
 			string nodeID = nextNode->Attribute("id");
 
 			//create node
-			auto node = InterfaceFactory::createNode(m_graph, nodeID, nodeType);
+			auto node = InterfaceFactory::createNode(m_graph, nodeID, nodeType, queueing);
 
 			if (node)
 			{
@@ -331,8 +331,8 @@ namespace supra
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
 				tbb::flow::make_edge(
-					*(fromNode->getOutput(fromPort)),
-					*(toNode->getInput(toPort)));
+					*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >* >(fromNode->getOutput(fromPort))),
+					*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >* >(toNode->getInput(toPort))));
 				logging::log_log("Added connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
 			}
 			else {
@@ -353,8 +353,8 @@ namespace supra
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
 				tbb::flow::remove_edge(
-					*(fromNode->getOutput(fromPort)),
-					*(toNode->getInput(toPort)));
+					*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >* >(fromNode->getOutput(fromPort))),
+					*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >* >(toNode->getInput(toPort))));
 				logging::log_log("Removed connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
 			}
 			else {

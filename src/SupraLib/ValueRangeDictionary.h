@@ -19,35 +19,18 @@
 #include <vector>
 #include <algorithm>
 #include <utilities/TemplateTypeDefault.h>
+#include <utilities/DataType.h>
 
 namespace supra
 {
-	/// Enum for the types supported by the parameter system
-	enum RangeValueType
-	{
-		TypeBool,
-		TypeInt8,
-		TypeUint8,
-		TypeInt16,
-		TypeUint16,
-		TypeInt32,
-		TypeUint32,
-		TypeInt64,
-		TypeUint64,
-		TypeFloat,
-		TypeDouble,
-		TypeString,
-		TypeValueUnknown
-	};
-
 	/// Base class for the templated \see ValueRangeEntry
 	class ValueRangeType
 	{
 	public:
 		virtual ~ValueRangeType() {}
 		/// Returns the type of the parameter described by the value range
-		virtual RangeValueType getType() const {
-			return TypeValueUnknown;
+		virtual DataType getType() const {
+			return TypeUnknown;
 		};
 	};
 
@@ -91,7 +74,7 @@ namespace supra
 		virtual ~ValueRangeEntry() {}
 
 		/// Return the type of the parameter range
-		virtual RangeValueType getType() const;
+		virtual DataType getType() const { return DataTypeGet<ValueType>(); }
 		/// Returns whether the range is unrestricted
 		virtual bool isUnrestricted() const { return m_isUnrestricted; }
 		/// Returns whether the range is closed but continous
@@ -192,7 +175,7 @@ namespace supra
 		}
 
 		/// Returns the type of a parameter. Only defined if `hasKey(key) == true`
-		RangeValueType getType(std::string key) const
+		DataType getType(std::string key) const
 		{
 			auto iteratorValue = m_mapEntries.find(key);
 			return iteratorValue->second->getType();

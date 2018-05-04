@@ -73,14 +73,13 @@ namespace supra
 		if (!m_frozen)
 		{
 			double timestamp = getCurrentTime();
-			//if (m_pCurrentContextMap) 
-			shared_ptr<USImage<uint8_t> > pImage;
+			shared_ptr<USImage> pImage;
 			{
 				lock_guard<mutex> lock(m_objectMutex);
 				m_callFrequency.measure();
 
 				int modValue = std::min((int)(255 * m_gain), 255);
-				int offset = modValue * (m_txFrequency / 12.0);
+				int offset = static_cast<int>(modValue * (m_txFrequency / 12.0));
 				modValue -= offset;
 
 				auto pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), m_bmodeNumVectors*m_bmodeNumSamples);
@@ -93,7 +92,7 @@ namespace supra
 					}
 				}
 
-				pImage = make_shared<USImage<uint8_t> >(
+				pImage = make_shared<USImage>(
 					vec2s{ m_bmodeNumVectors, m_bmodeNumSamples }, pData, m_pImageProperties, timestamp, timestamp);
 				m_callFrequency.measureEnd();
 			}
@@ -112,8 +111,8 @@ namespace supra
 		m_depth = m_configurationDictionary.get<double>("endDepth");
 		m_width = m_configurationDictionary.get<double>("width");
 
-		m_bmodeNumVectors = m_width*10;
-		m_bmodeNumSamples = m_depth*10;
+		m_bmodeNumVectors = static_cast<size_t>(m_width * 10);
+		m_bmodeNumSamples = static_cast<size_t>(m_depth * 10);
 
 		if (getTimerFrequency() != m_frequency)
 		{

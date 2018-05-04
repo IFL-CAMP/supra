@@ -9,28 +9,24 @@
 // 
 // ================================================================================================
 
-#ifndef __TEMPORALFILTER_H__
-#define __TEMPORALFILTER_H__
+#ifndef __IMAGEPROCESSINGCUDA_H__
+#define __IMAGEPROCESSINGCUDA_H__
 
 #include "USImage.h"
 
 #include <memory>
-#include <queue>
 
 namespace supra
 {
-	class TemporalFilter
+	class ImageProcessingCuda
 	{
 	public:
 		typedef float WorkType;
 
 		template<typename InputType, typename OutputType>
-		std::shared_ptr<Container<OutputType> >
-			filter(
-				const std::queue<std::shared_ptr<const ContainerBase> > & inImageData,
-				vec3s size,
-				const std::vector<double> weights);
+		static std::shared_ptr<Container<OutputType> >
+			process(const std::shared_ptr<const Container<InputType> > & imageData, vec3s size, WorkType factor);
 	};
 }
 
-#endif //!__TEMPORALFILTER_H__
+#endif //!__IMAGEPROCESSINGCUDA_H__

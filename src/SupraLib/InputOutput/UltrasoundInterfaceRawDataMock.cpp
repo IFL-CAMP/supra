@@ -32,6 +32,7 @@ namespace supra
 		, m_frameIndex(0)
 		, m_numel(0)
 		, m_frozen(false)
+		, m_lastFrame(false)
 	{
 		m_callFrequency.setName("RawMock");
 		//Setup allowed values for parameters
@@ -51,7 +52,7 @@ namespace supra
 			setUpTimer(m_frequency);
 		}
 
-		m_protoRawData = RxBeamformerParameters::readMetaDataForMock<int16_t>(m_mockMetadataFilename);
+		m_protoRawData = RxBeamformerParameters::readMetaDataForMock(m_mockMetadataFilename);
 
 		m_numel = m_protoRawData->getNumReceivedChannels()*m_protoRawData->getNumSamples()*m_protoRawData->getNumScanlines();
 
@@ -123,7 +124,7 @@ namespace supra
 			double timestamp = getCurrentTime();
 
 			m_callFrequency.measure();
-			shared_ptr<USRawData<int16_t> > pRawData = std::make_shared<USRawData<int16_t> >(
+			shared_ptr<USRawData> pRawData = std::make_shared<USRawData>(
 				m_protoRawData->getNumScanlines(),
 				m_protoRawData->getNumElements(),
 				m_protoRawData->getElementLayout(),
@@ -139,7 +140,14 @@ namespace supra
 
 			if (!m_singleImage)
 			{
-				readNextFrame();
+				if (m_lastFrame)
+				{
+					setRunning(false);
+				}
+				else
+				{
+					readNextFrame();
+				}
 			}
 			m_callFrequency.measureEnd();
 		}
@@ -175,7 +183,7 @@ namespace supra
 			m_sequenceIndex = (m_sequenceIndex + 1) % m_sequenceLengths.size();
 			if (m_sequenceIndex == 0 && m_streamSequenceOnce)
 			{
-				setRunning(false);
+				m_lastFrame = true;
 			}
 		}
 	}

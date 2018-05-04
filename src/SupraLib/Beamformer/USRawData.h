@@ -22,7 +22,6 @@
 
 namespace supra
 {
-	template <typename ElementType>
 	class USRawData : public RecordObject
 	{
 	public:
@@ -32,7 +31,7 @@ namespace supra
 			size_t numReceivedChannels,
 			size_t numSamples,
 			double samplingFrequency,
-			std::shared_ptr<const Container<ElementType> > pData,
+			std::shared_ptr<const ContainerBase > pData,
 			std::shared_ptr<const RxBeamformerParameters> pRxBeamformerParameters,
 			std::shared_ptr<const USImageProperties> pImageProperties,
 			double receiveTimestamp,
@@ -52,7 +51,11 @@ namespace supra
 		std::shared_ptr<const USImageProperties> getImageProperties() const { return m_pImageProperties; };
 		/// Sets the \see USImageProperties that contain the associated metadata
 		void setImageProperties(std::shared_ptr<USImageProperties> & imageProperties) { m_pImageProperties = imageProperties; };
-		std::shared_ptr<const Container<ElementType> > getData() const { return m_pData; };
+		template <typename ElementType>
+		std::shared_ptr<const Container<ElementType> > getData() const 
+		{
+			return std::dynamic_pointer_cast<const Container<ElementType> >(m_pData); 
+		}
 		size_t getNumScanlines() const { return m_numScanlines; };
 		size_t getNumElements() const { return m_numElements; };
 		vec2s getElementLayout() const { return m_elementLayout; };
@@ -62,6 +65,7 @@ namespace supra
 		std::shared_ptr<const RxBeamformerParameters> getRxBeamformerParameters() const { return m_pRxBeamformerParameters; };
 
 		virtual RecordObjectType getType() const { return TypeUSRawData; }
+		DataType getDataType() const { return m_pData->getType(); }
 
 	private:
 		size_t m_numScanlines;
@@ -70,7 +74,7 @@ namespace supra
 		size_t m_numReceivedChannels;
 		size_t m_numSamples;
 		double m_samplingFrequency; // [MHz]
-		std::shared_ptr<const Container<ElementType> > m_pData;
+		std::shared_ptr<const ContainerBase> m_pData;
 		std::shared_ptr<const RxBeamformerParameters> m_pRxBeamformerParameters;
 
 		std::shared_ptr<const USImageProperties> m_pImageProperties;

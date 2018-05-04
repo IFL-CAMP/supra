@@ -48,9 +48,6 @@ namespace supra
 	{
 		Q_OBJECT
 
-	private:
-		typedef tbb::flow::function_node<shared_ptr<RecordObject>, tbb::flow::continue_msg, tbb::flow::rejecting> inputNodeType;
-
 	public:
 		/// Constructor of the node. Beside the standard node parameters, it takes as parameters 
 		/// Its parentWidget, the layout to attach to, the maximum image size and whether to use
@@ -68,15 +65,14 @@ namespace supra
 		void addImagePreviewWidget();
 		void addTrackingPreviewWidget();
 
-		template <typename T>
-		std::tuple<double, double, bool> computeWorldSize(std::shared_ptr < USImage<T> > image);
+		std::tuple<double, double, bool> computeWorldSize(std::shared_ptr <USImage> image);
 
 		bool m_haveImagePreview;
 		bool m_haveTrackingPreview;
 		QWidget* m_parentWidget;
 		QVBoxLayout* m_targetLayout;
 		std::string m_name;
-		inputNodeType m_nodeIn;
+		NodeTypeOneSidedDiscarding m_nodeIn;
 		QSize m_imageMaxSize;
 		bool m_linearInterpolation;
 
@@ -91,7 +87,7 @@ namespace supra
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 0; }
 
-		virtual tbb::flow::receiver<std::shared_ptr<RecordObject> > *
+		virtual tbb::flow::graph_node *
 			getInput(size_t index);
 
 	signals:

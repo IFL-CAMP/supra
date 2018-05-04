@@ -316,7 +316,7 @@ namespace supra
 		}
 	}
 
-	template <typename ImageType, typename WeightType, typename IndexType>
+	template <typename InputType, typename OutputType, typename WeightType, typename IndexType>
 	__global__ void scanConvert2D(
 		uint32_t numScanlines,
 		uint32_t numSamples,
@@ -326,15 +326,15 @@ namespace supra
 		const IndexType* __restrict__ sampleIdx,
 		const WeightType* __restrict__ weightX,
 		const WeightType* __restrict__ weightY,
-		const ImageType* __restrict__ scanlines,
-		ImageType* __restrict__ image)
+		const InputType* __restrict__ scanlines,
+		OutputType* __restrict__ image)
 	{
 		vec2T<uint32_t> pixelPos{ blockDim.x * blockIdx.x + threadIdx.x, blockDim.y * blockIdx.y + threadIdx.y }; //@suppress("Symbol is not resolved") @suppress("Field cannot be resolved")
 
 		if (pixelPos.x < width && pixelPos.y < height)
 		{
 			IndexType pixelIdx = pixelPos.x + pixelPos.y*width;
-			ImageType val = 0;
+			float val = 0;
 			if (mask[pixelIdx])
 			{
 				IndexType sIdx = sampleIdx[pixelIdx];
@@ -346,11 +346,11 @@ namespace supra
 					wY *((1 - wX)*scanlines[sIdx + numScanlines] +
 						wX *scanlines[sIdx + 1 + numScanlines]);
 			}
-			image[pixelIdx] = val;
+			image[pixelIdx] = clampCast<OutputType>(val);
 		}
 	}
 
-	template <typename ImageType, typename WeightType, typename IndexType>
+	template <typename InputType, typename OutputType, typename WeightType, typename IndexType>
 	__global__ void scanConvert3D(
 		uint32_t numScanlinesX,
 		uint32_t numScanlinesY,
@@ -363,15 +363,15 @@ namespace supra
 		const WeightType* __restrict__ weightX,
 		const WeightType* __restrict__ weightY,
 		const WeightType* __restrict__ weightZ,
-		const ImageType* __restrict__ scanlines,
-		ImageType* __restrict__ image)
+		const InputType* __restrict__ scanlines,
+		OutputType* __restrict__ image)
 	{
 		vec3T<uint32_t> pixelPos{ blockDim.x * blockIdx.x + threadIdx.x, blockDim.y * blockIdx.y + threadIdx.y, blockDim.z * blockIdx.z + threadIdx.z }; //@suppress("Symbol is not resolved") @suppress("Field cannot be resolved")
 
 		if (pixelPos.x < width && pixelPos.y < height)
 		{
 			IndexType pixelIdx = pixelPos.x + pixelPos.y*width + pixelPos.z*width*height;
-			ImageType val = 0;
+			float val = 0;
 			if (mask[pixelIdx])
 			{
 				uint32_t numScanlines = numScanlinesX*numScanlinesY;
@@ -391,7 +391,7 @@ namespace supra
 						wZ *((1 - wX)*scanlines[sIdx + numScanlinesX + numScanlines] +
 							wX *scanlines[sIdx + 1 + numScanlinesX + numScanlines]));
 			}
-			image[pixelIdx] = val;
+			image[pixelIdx] = clampCast<OutputType>(val);
 		}
 	}
 
@@ -401,13 +401,13 @@ namespace supra
 	}
 
 	template<typename InputType, typename OutputType>
-	shared_ptr<Container<OutputType> > ScanConverter::convert(const shared_ptr<USImage<InputType>>& inImage)
+	shared_ptr<Container<OutputType> > ScanConverter::convert(const shared_ptr<USImage>& inImage)
 	{
 		uint32_t numScanlines = (uint32_t)inImage->getImageProperties()->getNumScanlines();
 		vec2s scanlineLayout = inImage->getImageProperties()->getScanlineLayout();
 		uint32_t numSamples = (uint32_t)inImage->getImageProperties()->getNumSamples();
 
-		shared_ptr<const Container<InputType> > pScanlineData = inImage->getData();
+		shared_ptr<const Container<InputType> > pScanlineData = inImage->getData<InputType>();
 		if (pScanlineData->isHost())
 		{
 			pScanlineData = make_shared<Container<InputType> >(LocationGpu, *pScanlineData);
@@ -435,7 +435,6 @@ namespace supra
 		}
 		else
 		{
-			logging::log_error("ScanConverter: Image size: ", m_imageSize.x, ", ", m_imageSize.y, ", ", m_imageSize.z);
 			dim3 blockSize(1, 256, 1);
 			dim3 gridSize(
 				static_cast<unsigned int>((m_imageSize.x + blockSize.x - 1) / blockSize.x),
@@ -461,10 +460,23 @@ namespace supra
 	}
 
 	template
-		std::shared_ptr<Container<uint8_t> > ScanConverter::convert<uint8_t, uint8_t>(const std::shared_ptr<USImage<uint8_t>>& inImage);
-
+		std::shared_ptr<Container<uint8_t> > ScanConverter::convert<uint8_t, uint8_t>(const std::shared_ptr<USImage>& inImage);
 	template
-		std::shared_ptr<Container<int16_t> > ScanConverter::convert<int16_t, int16_t>(const std::shared_ptr<USImage<int16_t>>& inImage);
+		std::shared_ptr<Container<int16_t> > ScanConverter::convert<uint8_t, int16_t>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<float> > ScanConverter::convert<uint8_t, float>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<uint8_t> > ScanConverter::convert<int16_t, uint8_t>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<int16_t> > ScanConverter::convert<int16_t, int16_t>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<float> > ScanConverter::convert<int16_t, float>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<uint8_t> > ScanConverter::convert<float, uint8_t>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<int16_t> > ScanConverter::convert<float, int16_t>(const std::shared_ptr<USImage>& inImage);
+	template
+		std::shared_ptr<Container<float> > ScanConverter::convert<float, float>(const std::shared_ptr<USImage>& inImage);
 
 	void ScanConverter::updateInternals(const std::shared_ptr<const USImageProperties>& inImageProps)
 	{

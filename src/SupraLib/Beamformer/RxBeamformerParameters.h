@@ -18,7 +18,6 @@
 namespace supra
 {
 	struct ScanlineRxParameters3D;
-	template <typename T>
 	class USRawData;
 
 	class RxBeamformerParameters
@@ -56,10 +55,8 @@ namespace supra
 				m_rxNumDepths == b.m_rxNumDepths;
 		}
 
-		template <typename ChannelDataType>
-		void writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData<ChannelDataType> > rawData) const;
-		template <typename ChannelDataType>
-		static std::shared_ptr<USRawData<ChannelDataType> > readMetaDataForMock(const std::string & mockMetadataFilename);
+		void writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData> rawData) const;
+		static std::shared_ptr<USRawData> readMetaDataForMock(const std::string & mockMetadataFilename);
 		
 	private:
 

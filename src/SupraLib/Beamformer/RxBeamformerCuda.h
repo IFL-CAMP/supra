@@ -21,7 +21,6 @@
 namespace supra
 {
 	struct ScanlineRxParameters3D;
-	template <typename T>
 	class USRawData;
 
 	using std::shared_ptr;
@@ -41,9 +40,9 @@ namespace supra
 
 		// perform the receive beamforming
 		template <typename ChannelDataType, typename ImageDataType>
-		shared_ptr<USImage<ImageDataType> > performRxBeamforming(
+		shared_ptr<USImage> performRxBeamforming(
 			RxSampleBeamformer sampleBeamformer,
-			shared_ptr<const USRawData<ChannelDataType> > rawData,
+			shared_ptr<const USRawData> rawData,
 			double fNumber,
 			WindowType windowType,
 			WindowFunction::ElementType windowParameters,

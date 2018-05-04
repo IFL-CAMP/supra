@@ -34,10 +34,10 @@ namespace supra
 		static std::shared_ptr<SupraManager> Get();
 
 		//Config file handling
-		void readFromXml(const char* configXmlFilename);
+		void readFromXml(const char* configXmlFilename, bool queueing = false);
 		void readInputDevicesFromXml(tinyxml2::XMLElement* inputsElement);
-		void readOutputDevicesFromXml(tinyxml2::XMLElement* outputsElement);
-		void readNodesFromXml(tinyxml2::XMLElement* nodesElement);
+		void readOutputDevicesFromXml(tinyxml2::XMLElement* outputsElement, bool queueing);
+		void readNodesFromXml(tinyxml2::XMLElement* nodesElement, bool queueing);
 		void readConnectionsFromXml(tinyxml2::XMLElement* connectionsElement);
 
 		//Node access

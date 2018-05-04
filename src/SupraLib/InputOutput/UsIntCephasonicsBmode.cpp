@@ -196,7 +196,7 @@ namespace supra
 	{
 		static CallFrequency m("US");
 		double timestamp = getCurrentTime();
-		shared_ptr<USImage<uint8_t> > pImage;
+		shared_ptr<USImage> pImage;
 		{
 			lock_guard<mutex> lock(m_objectMutex);
 			m.measure();
@@ -206,7 +206,7 @@ namespace supra
 			shared_ptr<Container<uint8_t> > pData = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, ContainerFactory::getNextStream(), numVectors*numSamples);
 			std::memcpy(pData->get(), frameBuffer->getBuf(), numVectors*numSamples);
 
-			pImage = make_shared<USImage<uint8_t> >(
+			pImage = make_shared<USImage>(
 				vec2s{ numVectors, numSamples }, pData, m_pImageProperties, timestamp, timestamp);
 		}
 		addData<0>(pImage);
