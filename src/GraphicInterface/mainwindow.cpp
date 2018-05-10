@@ -157,13 +157,13 @@ namespace supra
 		m_nodeSignalsDeactivated = true;
 		p_manager->readFromXml(filename.toStdString().c_str());
 		auto positions = computeNodePositions();
-		float gridSpacing = 100;
+		vec2f gridSpacing{ 250, 100 };
 
 		auto nodeTypes = p_manager->getNodeTypes();
 		for (string node : p_manager->getNodeIDs())
 		{
 			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, nodeTypes[node])));
-			auto position = static_cast<vec2f>(positions[node]) * 100;
+			auto position = static_cast<vec2f>(positions[node]) * gridSpacing;
 			m_pNodeScene->setNodePosition(sceneNode, QPointF(position.x, position.y));
 			m_NodeSceneNodeIDs[node] = sceneNode.id();
 
@@ -367,13 +367,13 @@ namespace supra
 		}
 		nodeLevels++;
 
-		vector<int> usedColumnsPerLevel(nodeLevels, 0);
+		vector<int> usedRowsPerLevel(nodeLevels, 0);
 		map<string, vec2i> positionMap;
 		for(auto node : nodeIDs)
 		{
-			int column = usedColumnsPerLevel[nodeLevel[node]];
-			usedColumnsPerLevel[nodeLevel[node]]++;
-			positionMap[node] = { column, nodeLevel[node] };
+			int row = usedRowsPerLevel[nodeLevel[node]];
+			usedRowsPerLevel[nodeLevel[node]]++;
+			positionMap[node] = { nodeLevel[node], row };
 		}
 
 		return positionMap;
