@@ -7,7 +7,23 @@ include(supraIncludeITK)
 # Widgets finds its own dependencies.
 find_package(Qt5Widgets REQUIRED)
 
-find_package(NodeEditor REQUIRED)
+include(ExternalProject)
+
+ExternalProject_Add(
+  NodeEditor
+
+  GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git"
+  GIT_TAG "feature_lightweight"
+  
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  
+  PREFIX "${CMAKE_SOURCE_DIR}/external/NodeEditor"
+  CMAKE_ARGS -DBUILD_EXAMPLES=OFF -DQt5_DIR=${Qt5_DIR}
+  
+  TEST_COMMAND ""
+)
+
 
 OPTION(SUPRA_USE_CAMPVIS "Use CAMPVis for data previews" OFF)
 if(${SUPRA_USE_CAMPVIS})
