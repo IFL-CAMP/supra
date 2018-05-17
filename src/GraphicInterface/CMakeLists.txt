@@ -9,19 +9,47 @@ find_package(Qt5Widgets REQUIRED)
 
 include(ExternalProject)
 
-ExternalProject_Add(
-  NodeEditor
+#ExternalProject_Add(
+#  NodeEditor
+#
+#  GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git"
+#  GIT_TAG "feature_lightweight"
+#  
+#  UPDATE_COMMAND ""
+#  PATCH_COMMAND ""
+#  
+#  CMAKE_ARGS -DBUILD_EXAMPLES=OFF -DQt5_DIR=${Qt5_DIR}
+#  INSTALL_CMD "echo install"
+#  TEST_COMMAND ""
+#)
 
-  GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git"
-  GIT_TAG "feature_lightweight"
-  
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
-  
-  PREFIX "${CMAKE_SOURCE_DIR}/external/NodeEditor"
-  CMAKE_ARGS -DBUILD_EXAMPLES=OFF -DQt5_DIR=${Qt5_DIR}
-  
-  TEST_COMMAND ""
+SET(NodeEditor_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor_bin" CACHE PATH "")
+SET(NodeEditor_SRC_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor" CACHE PATH "")
+SET(NodeEditor_BIN_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor_bin" CACHE PATH "")
+SET(NodeEditor_GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git" CACHE STRING "")
+SET(NodeEditor_GIT_TAG "feature_lightweight" CACHE STRING "")
+ExternalProject_Add( 
+	NodeEditor
+	PREFIX "${CMAKE_SOURCE_DIR}/external/NodeEditor"
+	
+	SOURCE_DIR "${NodeEditor_SRC_DIR}"
+	BINARY_DIR "${NodeEditor_BIN_DIR}"
+	#--Download step--------------
+	GIT_REPOSITORY ${NodeEditor_GIT_REPOSITORY}
+	GIT_TAG ${NodeEditor_GIT_TAG}
+	#--Configure step-------------
+	CMAKE_ARGS
+	  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+	  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+	  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+	  -DCMAKE_BUILD_TYPE=Release
+	  -DBUILD_EXAMPLES=OFF
+	  -DQt5_DIR=${Qt5_DIR}
+	  -DCMAKE_INSTALL_PREFIX=${NodeEditor_DIR}
+	#--Build step-----------------
+	BUILD_ALWAYS 1
+	#--Install step-----------------
+	INSTALL_DIR=${NodeEditor_DIR}
 )
 
 
@@ -138,6 +166,6 @@ TARGET_LINK_LIBRARIES(SUPRA_GUI
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD 11)
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD_REQUIRED ON)
 
-add_dependencies(SUPRA_GUI SUPRA_Lib)
+add_dependencies(SUPRA_GUI SUPRA_Lib NodeEditor)
 
 qt5_use_modules(SUPRA_GUI Widgets)
