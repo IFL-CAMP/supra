@@ -48,9 +48,14 @@ namespace supra
 		return make_shared<tbb::flow::graph>();
 	}
 
-	shared_ptr<AbstractInput> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType)
+	shared_ptr<AbstractInput> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType, size_t numPorts)
 	{
 		shared_ptr<AbstractInput> retVal = shared_ptr<AbstractInput>(nullptr);
+
+		if (numPorts>1 && deviceType != "UltrasoundInterfaceCephasonicsCC")
+		{
+			logging::log_warn("InterfaceFactory: More than one port currently not supported for input device " + deviceType + ".");
+		}
 
 #ifdef HAVE_DEVICE_TRACKING_SIM
 		if (deviceType == "TrackerInterfaceSimulated")
@@ -94,7 +99,7 @@ namespace supra
 #ifdef HAVE_CUDA
 		if (deviceType == "UltrasoundInterfaceCephasonicsCC")
 		{
-			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID);
+			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID, numPorts);
 		}
 #endif //HAVE_CUDA
 #endif //HAVE_DEVICE_CEPHASONICS

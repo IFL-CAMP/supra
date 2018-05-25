@@ -143,8 +143,8 @@ namespace supra
 	}
 
 
-	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput(graph, nodeID, 2)
+	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID, const size_t numPorts)
+		: AbstractInput(graph, nodeID, numPorts)
 		, m_pTransducer(nullptr)
 		, m_pSequencer(nullptr)
 		, m_pProbe(nullptr)
@@ -1786,17 +1786,23 @@ namespace supra
 
 				// switch outputs for sequences. I.e. first sequence transmitted on output port 0, second port 1, etc.
 				// max ouptut ports is 2 for the moment.
-				switch (linFrID)
+				if (linFrID<m_numOutputs)
 				{
-					case 0:	addData<0>(rawData);
-					break;
-
-					case 1: 
-						addData<1>(rawData);
-					break;
-					
-					default: addData<0>(rawData);
-					break;
+					switch (linFrID)
+					{
+						case 0:	addData<0>(rawData); break;
+						case 1: addData<1>(rawData); break;
+						case 2: addData<2>(rawData); break;
+						case 3: addData<3>(rawData); break;
+						case 4: addData<4>(rawData); break;
+						case 5: addData<5>(rawData); break;
+						case 6: addData<6>(rawData); break;
+						case 7: addData<7>(rawData); break;
+						case 8: addData<8>(rawData); break;
+						case 9: addData<9>(rawData); break;
+						default: addData<0>(rawData);
+						break;
+					}
 				}
 			}
 		}

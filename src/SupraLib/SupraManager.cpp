@@ -92,8 +92,14 @@ namespace supra
 			string inputType = nextInput->Attribute("type");
 			string inputID = nextInput->Attribute("id");
 
+			size_t numPorts = 1;
+			if (nextInput->Attribute("ports"))
+			{
+				numPorts = std::stoi(nextInput->Attribute("ports"));
+			}
+
 			//create input element
-			auto in = InterfaceFactory::createInputDevice(m_graph, inputID, inputType);
+			auto in = InterfaceFactory::createInputDevice(m_graph, inputID, inputType, numPorts);
 
 			if (in)
 			{

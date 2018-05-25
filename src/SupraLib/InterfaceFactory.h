@@ -25,7 +25,7 @@ namespace supra
 	class InterfaceFactory {
 	public:
 		static std::shared_ptr<tbb::flow::graph> createGraph();
-		static std::shared_ptr<AbstractInput> createInputDevice(std::shared_ptr<tbb::flow::graph> pG, const std::string& nodeID, std::string deviceType);
+		static std::shared_ptr<AbstractInput> createInputDevice(std::shared_ptr<tbb::flow::graph> pG, const std::string& nodeID, std::string deviceType, size_t numPorts);
 		static std::shared_ptr<AbstractOutput> createOutputDevice(std::shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType, bool queueing);
 		static std::shared_ptr<AbstractNode> createNode(std::shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string nodeType, bool queueing);
 	};

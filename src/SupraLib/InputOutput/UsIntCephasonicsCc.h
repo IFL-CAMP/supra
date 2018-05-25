@@ -84,7 +84,7 @@ namespace supra
 	class UsIntCephasonicsCc : public AbstractInput
 	{
 	public:
-		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID);
+		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID, const size_t numPorts);
 		virtual ~UsIntCephasonicsCc();
 
 		//Functions to be overwritten

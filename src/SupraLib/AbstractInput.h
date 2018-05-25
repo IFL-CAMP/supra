@@ -52,11 +52,11 @@ namespace supra
 	{
 	public:
 		/// Base constructor for the input node. Initializes its output ports.
-		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID, size_t numInputs) 
-			: AbstractNode(nodeID, false)
+		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID, size_t numPorts) 
+			: AbstractNode(nodeID, false), m_numOutputs(numPorts)
 		{
-			m_pOutputNodes.resize(numInputs);
-			for (size_t i = 0; i < numInputs; i++)
+			m_pOutputNodes.resize(m_numOutputs);
+			for (size_t i = 0; i < m_numOutputs; i++)
 			{
 				m_pOutputNodes[i] = std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > >(
 					new tbb::flow::broadcast_node<std::shared_ptr<RecordObject> >(graph));
@@ -168,8 +168,10 @@ namespace supra
 		SingleThreadTimer m_timer;
 		std::shared_ptr<std::thread> m_pInputDeviceThread;
 		std::atomic_bool m_running;
+		
+	protected:
 
-		size_t m_numInputs;
+		const size_t m_numOutputs;
 
 		//Functions to be overwritten
 	public:
