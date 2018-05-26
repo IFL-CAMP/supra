@@ -19,12 +19,11 @@
 #include "AbstractNode.h"
 #include "RecordObject.h"
 #include "USImageProperties.h"
+#include "HilbertEnvelope.h"
 
 namespace supra
 {
 	class USImage;
-	class HilbertEnvelope;
-	class ContainerBase;
 
 	class HilbertEnvelopeNode : public AbstractNode {
 	public:

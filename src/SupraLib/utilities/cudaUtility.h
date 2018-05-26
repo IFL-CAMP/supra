@@ -14,13 +14,15 @@
 
 #ifdef HAVE_CUDA
 #include <cuda_runtime_api.h>
+#ifdef HAVE_CUFFT
+#include <cufft.h>
+#endif
 #endif
 #include <cstdio>
 #include "utilities/Logging.h"
 #include <algorithm>
 #include <cmath>
 #include <cfloat>
-#include <cufft.h>
 
 
 namespace supra
@@ -72,6 +74,7 @@ namespace supra
 		return true;
 	}
 
+#ifdef HAVE_CUFFT
 	/// Verifies a cuFFT call returned "CUFFT_SUCCESS". Prints error message otherwise.
 	/// returns true if no error occured, false otherwise.
     #define cufftSafeCall(_err_) cufftSafeCall2(_err_, __FILE__, __LINE__, FUNCNAME_PORTABLE)
@@ -92,6 +95,7 @@ namespace supra
 		//#endif
 		return true;
 	}
+#endif
 
 	/// Returns the square of x. CUDA constexpr version
 	template <typename T>

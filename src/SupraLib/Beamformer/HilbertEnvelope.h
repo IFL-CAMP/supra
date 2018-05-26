@@ -9,8 +9,8 @@
 // 
 // ================================================================================================
 
-#ifndef __IQDEMODULATOR_H__
-#define __IQDEMODULATOR_H__
+#ifndef __HILBERTENVELOPE_H__
+#define __HILBERTENVELOPE_H__
 
 #include "Container.h"
 
@@ -43,4 +43,4 @@ namespace supra
 	};
 }
 
-#endif //!__IQDEMODULATOR_H__
+#endif //!__HILBERTENVELOPE_H__

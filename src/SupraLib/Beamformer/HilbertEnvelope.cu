@@ -39,37 +39,28 @@ namespace supra
 			if (scanlineIdx < numScanlines && sampleIdx < numSamples)
 			{
 				InputType val = in[sampleIdx + scanlineIdx*numSamples];
-				float factor = 1.0f;
+				float factor = 0.0f;
 				if (numSamples % 2 == 0)
 				{
 					if (sampleIdx == 0 || sampleIdx == numSamples / 2)
 					{
-						// multiply by one, duh!
+						// multiply DC by one
 						factor = 1.0f;
 					}
 					else if (sampleIdx < numSamples / 2)
 					{
-						// multiply by two
 						factor = 2.0f;
 					}
-					else
-					{
-						factor = 0.0f;
-					}
-
 				}
 				else {
 					if (sampleIdx == 0)
 					{
-						// multiply by one, duh!
+						// multiply DC by one
 						factor = 1.0f;
 					}
 					else if (sampleIdx < (numSamples + 1) / 2)
 					{
 						factor = 2.0f;
-					}
-					else {
-						factor = 0.0f;
 					}
 				}
 				val = make_cuFloatComplex(factor*cuCrealf(val), factor*cuCimagf(val));
@@ -89,11 +80,8 @@ namespace supra
 
 			if (scanlineIdx < numScanlines && sampleIdx < numSamples)
 			{
-				//InputType val = in[scanlineIdx + sampleIdx*numScanlines];
-				//TEST transposing
+				// transposing
 				InputType val = in[sampleIdx + scanlineIdx*numSamples];
-				//cufftComplex valC = val;
-				//float valAbs = sqrt(squ(valC.x) + squ(valC.y));
 				float valAbs = cuCabsf(val) / numSamples;
 				out[scanlineIdx + sampleIdx*numScanlines] = clampCast<OutputType>(valAbs);
 			}
@@ -112,9 +100,7 @@ namespace supra
 			if (scanlineIdx < numScanlines && sampleIdx < numSamples)
 			{
 				InputType val = in[scanlineIdx + sampleIdx*numScanlines];
-				//out[scanlineIdx + sampleIdx*numScanlines] = clampCast<OutputType>(val);
-				// TEST transposing
-				//out[sampleIdx + scanlineIdx*numSamples] = clampCast<OutputType>(val);
+				// transposing
 				out[sampleIdx + scanlineIdx*numSamples] = make_cuFloatComplex(val, 0.0f);
 			}
 		}
@@ -129,7 +115,7 @@ namespace supra
 
 	HilbertEnvelope::~HilbertEnvelope()
 	{
-		cufftSafeCall(cufftDestroy(m_cufftHandleR2C));
+		//cufftSafeCall(cufftDestroy(m_cufftHandleR2C));
 		cufftSafeCall(cufftDestroy(m_cufftHandleC2C));
 	}
 
@@ -157,15 +143,15 @@ namespace supra
 
 			if (m_fftHavePlan)
 			{
-				cufftSafeCall(cufftDestroy(m_cufftHandleR2C));
+				//cufftSafeCall(cufftDestroy(m_cufftHandleR2C));
 				cufftSafeCall(cufftDestroy(m_cufftHandleC2C));
 			}
 
-			cufftSafeCall(cufftPlan1d(&m_cufftHandleR2C, m_fftPlanLength, CUFFT_R2C, m_fftPlanBatch));
+			//cufftSafeCall(cufftPlan1d(&m_cufftHandleR2C, m_fftPlanLength, CUFFT_R2C, m_fftPlanBatch));
 			cufftSafeCall(cufftPlan1d(&m_cufftHandleC2C, m_fftPlanLength, CUFFT_C2C, m_fftPlanBatch));
 		}
 		
-		cufftSafeCall(cufftSetStream(m_cufftHandleR2C, inImageData->getStream()));
+		//cufftSafeCall(cufftSetStream(m_cufftHandleR2C, inImageData->getStream()));
 		cufftSafeCall(cufftSetStream(m_cufftHandleC2C, inImageData->getStream()));
 
 		// converted input
@@ -181,6 +167,10 @@ namespace supra
 		dim3 gridSizeFilter(
 			static_cast<unsigned int>((numScanlines + blockSizeFilter.x - 1) / blockSizeFilter.x),
 			static_cast<unsigned int>((numSamples + blockSizeFilter.y - 1) / blockSizeFilter.y));
+
+		// For improved performance:
+		//    - Use R2C instead of C2C for FFT
+		//    - conversion, spectrum masking and absolute value can be performed in callbacks!
 
 		// convert input
 		hilbertEnvelopeKernels::convertInput <<<gridSizeFilter, blockSizeFilter, 0, inImageData->getStream() >>> (
