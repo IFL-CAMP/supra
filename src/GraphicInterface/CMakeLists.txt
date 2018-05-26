@@ -23,17 +23,23 @@ include(ExternalProject)
 #  TEST_COMMAND ""
 #)
 
-SET(NodeEditor_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor_bin" CACHE PATH "")
-SET(NodeEditor_SRC_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor" CACHE PATH "")
-SET(NodeEditor_BIN_DIR "${CMAKE_SOURCE_DIR}/external/NodeEditor_bin" CACHE PATH "")
+SET(NodeEditor_DIR "${CMAKE_CURRENT_BINARY_DIR}/NodeEditor")
 SET(NodeEditor_GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git" CACHE STRING "")
 SET(NodeEditor_GIT_TAG "feature_lightweight" CACHE STRING "")
 ExternalProject_Add( 
 	NodeEditor
-	PREFIX "${CMAKE_SOURCE_DIR}/external/NodeEditor"
+	PREFIX "${NodeEditor_DIR}"
 	
-	SOURCE_DIR "${NodeEditor_SRC_DIR}"
-	BINARY_DIR "${NodeEditor_BIN_DIR}"
+	LOG_DOWNLOAD TRUE
+	LOG_UPDATE TRUE
+	LOG_CONFIGURE TRUE
+	LOG_BUILD TRUE
+	LOG_INSTALL TRUE
+	
+	SOURCE_DIR "${NodeEditor_DIR}"
+	BINARY_DIR "${NodeEditor_DIR}_build"
+	STAMP_DIR "${NodeEditor_DIR}_stamp"
+	TMP_DIR "${NodeEditor_DIR}_tmp"
 	#--Download step--------------
 	GIT_REPOSITORY ${NodeEditor_GIT_REPOSITORY}
 	GIT_TAG ${NodeEditor_GIT_TAG}
@@ -45,12 +51,16 @@ ExternalProject_Add(
 	  -DCMAKE_BUILD_TYPE=Release
 	  -DBUILD_EXAMPLES=OFF
 	  -DQt5_DIR=${Qt5_DIR}
-	  -DCMAKE_INSTALL_PREFIX=${NodeEditor_DIR}
+	  -DCMAKE_INSTALL_PREFIX=${NodeEditor_DIR}_install
+	  -DNODE_EDITOR_STATIC=
 	#--Build step-----------------
-	BUILD_ALWAYS 1
+	BUILD_ALWAYS 0
 	#--Install step-----------------
-	INSTALL_DIR=${NodeEditor_DIR}
+	INSTALL_DIR=${NodeEditor_DIR}_install
 )
+SET(NodeEditor_LIBRARIES "nodes")
+INCLUDE_DIRECTORIES(SUPRA_GUI "${NodeEditor_DIR}_install/include")
+LINK_DIRECTORIES(SUPRA_GUI "${NodeEditor_DIR}_install/lib")
 
 
 OPTION(SUPRA_USE_CAMPVIS "Use CAMPVis for data previews" OFF)
@@ -132,7 +142,7 @@ add_executable(SUPRA_GUI ${SOURCES} ${HEADERS} ${MOC_HEADERS} ${FORMS} ${UIS})
 
 TARGET_COMPILE_DEFINITIONS(SUPRA_GUI
 	PRIVATE ${SUPRA_Lib_DEFINES}
-	${CAMPVIS_DEFINITIONS})
+	${CAMPVIS_DEFINITIONS} NODE_EDITOR_STATIC)
 
 if(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 	# generate proper GUI program on specified platform
@@ -157,6 +167,8 @@ if(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 		message(SEND_ERROR "You are on an unsupported platform! (Not Win32, Mac OS X or Unix)")
 	endif(WIN32)
 endif(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
+
+MESSAGE("'${NodeEditor_LIBRARIES}'")
 
 TARGET_LINK_LIBRARIES(SUPRA_GUI
 	${SUPRA_Lib_LIBRARIES}
