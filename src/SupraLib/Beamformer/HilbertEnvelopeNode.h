@@ -12,6 +12,8 @@
 #ifndef __HILBERTENVELOPENODE_H__
 #define __HILBERTENVELOPENODE_H__
 
+#ifdef HAVE_CUFFT
+
 #include <memory>
 #include <mutex>
 #include <tbb/flow_graph.h>
@@ -73,4 +75,5 @@ namespace supra
 	};
 }
 
+#endif //HAVE_CUFFT
 #endif //!__HILBERTENVELOPENODE_H__

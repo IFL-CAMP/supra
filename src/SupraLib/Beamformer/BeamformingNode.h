@@ -12,6 +12,8 @@
 #ifndef __BEAMFORMINGNODE_H__
 #define __BEAMFORMINGNODE_H__
 
+#ifdef HAVE_BEAMFORMER
+
 #include <memory>
 #include <vector>
 #include <deque>
@@ -83,4 +85,5 @@ namespace supra
 	};
 }
 
+#endif //HAVE_BEAMFORMER
 #endif //!__BEAMFORMINGNODE_H__
