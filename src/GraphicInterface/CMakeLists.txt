@@ -5,7 +5,7 @@ MESSAGE(STATUS "Building SUPRA Graphic Interface")
 include(supraIncludeITK)
 
 # Widgets finds its own dependencies.
-find_package(Qt5Widgets REQUIRED)
+find_package(Qt5 REQUIRED Widgets)
 
 include(ExternalProject)
 
@@ -54,7 +54,7 @@ ExternalProject_Add(
 	  -DCMAKE_INSTALL_PREFIX=${NodeEditor_DIR}_install
 	  -DNODE_EDITOR_STATIC=
 	#--Build step-----------------
-	BUILD_ALWAYS 0
+	#BUILD_ALWAYS 0
 	#--Install step-----------------
 	INSTALL_DIR=${NodeEditor_DIR}_install
 )
@@ -167,8 +167,6 @@ if(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 		message(SEND_ERROR "You are on an unsupported platform! (Not Win32, Mac OS X or Unix)")
 	endif(WIN32)
 endif(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
-
-MESSAGE("'${NodeEditor_LIBRARIES}'")
 
 TARGET_LINK_LIBRARIES(SUPRA_GUI
 	${SUPRA_Lib_LIBRARIES}

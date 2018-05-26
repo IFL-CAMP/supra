@@ -310,7 +310,8 @@ namespace supra
 	{
 		std::vector<std::tuple<std::string, size_t, std::string, size_t> > nodeConnections(m_nodeConnections.size());
 		std::transform(m_nodeConnections.begin(), m_nodeConnections.end(), nodeConnections.begin(),
-			[](auto mapPair) -> std::tuple<std::string, size_t, std::string, size_t> {return mapPair.first; });
+			[](const std::pair<std::tuple<std::string, size_t, std::string, size_t>, bool>& mapPair) -> 
+				std::tuple<std::string, size_t, std::string, size_t> {return mapPair.first; });
 		return nodeConnections;
 	}
 
