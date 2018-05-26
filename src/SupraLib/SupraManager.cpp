@@ -367,9 +367,10 @@ namespace supra
 			shared_ptr<AbstractNode> toNode = m_nodes[toID];
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
-				if (m_nodeConnections.count({ fromID, fromPort, toID, toPort }) == 0)
+				auto connTuple = std::make_tuple(fromID, fromPort, toID, toPort);
+				if (m_nodeConnections.count(connTuple) == 0)
 				{
-					m_nodeConnections[{fromID, fromPort, toID, toPort}] = true;
+					m_nodeConnections[connTuple] = true;
 					tbb::flow::make_edge(
 						*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >*>(fromNode->getOutput(fromPort))),
 						*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >*>(toNode->getInput(toPort))));
@@ -397,10 +398,11 @@ namespace supra
 			shared_ptr<AbstractNode> toNode = m_nodes[toID];
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
-				if (m_nodeConnections.count({ fromID, fromPort, toID, toPort }) == 1 &&
-					m_nodeConnections[{fromID, fromPort, toID, toPort}])
+				auto connTuple = std::make_tuple(fromID, fromPort, toID, toPort);
+				if (m_nodeConnections.count(connTuple) == 1 &&
+					m_nodeConnections[connTuple])
 				{
-					m_nodeConnections.erase({ fromID, fromPort, toID, toPort });
+					m_nodeConnections.erase(connTuple);
 					tbb::flow::remove_edge(
 						*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >*>(fromNode->getOutput(fromPort))),
 						*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >*>(toNode->getInput(toPort))));
