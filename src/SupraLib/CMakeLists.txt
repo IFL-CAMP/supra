@@ -200,6 +200,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USTransducer.cpp
 		Beamformer/BeamformingNode.cpp
 		Beamformer/IQDemodulatorNode.cpp
+		Beamformer/HilbertEnvelopeNode.cpp
 		Beamformer/LogCompressorNode.cpp
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
@@ -208,6 +209,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
 		Beamformer/IQDemodulator.cu
+		Beamformer/HilbertEnvelope.cu
 		Beamformer/LogCompressor.cu
 		Beamformer/ScanConverter.cu
 		Beamformer/TemporalFilter.cu
@@ -225,7 +227,9 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USTransducer.h
 		Beamformer/BeamformingNode.h
 		Beamformer/IQDemodulator.h
+		Beamformer/HilbertEnvelope.h
 		Beamformer/IQDemodulatorNode.h
+		Beamformer/HilbertEnvelopeNode.h
 		Beamformer/LogCompressor.h
 		Beamformer/LogCompressorNode.h
 		Beamformer/ScanConverter.h
@@ -239,7 +243,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
-		${CUDA_LIBRARIES})
+		${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}

@@ -26,6 +26,7 @@
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "Beamformer/BeamformingNode.h"
 #include "Beamformer/IQDemodulatorNode.h"
+#include "Beamformer/HilbertEnvelopeNode.h"
 #include "Beamformer/LogCompressorNode.h"
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
@@ -181,6 +182,10 @@ namespace supra
 		if (nodeType == "IQDemodulatorNode")
 		{
 			retVal = make_shared<IQDemodulatorNode>(*pG, nodeID, queueing);
+		}
+		if (nodeType == "HilbertEnvelopeNode")
+		{
+			retVal = make_shared<HilbertEnvelopeNode>(*pG, nodeID, queueing);
 		}
 		if (nodeType == "LogCompressorNode")
 		{

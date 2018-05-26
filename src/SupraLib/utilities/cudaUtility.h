@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cfloat>
+#include <cufft.h>
 
 
 namespace supra
@@ -62,6 +63,27 @@ namespace supra
 		if (cudaSuccess != err) {
 			char buf[1024];
 			sprintf(buf, "CUDA Error (in \"%s\", Line: %d, %s): %d - %s\n", file, line, func, err, cudaGetErrorString(err));
+			printf("%s", buf);
+			logging::log_error(buf);
+			return false;
+		}
+
+		//#endif
+		return true;
+	}
+
+	/// Verifies a cuFFT call returned "CUFFT_SUCCESS". Prints error message otherwise.
+	/// returns true if no error occured, false otherwise.
+    #define cufftSafeCall(_err_) cufftSafeCall2(_err_, __FILE__, __LINE__, FUNCNAME_PORTABLE)
+
+	/// Verifies a cuFFT call returned "CUFFT_SUCCESS". Prints error message otherwise.
+	/// returns true if no error occured, false otherwise. Calles by cudaSafeCall
+	inline bool cufftSafeCall2(cufftResult err, const char* file, int line, const char* func) {
+
+		//#ifdef CUDA_ERROR_CHECK
+		if (CUFFT_SUCCESS != err) {
+			char buf[1024];
+			sprintf(buf, "CUFFT Error (in \"%s\", Line: %d, %s): %d\n", file, line, func, err);
 			printf("%s", buf);
 			logging::log_error(buf);
 			return false;
