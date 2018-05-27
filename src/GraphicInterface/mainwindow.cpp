@@ -54,8 +54,6 @@ namespace supra
 		QTimer *timer = new QTimer(this);
 		QTimer *timerFreeze = new QTimer(this);
 
-		//setMinMaxWidthAdaptive(ui->list_allNodes);
-
 		connect(ui->actionLoadConfig, SIGNAL(triggered()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonLoad, SIGNAL(clicked()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonStart, SIGNAL(clicked()), this, SLOT(startNodes()));
@@ -196,10 +194,7 @@ namespace supra
 				);
 			}
 		}
-
-
-		//setMinMaxWidthAdaptive(ui->list_allNodes);
-
+		
 		ui->pushButtonLoad->setDisabled(true);
 		ui->actionLoadConfig->setDisabled(true);
 		ui->pushButtonStart->setEnabled(true);		

@@ -9,20 +9,6 @@ find_package(Qt5 REQUIRED Widgets)
 
 include(ExternalProject)
 
-#ExternalProject_Add(
-#  NodeEditor
-#
-#  GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git"
-#  GIT_TAG "feature_lightweight"
-#  
-#  UPDATE_COMMAND ""
-#  PATCH_COMMAND ""
-#  
-#  CMAKE_ARGS -DBUILD_EXAMPLES=OFF -DQt5_DIR=${Qt5_DIR}
-#  INSTALL_CMD "echo install"
-#  TEST_COMMAND ""
-#)
-
 SET(NodeEditor_DIR "${CMAKE_CURRENT_BINARY_DIR}/NodeEditor")
 SET(NodeEditor_GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git" CACHE STRING "")
 SET(NodeEditor_GIT_TAG "feature_lightweight" CACHE STRING "")
@@ -106,10 +92,6 @@ set ( UIS
  mainwindow.ui
  parametersWidget.ui
 )
-
-#set ( RESOURCES
-# main.qrc
-#)
 
 # Tell CMake to run moc when necessary:
 set(CMAKE_AUTOMOC ON)
