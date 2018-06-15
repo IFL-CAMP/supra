@@ -12,6 +12,8 @@
 #ifndef __RAWDELAYNODE_H__
 #define __RAWDELAYNODE_H__
 
+#ifdef HAVE_BEAMFORMER
+
 #include <memory>
 #include <vector>
 #include <deque>
@@ -80,4 +82,5 @@ namespace supra
 	};
 }
 
+#endif //HAVE_BEAMFORMER
 #endif //!__RAWDELAYNODE_H__

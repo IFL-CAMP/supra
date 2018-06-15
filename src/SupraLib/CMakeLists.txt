@@ -72,6 +72,14 @@ IF(SUPRA_CUDA)
 	IF(NOT WIN32)
 		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
 	ENDIF()
+	
+	# on win32 cufft is not supported
+	IF(EXISTS ${CUDA_CUFFT_LIBRARIES})
+		LIST(APPEND CUDA_LIBRARIES ${CUDA_CUFFT_LIBRARIES})
+		SET(SUPRA_CUFFT TRUE)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES} HAVE_CUFFT)
+	ENDIF()
+	
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
@@ -236,6 +244,16 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
 		InputOutput/UltrasoundInterfaceRawDataMock.h)
+	IF(SUPRA_CUFFT)
+		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+			Beamformer/HilbertEnvelopeNode.cpp)
+		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
+			Beamformer/HilbertEnvelope.cu)
+		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+			Beamformer/HilbertEnvelope.h
+			Beamformer/HilbertEnvelopeNode.h)
+	ENDIF(SUPRA_CUFFT)
+		
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
