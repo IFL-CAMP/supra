@@ -46,7 +46,7 @@ namespace supra
 		std::vector<std::string> getNodeIDs();
 		std::map<std::string, std::string> getNodeTypes();
 		std::shared_ptr<AbstractNode> getNode(std::string nodeID);
-		std::shared_ptr<AbstractInput<RecordObject> > getInputDevice(std::string nodeID);
+		std::shared_ptr<AbstractInput> getInputDevice(std::string nodeID);
 		std::shared_ptr<AbstractOutput> getOutputDevice(std::string nodeID);
 		bool nodeExists(std::string nodeID);
 		std::vector<std::tuple<std::string, size_t, std::string, size_t> > getNodeConnections();
@@ -99,7 +99,7 @@ namespace supra
 		std::string findUnusedID(std::string prefix);
 
 		std::shared_ptr<tbb::flow::graph> m_graph;
-		std::map<std::string, std::shared_ptr<AbstractInput<RecordObject> > > m_inputDevices;
+		std::map<std::string, std::shared_ptr<AbstractInput> > m_inputDevices;
 		std::map<std::string, std::shared_ptr<AbstractOutput> > m_outputDevices;
 		std::map<std::string, std::shared_ptr<AbstractNode> > m_nodes;
 		std::map<std::string, std::string > m_nodeTypes;

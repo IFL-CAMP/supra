@@ -70,6 +70,8 @@ namespace supra
 	template <>
 	DataType DataTypeGet<DataType>();
 
+	DataType DataTypeFromString(const std::string& s, bool* sucess = nullptr);
+	std::string DataTypeToString(DataType t, bool* success = nullptr);
 	std::ostream& operator<<(std::ostream& os, DataType dataType);
 	std::istream& operator>>(std::istream& is, DataType& dataType);
 }

@@ -34,7 +34,7 @@ namespace supra
 	UltrasoundInterfaceUltrasonix* g_pUSLib = 0;
 
 	UltrasoundInterfaceUltrasonix::UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_tickTimestamp(0)
 		, m_imagingMode(usModeBMode)
 		, m_frozen(false)

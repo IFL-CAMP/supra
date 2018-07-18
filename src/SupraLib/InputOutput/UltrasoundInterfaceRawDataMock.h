@@ -28,7 +28,7 @@ namespace supra
 	//forward declaration
 	class USRawData;
 
-	class UltrasoundInterfaceRawDataMock : public AbstractInput<RecordObject>
+	class UltrasoundInterfaceRawDataMock : public AbstractInput
 	{
 	public:
 		UltrasoundInterfaceRawDataMock(tbb::flow::graph& graph, const std::string & nodeID);

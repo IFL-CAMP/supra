@@ -67,65 +67,10 @@ namespace supra
 		return TypeDataType;
 	}
 
-	std::ostream& operator<<(std::ostream& os, DataType dataType)
+	DataType DataTypeFromString(const std::string & s, bool* success)
 	{
-		switch (dataType)
-		{
-		case supra::TypeBool:
-			os << "bool";
-			break;
-		case supra::TypeInt8:
-			os << "int8";
-			break;
-		case supra::TypeUint8:
-			os << "uint8";
-			break;
-		case supra::TypeInt16:
-			os << "int16";
-			break;
-		case supra::TypeUint16:
-			os << "uint16";
-			break;
-		case supra::TypeInt32:
-			os << "int32";
-			break;
-		case supra::TypeUint32:
-			os << "uint32";
-			break;
-		case supra::TypeInt64:
-			os << "int64";
-			break;
-		case supra::TypeUint64:
-			os << "uint64";
-			break;
-		case supra::TypeFloat:
-			os << "float";
-			break;
-		case supra::TypeDouble:
-			os << "double";
-			break;
-		case supra::TypeString:
-			os << "string";
-			break;
-		case supra::TypeDataType:
-			os << "dataType";
-			break;
-		case supra::TypeUnknown:
-			os << "Unknown";
-			break;
-		default:
-			os.setstate(std::ios_base::failbit);
-			break;
-		}
-		
-		return os;
-	}
-
-	std::istream& operator>>(std::istream& is, DataType& dataType)
-	{
-		std::string s;
-		is >> s;
-
+		DataType dataType;
+		bool hadSuccess = true;
 		if (s == "bool")
 		{
 			dataType = supra::TypeBool;
@@ -183,6 +128,101 @@ namespace supra
 			dataType = supra::TypeUnknown;
 		}
 		else
+		{
+			hadSuccess = false;
+		}
+		if (success)
+		{
+			*success = hadSuccess;
+		}
+		return dataType;
+	}
+
+	std::string DataTypeToString(DataType t, bool* success)
+	{
+		std::string s;
+		bool hadSuccess = true;
+		switch (t)
+		{
+		case supra::TypeBool:
+			s = "bool";
+			break;
+		case supra::TypeInt8:
+			s = "int8";
+			break;
+		case supra::TypeUint8:
+			s = "uint8";
+			break;
+		case supra::TypeInt16:
+			s = "int16";
+			break;
+		case supra::TypeUint16:
+			s = "uint16";
+			break;
+		case supra::TypeInt32:
+			s = "int32";
+			break;
+		case supra::TypeUint32:
+			s = "uint32";
+			break;
+		case supra::TypeInt64:
+			s = "int64";
+			break;
+		case supra::TypeUint64:
+			s = "uint64";
+			break;
+		case supra::TypeFloat:
+			s = "float";
+			break;
+		case supra::TypeDouble:
+			s = "double";
+			break;
+		case supra::TypeString:
+			s = "string";
+			break;
+		case supra::TypeDataType:
+			s = "dataType";
+			break;
+		case supra::TypeUnknown:
+			s = "Unknown";
+			break;
+		default:
+			hadSuccess = false;
+			break;
+		}
+
+		if (success)
+		{
+			*success = hadSuccess;
+		}
+		return s;
+	}
+
+	std::ostream& operator<<(std::ostream& os, DataType dataType)
+	{
+		bool success;
+		std::string s = DataTypeToString(dataType, &success);
+
+		if (success)
+		{
+			os << s;
+		}
+		else
+		{
+			os.setstate(std::ios_base::failbit);
+		}
+
+		return os;
+	}
+
+	std::istream& operator>>(std::istream& is, DataType& dataType)
+	{
+		std::string s;
+		is >> s;
+
+		bool success;
+		dataType = DataTypeFromString(s, &success);
+		if(!success)
 		{
 			is.setstate(std::ios_base::failbit);
 		}

@@ -35,7 +35,7 @@ namespace supra
 {
 	class UsIntCephasonicsBmodeProc;
 
-	class UsIntCephasonicsBmode : public AbstractInput<RecordObject>
+	class UsIntCephasonicsBmode : public AbstractInput
 	{
 	public:
 		UsIntCephasonicsBmode(tbb::flow::graph& graph, const std::string& nodeID);

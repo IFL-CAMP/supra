@@ -22,7 +22,7 @@ using namespace std;
 namespace supra
 {
 	TrackerInterfaceROS::TrackerInterfaceROS(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_connected(false)
 		, m_frozen(false)
 	{
@@ -52,7 +52,7 @@ namespace supra
 		m_callFrequency.setName("TrROS");
 
 		m_rosWrapper->subscribe(m_rosTopic, &TrackerInterfaceROS::receiveTransformMessage, this);
-		m_rosWrapper->spin(&AbstractInput<RecordObject>::getRunning, (AbstractInput<RecordObject>*)this);
+		m_rosWrapper->spin(&AbstractInput::getRunning, (AbstractInput*)this);
 	}
 
 	void TrackerInterfaceROS::receiveTransformMessage(const geometry_msgs::TransformStamped & transform)

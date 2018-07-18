@@ -66,7 +66,7 @@ namespace supra
 	}
 
 	UsIntCephasonicsBmode::UsIntCephasonicsBmode(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_cPlatformHandle(nullptr)
 		, m_cScanDefiniton(nullptr)
 		, m_endDepth(70.0)

@@ -26,6 +26,7 @@
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "Beamformer/BeamformingNode.h"
 #include "Beamformer/IQDemodulatorNode.h"
+#include "Beamformer/HilbertEnvelopeNode.h"
 #include "Beamformer/LogCompressorNode.h"
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
@@ -35,6 +36,8 @@
 #include "StreamSynchronizer.h"
 #include "FrequencyLimiterNode.h"
 #include "AutoQuitNode.h"
+#include "ExampleNodes/ImageProcessingCpuNode.h"
+#include "ExampleNodes/ImageProcessingCudaNode.h"
 
 using namespace std;
 
@@ -46,9 +49,14 @@ namespace supra
 		return make_shared<tbb::flow::graph>();
 	}
 
-	shared_ptr<AbstractInput<RecordObject>> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType)
+	shared_ptr<AbstractInput> InterfaceFactory::createInputDevice(shared_ptr<tbb::flow::graph> pG, const std::string & nodeID, std::string deviceType, size_t numPorts)
 	{
-		shared_ptr<AbstractInput<RecordObject>> retVal = shared_ptr<AbstractInput<RecordObject> >(nullptr);
+		shared_ptr<AbstractInput> retVal = shared_ptr<AbstractInput>(nullptr);
+
+		if (numPorts>1 && deviceType != "UltrasoundInterfaceCephasonicsCC")
+		{
+			logging::log_warn("InterfaceFactory: More than one port currently not supported for input device " + deviceType + ".");
+		}
 
 #ifdef HAVE_DEVICE_TRACKING_SIM
 		if (deviceType == "TrackerInterfaceSimulated")
@@ -92,7 +100,7 @@ namespace supra
 #ifdef HAVE_CUDA
 		if (deviceType == "UltrasoundInterfaceCephasonicsCC")
 		{
-			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID);
+			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID, numPorts);
 		}
 #endif //HAVE_CUDA
 #endif //HAVE_DEVICE_CEPHASONICS
@@ -165,11 +173,18 @@ namespace supra
 	std::map<std::string, InterfaceFactory::nodeCreationFunctionType> 
 		InterfaceFactory::m_nodeCreators = 
 	{
-		{ "StreamSynchronizer",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<StreamSynchronizer>(g, nodeID, queueing); } },
-		{ "TemporalOffsetNode",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TemporalOffsetNode>(g, nodeID, queueing); } },
-		{ "FrequencyLimiterNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FrequencyLimiterNode>(g, nodeID, queueing); } },
-		{ "AutoQuitNode",         [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<AutoQuitNode>(g, nodeID, queueing); } },
-		{ "StreamSyncNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<StreamSyncNode>(g, nodeID, queueing); } },
+		{ "StreamSynchronizer",     [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<StreamSynchronizer>(g, nodeID, queueing); } },
+		{ "TemporalOffsetNode",     [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TemporalOffsetNode>(g, nodeID, queueing); } },
+		{ "FrequencyLimiterNode",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FrequencyLimiterNode>(g, nodeID, queueing); } },
+		{ "AutoQuitNode",           [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<AutoQuitNode>(g, nodeID, queueing); } },
+		{ "StreamSyncNode",         [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<StreamSyncNode>(g, nodeID, queueing); } },
+		{ "ImageProcessingCpuNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCpuNode>(g, nodeID, queueing); } },
+#ifdef HAVE_CUDA
+		{ "ImageProcessingCudaNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCudaNode>(g, nodeID, queueing); } },
+#endif
+#ifdef HAVE_CUFFT
+		{ "HilbertEnvelopeNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<HilbertEnvelopeNode>(g, nodeID, queueing); } },
+#endif
 #ifdef HAVE_BEAMFORMER
 		{ "BeamformingNode",    [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BeamformingNode>(g, nodeID, queueing); } },
 		{ "IQDemodulatorNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<IQDemodulatorNode>(g, nodeID, queueing); } },
