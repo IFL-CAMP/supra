@@ -24,7 +24,7 @@ namespace supra
 {
 	class RosWrapper;
 
-	class TrackerInterfaceROS : public AbstractInput<RecordObject>
+	class TrackerInterfaceROS : public AbstractInput
 	{
 	public:
 

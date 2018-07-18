@@ -40,7 +40,7 @@ namespace supra
 {
 	//TODO add handling of software-controlled parameter changes
 	//TODO add other imaging modes
-	class UltrasoundInterfaceUltrasonix : public AbstractInput<RecordObject>
+	class UltrasoundInterfaceUltrasonix : public AbstractInput
 	{
 	public:
 		UltrasoundInterfaceUltrasonix(tbb::flow::graph& graph, const std::string& nodeID);

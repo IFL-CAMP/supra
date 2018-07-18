@@ -27,7 +27,7 @@
 
 namespace supra
 {
-	class TrackerInterfaceIGTL : public AbstractInput<RecordObject>
+	class TrackerInterfaceIGTL : public AbstractInput
 	{
 	public:
 

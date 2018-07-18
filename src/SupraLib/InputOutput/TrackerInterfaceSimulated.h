@@ -24,12 +24,12 @@
 
 namespace supra
 {
-	class TrackerInterfaceSimulated : public AbstractInput<RecordObject>
+	class TrackerInterfaceSimulated : public AbstractInput
 	{
 	public:
 
 		TrackerInterfaceSimulated(tbb::flow::graph & graph, const std::string & nodeID)
-			: AbstractInput<RecordObject>(graph, nodeID)
+			: AbstractInput(graph, nodeID,1)
 			, m_frozen(false)
 		{
 			m_valueRangeDictionary.set<int>("frequency", 5, 200, 50, "Frequency");

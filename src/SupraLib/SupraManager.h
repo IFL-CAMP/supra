@@ -45,7 +45,7 @@ namespace supra
 		std::vector<std::string> getOutputDeviceIDs();
 		std::vector<std::string> getNodeIDs();
 		std::shared_ptr<AbstractNode> getNode(std::string nodeID);
-		std::shared_ptr<AbstractInput<RecordObject> > getInputDevice(std::string nodeID);
+		std::shared_ptr<AbstractInput> getInputDevice(std::string nodeID);
 		std::shared_ptr<AbstractOutput> getOutputDevice(std::string nodeID);
 		bool nodeExists(std::string nodeID);
 		std::map<std::string, std::vector<size_t> > getImageOutputPorts();
@@ -95,7 +95,7 @@ namespace supra
 		void freezeThread();
 
 		std::shared_ptr<tbb::flow::graph> m_graph;
-		std::map<std::string, std::shared_ptr<AbstractInput<RecordObject> > > m_inputDevices;
+		std::map<std::string, std::shared_ptr<AbstractInput> > m_inputDevices;
 		std::map<std::string, std::shared_ptr<AbstractOutput> > m_outputDevices;
 		std::map<std::string, std::shared_ptr<AbstractNode> > m_nodes;
 		std::vector<std::shared_ptr<AbstractNode> > m_removedNodes;

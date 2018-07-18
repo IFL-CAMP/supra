@@ -27,7 +27,7 @@
 
 namespace supra
 {
-	class UltrasoundInterfaceSimulated : public AbstractInput<RecordObject>
+	class UltrasoundInterfaceSimulated : public AbstractInput
 	{
 	public:
 		UltrasoundInterfaceSimulated(tbb::flow::graph& graph, const std::string & nodeID);
