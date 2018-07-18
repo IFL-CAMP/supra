@@ -2,15 +2,23 @@
 #define MAINWINDOW_H
 
 #include <memory>
+#include <atomic>
 
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QShortcut>
 #include <QSize>
+#include <QUuid>
+
+#include <nodes/FlowScene>
+#include <nodes/FlowView>
+#include <nodes/Node>
+
+#include <vec.h>
 
 namespace Ui {
-class MainWindow;
+	class MainWindow;
 }
 namespace supra
 {
@@ -47,17 +55,34 @@ namespace supra
 		/// active use.
 		void keyPressEvent(QKeyEvent* keyEvent);
 	private:
+		/// Slot that is called on selection in the node list.
+		/// Shows a parameter widget for the currently selected node
+		void showParametersFromList(QString nodeID);
+		void hideParameters();
+		void nodeSceneSelectionChanged();
+		void connectionCreated(QtNodes::Connection& connection);
+		void connectionDeleted(QtNodes::Connection& connection);
+		void nodeCreated(QtNodes::Node& node);
+		void nodeDeleted(QtNodes::Node& node);
+
+		std::map<std::string, vec2i> computeNodePositions();
+
 		Ui::MainWindow *ui;
 
 		QShortcut* m_pSequenceShortcut;
 
 		std::shared_ptr<SupraManager> p_manager;
+		std::atomic_bool m_nodeSignalsDeactivated;
 		bool m_started;
 		bool m_sequenceStarted;
 		QSize m_previewSize;
 		bool m_previewLinearInterpolation;
 		previewBuilderQT* m_preview;
 		parametersWidget* m_pParametersWidget;
+		QtNodes::FlowScene* m_pNodeScene;
+		QtNodes::FlowView* m_pNodeView;
+		std::map<std::string, QUuid> m_NodeSceneNodeIDs;
+		std::map<QUuid, QtNodes::Node*> m_NodeSceneNodes;
 
 		QPoint m_previousCursorPosition;
 
@@ -65,9 +90,6 @@ namespace supra
 		/// Slot that asks the user for the path to a configuration file
 		/// and subsequently loads it, i.e. creates the graph as specified in the config
 		void loadConfigFileAction();
-		/// Slot that is called on selection in the node list.
-		/// Shows a parameter widget for the currently selected node
-		void showParametersFromList();
 		/// Selects the log-level to be shown in the console
 		void setLogLevel();
 		/// Sets the size of the preview image widget

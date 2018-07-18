@@ -118,7 +118,7 @@ build_windows:
   script:
     - IF NOT EXIST "build_msvs" mkdir "build_msvs"
     - cd build_msvs
-    - cmake .. -G "Visual Studio 14 2015 Win64" -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build  -DQt5Widgets_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015_64/lib/cmake/Qt5Widgets
+    - cmake .. -G "Visual Studio 14 2015 Win64" -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build -DQt5_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015_64/lib/cmake/Qt5
     - cmake --build .
 
 build_windows_win32:
@@ -128,5 +128,5 @@ build_windows_win32:
   script:
     - IF NOT EXIST "build_msvs_win32" mkdir "build_msvs_win32"
     - cd build_msvs_win32
-    - cmake .. -G "Visual Studio 14 2015" -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=ON -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_EXTERNALS="C:/Users/ifl-ci/repo" -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build_win32 -DQt5Widgets_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015/lib/cmake/Qt5Widgets
+    - cmake .. -G "Visual Studio 14 2015" -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=ON -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_EXTERNALS="C:/Users/ifl-ci/repo" -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build_win32 -DQt5_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015/lib/cmake/Qt5
     - cmake --build .

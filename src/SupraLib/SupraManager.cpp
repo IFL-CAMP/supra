@@ -108,8 +108,8 @@ namespace supra
 				in->changeConfig(dict);
 
 				//store input node
-				bool couldAdd = addNode(inputID, in);
-				logging::log_warn_if(!couldAdd, "Node '", inputID, "' already existed. Did not add it to collection.");
+				bool couldAdd = addNode(inputID, in, inputType);
+				logging::log_warn_if(!couldAdd, "SupraManager: Node '", inputID, "' already existed. Did not add it to collection.");
 				if (couldAdd)
 				{
 					m_inputDevices[inputID] = in;
@@ -140,8 +140,8 @@ namespace supra
 				out->changeConfig(dict);
 
 				//store output node
-				bool couldAdd = addNode(outputID, out);
-				logging::log_warn_if(!couldAdd, "Node '", outputID, "' already existed. Did not add it to collection.");
+				bool couldAdd = addNode(outputID, out, outputType);
+				logging::log_warn_if(!couldAdd, "SupraManager: Node '", outputID, "' already existed. Did not add it to collection.");
 				if (couldAdd)
 				{
 					m_outputDevices[outputID] = out;
@@ -172,8 +172,8 @@ namespace supra
 				node->changeConfig(dict);
 
 				//store node
-				bool couldAdd = addNode(nodeID, node);
-				logging::log_warn_if(!couldAdd, "Node '", nodeID, "' already existed. Did not add it to collection.");
+				bool couldAdd = addNode(nodeID, node, nodeType);
+				logging::log_warn_if(!couldAdd, "SupraManager: Node '", nodeID, "' already existed. Did not add it to collection.");
 			}
 
 			//advance to next element
@@ -192,7 +192,7 @@ namespace supra
 			int fromPort = 0;
 			if (fromElement->QueryIntAttribute("port", &fromPort) != XML_SUCCESS)
 			{
-				logging::log_error("Error parsing the port attribute of a connection from '", fromID, "'.");
+				logging::log_error("SupraManager: Error parsing the port attribute of a connection from '", fromID, "'.");
 			}
 
 			//to
@@ -201,7 +201,7 @@ namespace supra
 			int toPort = 0;
 			if (toElement->QueryIntAttribute("port", &toPort) != XML_SUCCESS)
 			{
-				logging::log_error("Error parsing the port attribute of a connection to '", toID, "'.");
+				logging::log_error("SupraManager: Error parsing the port attribute of a connection to '", toID, "'.");
 			}
 
 			//create the connection
@@ -236,6 +236,11 @@ namespace supra
 		return nodeIDs;
 	}
 
+	std::map<std::string, std::string> SupraManager::getNodeTypes()
+	{
+		return m_nodeTypes;
+	}
+
 	shared_ptr<AbstractNode> SupraManager::getNode(string nodeID)
 	{
 		shared_ptr<AbstractNode> retVal = shared_ptr<AbstractNode>(nullptr);
@@ -266,7 +271,7 @@ namespace supra
 		return retVal;
 	}
 
-	bool SupraManager::addNode(string nodeID, shared_ptr<AbstractNode> node)
+	bool SupraManager::addNode(string nodeID, shared_ptr<AbstractNode> node, string nodeType)
 	{
 		if (nodeExists(nodeID))
 		{
@@ -275,13 +280,45 @@ namespace supra
 		else
 		{
 			m_nodes[nodeID] = node;
+			m_nodeTypes[nodeID] = nodeType;
+			logging::log_log("SupraManager: Added Node '", nodeID, "'.");
 			return true;
 		}
+	}
+
+	std::string SupraManager::addNode(std::string nodeType, bool queueing)
+	{
+		string newID = findUnusedID(nodeType);
+
+		//create node
+		auto node = InterfaceFactory::createNode(m_graph, newID, nodeType, queueing);
+
+		bool couldAdd = false;
+		if (node)
+		{
+			//store node
+			couldAdd = addNode(newID, node, nodeType);
+			logging::log_warn_if(!couldAdd, "SupraManager: Node '", newID, "' already existed. Did not add it to collection.");
+		}
+		if (!couldAdd)
+		{
+			newID = "";
+		}
+		return newID;
 	}
 
 	bool SupraManager::nodeExists(string nodeID)
 	{
 		return (m_nodes.find(nodeID) != m_nodes.end());
+	}
+
+	std::vector<std::tuple<std::string, size_t, std::string, size_t> > SupraManager::getNodeConnections()
+	{
+		std::vector<std::tuple<std::string, size_t, std::string, size_t> > nodeConnections(m_nodeConnections.size());
+		std::transform(m_nodeConnections.begin(), m_nodeConnections.end(), nodeConnections.begin(),
+			[](const std::pair<std::tuple<std::string, size_t, std::string, size_t>, bool>& mapPair) -> 
+				std::tuple<std::string, size_t, std::string, size_t> {return mapPair.first; });
+		return nodeConnections;
 	}
 
 	std::map<std::string, std::vector<size_t>> SupraManager::getImageOutputPorts()
@@ -336,17 +373,26 @@ namespace supra
 			shared_ptr<AbstractNode> toNode = m_nodes[toID];
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
-				tbb::flow::make_edge(
-					*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >* >(fromNode->getOutput(fromPort))),
-					*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >* >(toNode->getInput(toPort))));
-				logging::log_log("Added connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
+				auto connTuple = std::make_tuple(fromID, fromPort, toID, toPort);
+				if (m_nodeConnections.count(connTuple) == 0)
+				{
+					m_nodeConnections[connTuple] = true;
+					tbb::flow::make_edge(
+						*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >*>(fromNode->getOutput(fromPort))),
+						*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >*>(toNode->getInput(toPort))));
+					logging::log_log("SupraManager: Added connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
+				}
+				else
+				{
+					logging::log_error("SupraManager: Could not add connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). It already exists.");
+				}
 			}
 			else {
-				logging::log_error("Could not add connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One of the ports does not exist.");
+				logging::log_error("SupraManager: Could not add connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One of the ports does not exist.");
 			}
 		}
 		else {
-			logging::log_error("Could not add connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One node does not exist.");
+			logging::log_error("SupraManager: Could not add connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One node does not exist.");
 		}
 	}
 
@@ -358,17 +404,27 @@ namespace supra
 			shared_ptr<AbstractNode> toNode = m_nodes[toID];
 			if (fromNode->getNumOutputs() > fromPort && toNode->getNumInputs() > toPort)
 			{
-				tbb::flow::remove_edge(
-					*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >* >(fromNode->getOutput(fromPort))),
-					*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >* >(toNode->getInput(toPort))));
-				logging::log_log("Removed connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
+				auto connTuple = std::make_tuple(fromID, fromPort, toID, toPort);
+				if (m_nodeConnections.count(connTuple) == 1 &&
+					m_nodeConnections[connTuple])
+				{
+					m_nodeConnections.erase(connTuple);
+					tbb::flow::remove_edge(
+						*(dynamic_cast<tbb::flow::sender<std::shared_ptr<RecordObject> >*>(fromNode->getOutput(fromPort))),
+						*(dynamic_cast<tbb::flow::receiver<std::shared_ptr<RecordObject> >*>(toNode->getInput(toPort))));
+					logging::log_log("SupraManager: Removed connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, ").");
+				}
+				else
+				{
+					logging::log_error("SupraManager: Could not remove connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). It does not exist.");
+				}
 			}
 			else {
-				logging::log_error("Could not remove connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One of the ports does not exist.");
+				logging::log_error("SupraManager: Could not remove connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One of the ports does not exist.");
 			}
 		}
 		else {
-			logging::log_error("Could not remove connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One node does not exist.");
+			logging::log_error("SupraManager: Could not remove connection from (", fromID, ", ", fromPort, ") to (", toID, ", ", toPort, "). One node does not exist.");
 		}
 	}
 
@@ -377,14 +433,14 @@ namespace supra
 		for (auto outputDevicePair : m_outputDevices)
 		{
 			string nodeID = outputDevicePair.first;
-			logging::log_log("Starting output '", nodeID, "'");
+			logging::log_log("SupraManager: Starting output '", nodeID, "'");
 			outputDevicePair.second->initializeOutput();
 			if (outputDevicePair.second->ready())
 			{
 				outputDevicePair.second->setRunning(true);
 			}
 			else {
-				logging::log_warn("Output '", nodeID, "' not started. It was not ready.");
+				logging::log_warn("SupraManager: Output '", nodeID, "' not started. It was not ready.");
 			}
 		}
 	}
@@ -394,7 +450,7 @@ namespace supra
 		for (auto outputDevicePair : m_outputDevices)
 		{
 			string nodeID = outputDevicePair.first;
-			logging::log_log("Starting sequence at '", nodeID, "'");
+			logging::log_log("SupraManager: Starting sequence at '", nodeID, "'");
 			outputDevicePair.second->startSequence();
 		}
 	}
@@ -404,7 +460,7 @@ namespace supra
 		for (auto outputDevicePair : m_outputDevices)
 		{
 			string nodeID = outputDevicePair.first;
-			logging::log_log("Stopping sequence at '", nodeID, "'");
+			logging::log_log("SupraManager: Stopping sequence at '", nodeID, "'");
 			outputDevicePair.second->stopSequence();
 		}
 	}
@@ -418,14 +474,14 @@ namespace supra
 		for (auto inputDevicePair : m_inputDevices)
 		{
 			string nodeID = inputDevicePair.first;
-			logging::log_log("Starting input '", nodeID, "'");
+			logging::log_log("SupraManager: Starting input '", nodeID, "'");
 			inputDevicePair.second->initializeDevice();
 			if (inputDevicePair.second->ready())
 			{
 				inputDevicePair.second->start();
 			}
 			else {
-				logging::log_warn("Input '", nodeID, "' not started. It was not ready.");
+				logging::log_warn("SupraManager: Input '", nodeID, "' not started. It was not ready.");
 			}
 		}
 	}
@@ -437,7 +493,7 @@ namespace supra
 			if (inputDevicePair.second->getRunning())
 			{
 				string nodeID = inputDevicePair.first;
-				logging::log_log("Stopping input '", nodeID, "'");
+				logging::log_log("SupraManager: Stopping input '", nodeID, "'");
 				inputDevicePair.second->setRunning(false);
 			}
 		}
@@ -451,7 +507,7 @@ namespace supra
 			if (inputDevicePair.second->getRunning())
 			{
 				string nodeID = inputDevicePair.first;
-				logging::log_log("Waiting for input '", nodeID, "' to finish.");
+				logging::log_log("SupraManager: Waiting for input '", nodeID, "' to finish.");
 				inputDevicePair.second->waitForFinish();
 			}
 		}
@@ -478,7 +534,7 @@ namespace supra
 				if (inputDevicePair.second->getRunning())
 				{
 					string nodeID = inputDevicePair.first;
-					logging::log_log("Freezing input '", nodeID, "'");
+					logging::log_log("SupraManager: Freezing input '", nodeID, "'");
 					inputDevicePair.second->freeze();
 				}
 			}
@@ -498,7 +554,7 @@ namespace supra
 				if (inputDevicePair.second->getRunning())
 				{
 					string nodeID = inputDevicePair.first;
-					logging::log_log("Freezing input '", nodeID, "'");
+					logging::log_log("SupraManager: Freezing input '", nodeID, "'");
 					inputDevicePair.second->unfreeze();
 				}
 			}
@@ -527,6 +583,25 @@ namespace supra
 					break;
 			}
 		}
+	}
+
+	std::string SupraManager::findUnusedID(std::string prefix)
+	{
+		std::vector<std::string> usedIDs(m_nodes.size());
+		std::transform(m_nodes.begin(), m_nodes.end(), usedIDs.begin(),
+			[](std::pair<std::string, std::shared_ptr<AbstractNode> > p) { return p.first; });
+
+		string newID = prefix + std::to_string(rand());
+		for (size_t i = 1; i <= 100; i++)
+		{
+			string potentialID = prefix + "_" + std::to_string(i);
+			if (m_nodes.count(potentialID) == 0)
+			{
+				newID = potentialID;
+				break;
+			}
+		}
+		return newID;
 	}
 
 	int32_t SupraManager::getFreezeTimeout()
