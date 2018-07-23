@@ -38,7 +38,7 @@ namespace supra
 
 	private:
 		std::string getParameterRangeString(const ValueRangeDictionary* ranges, std::string paramName);
-		void readAndSetParameter(std::shared_ptr<AbstractInput<RecordObject> > inputNode, std::string paramName);
+		void readAndSetParameter(std::shared_ptr<AbstractInput> inputNode, std::string paramName);
 		std::string getParameterTypeString(const ValueRangeDictionary* ranges, std::string paramName);
 		std::string getParameterValueString(const ConfigurationDictionary* config, const ValueRangeDictionary* ranges, std::string paramName);
 

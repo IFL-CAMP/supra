@@ -68,6 +68,9 @@ namespace supra
 
 		void setScanType(const std::string scanType);
 
+		/// active and deactivate receival for beamformer
+		void setRxModeActive(const bool active);
+
 		/// Set speed of sound as assumed for beamforming [m/s]
 		void setSpeedOfSound(const double speedOfSound);
 
@@ -119,6 +122,7 @@ namespace supra
 
 
 		std::string getScanType() const;
+		bool getRxModeActive() const;
 		double getSpeedOfSound() const;
 		double getDepth() const;
 		vec2s getNumScanlines() const;
@@ -178,6 +182,7 @@ namespace supra
 
 		// Imaging parameters
 		ScanType m_type;
+		bool m_disableRx;
 		bool m_correctMatchingLayers;
 
 		vec2s m_numScanlines;

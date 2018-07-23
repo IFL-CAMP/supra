@@ -41,4 +41,8 @@ namespace supra
 	{
 		delete ui;
 	}
+	QString parametersWidget::getNodeID()
+	{
+		return QString::fromStdString(p_node->getNodeID());
+	}
 }

@@ -29,6 +29,7 @@ namespace supra
 		/// Constructor of parametersWidget. It takes the ID of the node to display.
 		explicit parametersWidget(const QString & nodeID, QWidget *parent = 0);
 		~parametersWidget();
+		QString getNodeID();
 
 	private:
 		Ui::parametersWidget *ui;

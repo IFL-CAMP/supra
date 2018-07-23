@@ -5,7 +5,49 @@ MESSAGE(STATUS "Building SUPRA Graphic Interface")
 include(supraIncludeITK)
 
 # Widgets finds its own dependencies.
-find_package(Qt5Widgets REQUIRED)
+find_package(Qt5 REQUIRED Widgets)
+
+include(ExternalProject)
+
+SET(NodeEditor_DIR "${CMAKE_CURRENT_BINARY_DIR}/NodeEditor")
+SET(NodeEditor_GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git" CACHE STRING "")
+SET(NodeEditor_GIT_TAG "feature_lightweight" CACHE STRING "")
+ExternalProject_Add( 
+	NodeEditor
+	PREFIX "${NodeEditor_DIR}"
+	
+	LOG_DOWNLOAD TRUE
+	LOG_UPDATE TRUE
+	LOG_CONFIGURE TRUE
+	LOG_BUILD TRUE
+	LOG_INSTALL TRUE
+	
+	SOURCE_DIR "${NodeEditor_DIR}"
+	BINARY_DIR "${NodeEditor_DIR}_build"
+	STAMP_DIR "${NodeEditor_DIR}_stamp"
+	TMP_DIR "${NodeEditor_DIR}_tmp"
+	#--Download step--------------
+	GIT_REPOSITORY ${NodeEditor_GIT_REPOSITORY}
+	GIT_TAG ${NodeEditor_GIT_TAG}
+	#--Configure step-------------
+	CMAKE_ARGS
+	  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+	  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+	  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+	  -DCMAKE_BUILD_TYPE=Release
+	  -DBUILD_EXAMPLES=OFF
+	  -DQt5_DIR=${Qt5_DIR}
+	  -DCMAKE_INSTALL_PREFIX=${NodeEditor_DIR}_install
+	  -DNODE_EDITOR_STATIC=
+	#--Build step-----------------
+	#BUILD_ALWAYS 0
+	#--Install step-----------------
+	INSTALL_DIR=${NodeEditor_DIR}_install
+)
+SET(NodeEditor_LIBRARIES "nodes")
+INCLUDE_DIRECTORIES(SUPRA_GUI "${NodeEditor_DIR}_install/include")
+LINK_DIRECTORIES(SUPRA_GUI "${NodeEditor_DIR}_install/lib")
+
 
 OPTION(SUPRA_USE_CAMPVIS "Use CAMPVis for data previews" OFF)
 if(${SUPRA_USE_CAMPVIS})
@@ -28,6 +70,7 @@ set ( SOURCES
  previewBuilderQt.cpp
  QImagePreviewReciever.cpp
  QTrackerPreviewReciever.cpp
+ NodeExplorerDataModel.cpp
  ${CAMPVIS_SOURCES}
 )
 
@@ -36,6 +79,7 @@ set ( HEADERS
  previewBuilderQt.h
  QImagePreviewReciever.h
  QTrackerPreviewReciever.h
+ NodeExplorerDataModel.h
  ${CAMPVIS_HEADERS}
 )
 
@@ -48,10 +92,6 @@ set ( UIS
  mainwindow.ui
  parametersWidget.ui
 )
-
-#set ( RESOURCES
-# main.qrc
-#)
 
 # Tell CMake to run moc when necessary:
 set(CMAKE_AUTOMOC ON)
@@ -84,7 +124,7 @@ add_executable(SUPRA_GUI ${SOURCES} ${HEADERS} ${MOC_HEADERS} ${FORMS} ${UIS})
 
 TARGET_COMPILE_DEFINITIONS(SUPRA_GUI
 	PRIVATE ${SUPRA_Lib_DEFINES}
-	${CAMPVIS_DEFINITIONS})
+	${CAMPVIS_DEFINITIONS} NODE_EDITOR_STATIC)
 
 if(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 	# generate proper GUI program on specified platform
@@ -113,10 +153,11 @@ endif(NOT SUPRA_INTERFACE_GRAPHIC_CMD)
 TARGET_LINK_LIBRARIES(SUPRA_GUI
 	${SUPRA_Lib_LIBRARIES}
 	${CAMPVIS_LIB}
+	${NodeEditor_LIBRARIES}
 )
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD 11)
 set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD_REQUIRED ON)
 
-add_dependencies(SUPRA_GUI SUPRA_Lib)
+add_dependencies(SUPRA_GUI SUPRA_Lib NodeEditor)
 
 qt5_use_modules(SUPRA_GUI Widgets)

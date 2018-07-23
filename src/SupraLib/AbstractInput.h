@@ -48,14 +48,15 @@ namespace supra
 	 *		\see setupTimer and once \see timerLoop is entered, the timer continously calls 
 	 *		\see timerCallback for the node, sleeping appropriately inbetween calls.
 	 */
-	template<typename... InputTypes>
 	class AbstractInput : public AbstractNode
 	{
 	public:
 		/// Base constructor for the input node. Initializes its output ports.
-		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID) : AbstractNode(nodeID, false)
+		AbstractInput(tbb::flow::graph& graph, const std::string & nodeID, size_t numPorts) 
+			: AbstractNode(nodeID, false), m_numOutputs(numPorts)
 		{
-			for (size_t i = 0; i < sizeof...(InputTypes); i++)
+			m_pOutputNodes.resize(m_numOutputs);
+			for (size_t i = 0; i < m_numOutputs; i++)
 			{
 				m_pOutputNodes[i] = std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > >(
 					new tbb::flow::broadcast_node<std::shared_ptr<RecordObject> >(graph));
@@ -84,7 +85,7 @@ namespace supra
 			setRunning(true);
 			//The input device function is run in a new thread, so it is free to consume time and yield
 			// e.g. using the builtin timer
-			m_pInputDeviceThread = std::make_shared<std::thread>([this] {this->startAcquisition(); });
+			m_pInputDeviceThread = std::make_shared<std::thread>(std::thread([this]() {this->startAcquisition(); }));
 		}
 
 		/// Set the state of the input node, if newState is false, the node is stopped
@@ -131,9 +132,9 @@ namespace supra
 		/// The nodes output. An implementing node calls this method when it has a dataset 
 		/// to send into the graph.
 		template <size_t index>
-		bool addData(std::shared_ptr<typename std::tuple_element<index, std::tuple<InputTypes...> >::type> data)
+		bool addData(std::shared_ptr<RecordObject> data)
 		{
-			return std::get<index>(m_pOutputNodes)->try_put(data);
+			return m_pOutputNodes[index]->try_put(data);
 		}
 
 		/// Returns the configured frequency of the \see SingleThreadTimer
@@ -161,11 +162,16 @@ namespace supra
 			}
 		}
 	private:
-		std::array<std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > >, sizeof...(InputTypes)> m_pOutputNodes;
+		
+		std::vector<std::unique_ptr<tbb::flow::broadcast_node<std::shared_ptr<RecordObject> > > > m_pOutputNodes;
 
 		SingleThreadTimer m_timer;
 		std::shared_ptr<std::thread> m_pInputDeviceThread;
 		std::atomic_bool m_running;
+		
+	protected:
+
+		const size_t m_numOutputs;
 
 		//Functions to be overwritten
 	public:

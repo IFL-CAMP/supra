@@ -6,13 +6,16 @@
 #include <QString>
 #include <QScrollBar>
 #include <QTimer>
+#include <QListWidget>
 
 #include <parametersWidget.h>
 #include <previewBuilderQt.h>
+#include "NodeExplorerDataModel.h"
 
 #include <utilities/utility.h>
 #include <utilities/Logging.h>
 #include <SupraManager.h>
+#include <InterfaceFactory.h>
 
 using namespace std;
 
@@ -51,8 +54,6 @@ namespace supra
 		QTimer *timer = new QTimer(this);
 		QTimer *timerFreeze = new QTimer(this);
 
-		setMinMaxWidthAdaptive(ui->list_allNodes);
-
 		connect(ui->actionLoadConfig, SIGNAL(triggered()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonLoad, SIGNAL(clicked()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonStart, SIGNAL(clicked()), this, SLOT(startNodes()));
@@ -74,7 +75,6 @@ namespace supra
 
 		connect(ui->comboBoxPreviewNode, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(previewSelected(const QString &)));
 
-		connect(ui->list_allNodes, SIGNAL(itemSelectionChanged()), this, SLOT(showParametersFromList()));
 		connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeTimings()));
 		connect(timerFreeze, SIGNAL(timeout()), this, SLOT(updateFreezeTimer()));
 		connect(ui->pushButtonFreeze, SIGNAL(clicked()), this, SLOT(toogleFreeze()));
@@ -91,6 +91,25 @@ namespace supra
 
 		timer->start(2000);
 		timerFreeze->start(1000);
+
+		//ui->group_allNodes->layout
+		shared_ptr<QtNodes::DataModelRegistry> flowRegistry = make_shared<QtNodes::DataModelRegistry>();
+		for (auto nodeType : InterfaceFactory::getNodeTypes())
+		{
+			flowRegistry->registerModel(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(nodeType, nodeType)));
+		}
+
+		m_pNodeScene = new QtNodes::FlowScene(flowRegistry);
+		m_pNodeScene->setParent(this);
+		m_pNodeView = new QtNodes::FlowView(m_pNodeScene, ui->group_allNodes);
+		
+		ui->group_allNodes->layout()->addWidget(m_pNodeView);
+
+		connect(m_pNodeScene, &QtNodes::FlowScene::selectionChanged, this, &MainWindow::nodeSceneSelectionChanged);
+		connect(m_pNodeScene, &QtNodes::FlowScene::connectionCreated, this, &MainWindow::connectionCreated);
+		connect(m_pNodeScene, &QtNodes::FlowScene::connectionDeleted, this, &MainWindow::connectionDeleted);
+		connect(m_pNodeScene, &QtNodes::FlowScene::nodeCreated, this, &MainWindow::nodeCreated);
+		connect(m_pNodeScene, &QtNodes::FlowScene::nodeDeleted, this, &MainWindow::nodeDeleted);
 	}
 
 	MainWindow::~MainWindow()
@@ -100,6 +119,7 @@ namespace supra
 
 	void MainWindow::prepareForClose()
 	{
+		m_nodeSignalsDeactivated = true;
 		//remove the previews
 		if (m_preview)
 		{
@@ -132,24 +152,54 @@ namespace supra
 
 	void MainWindow::loadConfigFile(const QString & filename)
 	{
+		m_nodeSignalsDeactivated = true;
 		p_manager->readFromXml(filename.toStdString().c_str());
+		auto positions = computeNodePositions();
+		vec2f gridSpacing{ 250, 100 };
 
+		auto nodeTypes = p_manager->getNodeTypes();
 		for (string node : p_manager->getNodeIDs())
 		{
-			QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(node));
-			item->setData(Qt::UserRole, QVariant(QString::fromStdString(node)));
-			//ui->list_allNodes->addItem(QString::fromStdString(node));
-			ui->list_allNodes->addItem(item);
+			auto& sceneNode = m_pNodeScene->createNode(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(node, nodeTypes[node])));
+			auto position = static_cast<vec2f>(positions[node]) * gridSpacing;
+			m_pNodeScene->setNodePosition(sceneNode, QPointF(position.x, position.y));
+			m_NodeSceneNodeIDs[node] = sceneNode.id();
+
 			if (p_manager->getNode(node)->getNumOutputs() > 0)
 			{
 				ui->comboBoxPreviewNode->addItem(QString::fromStdString(node));
 			}
 		}
-		setMinMaxWidthAdaptive(ui->list_allNodes);
 
+		m_pNodeScene->iterateOverNodes([this](QtNodes::Node* node) {
+			this->m_NodeSceneNodes[node->id()] = node;
+		});
+		string prevNodeID = "";
+		if (m_preview)
+		{
+			prevNodeID = m_preview->getNodeID();
+		}
+
+		for (auto connection : p_manager->getNodeConnections())
+		{
+			string fromNodeID = get<0>(connection);
+			string toNodeID = get<2>(connection);
+			if (prevNodeID == "" || toNodeID != prevNodeID)
+			{
+				m_pNodeScene->createConnection(
+					*(m_NodeSceneNodes[m_NodeSceneNodeIDs[toNodeID]]),
+					static_cast<QtNodes::PortIndex>(get<3>(connection)),
+					*(m_NodeSceneNodes[m_NodeSceneNodeIDs[fromNodeID]]),
+					static_cast<QtNodes::PortIndex>(get<1>(connection))
+				);
+			}
+		}
+		
 		ui->pushButtonLoad->setDisabled(true);
 		ui->actionLoadConfig->setDisabled(true);
-		ui->pushButtonStart->setEnabled(true);
+		ui->pushButtonStart->setEnabled(true);		
+
+		m_nodeSignalsDeactivated = false;
 	}
 
 	void MainWindow::keyPressEvent(QKeyEvent * keyEvent)
@@ -158,30 +208,170 @@ namespace supra
 		QMainWindow::keyPressEvent(keyEvent);
 	}
 
-	void MainWindow::showParametersFromList()
+	void MainWindow::showParametersFromList(QString nodeID)
 	{
-		QListWidget* pSender = dynamic_cast<QListWidget*>(sender());
-		if (pSender)
+		if (m_pParametersWidget)
 		{
-			if (m_pParametersWidget)
-				delete m_pParametersWidget;
+			delete m_pParametersWidget;
+		}
 
-			auto item = pSender->item(pSender->currentRow());
-			QVariant data = item->data(Qt::UserRole);
-			if (data.type() == data.String)
+		ui->group_parameters->setTitle(QString("Parameters: ") + nodeID);
+
+		m_pParametersWidget = new parametersWidget(nodeID, ui->group_parameters);
+		ui->scrollArea_parameters->setWidget(m_pParametersWidget);
+		int widthBefore = ui->scrollArea_parameters->width();
+		ui->scrollArea_parameters->setMinimumWidth(0);
+		ui->scrollArea_parameters->resize(10, ui->scrollArea_parameters->height());
+		int scrollbarWidth = qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+		ui->scrollArea_parameters->setMinimumWidth(max(m_pParametersWidget->width() + scrollbarWidth, widthBefore));
+	}
+	void MainWindow::hideParameters()
+	{
+		if (m_pParametersWidget)
+		{
+			delete m_pParametersWidget;
+			m_pParametersWidget = nullptr;
+			ui->group_parameters->setTitle(QString("Parameters: Select Node"));
+		}
+	}
+
+	void MainWindow::nodeSceneSelectionChanged()
+	{
+		auto nodes = m_pNodeScene->selectedNodes();
+		if (nodes.size() >= 1)
+		{
+			showParametersFromList(nodes[0]->nodeDataModel()->caption());
+		}
+	}
+
+	void MainWindow::connectionCreated(QtNodes::Connection & connection)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
+			auto nodeTo = connection.getNode(QtNodes::PortType::In);
+			if (nodeFrom && nodeTo)
 			{
-				QString newID = data.toString();
-				ui->group_parameters->setTitle(QString("Parameters: ") + newID);
-
-				m_pParametersWidget = new parametersWidget(newID, ui->group_parameters);
-				ui->scrollArea_parameters->setWidget(m_pParametersWidget);
-				int widthBefore = ui->scrollArea_parameters->width();
-				ui->scrollArea_parameters->setMinimumWidth(0);
-				ui->scrollArea_parameters->resize(10, ui->scrollArea_parameters->height());
-				int scrollbarWidth = qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
-				ui->scrollArea_parameters->setMinimumWidth(max(m_pParametersWidget->width() + scrollbarWidth, widthBefore));
+				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
+				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
+				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
+				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
+				p_manager->connect(nodeFromID, portFrom, nodeToID, portTo);
 			}
 		}
+	}
+
+	void MainWindow::connectionDeleted(QtNodes::Connection & connection)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			auto nodeFrom = connection.getNode(QtNodes::PortType::Out);
+			auto nodeTo = connection.getNode(QtNodes::PortType::In);
+			if (nodeFrom && nodeTo)
+			{
+				string nodeFromID = nodeFrom->nodeDataModel()->caption().toStdString();
+				string nodeToID = nodeTo->nodeDataModel()->caption().toStdString();
+				size_t portFrom = connection.getPortIndex(QtNodes::PortType::Out);
+				size_t portTo = connection.getPortIndex(QtNodes::PortType::In);
+				p_manager->disconnect(nodeFromID, portFrom, nodeToID, portTo);
+			}
+		}
+	}
+
+	void MainWindow::nodeCreated(QtNodes::Node & node)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			string nodeID = node.nodeDataModel()->caption().toStdString();
+			if (p_manager->getNode(nodeID)->getNumOutputs() > 0)
+			{
+				ui->comboBoxPreviewNode->addItem(QString::fromStdString(nodeID));
+			}
+		}
+	}
+
+	void MainWindow::nodeDeleted(QtNodes::Node & node)
+	{
+		if (!m_nodeSignalsDeactivated)
+		{
+			QString nodeID = node.nodeDataModel()->caption();
+			int index = ui->comboBoxPreviewNode->findText(nodeID);
+			bool currentlyActive = ui->comboBoxPreviewNode->currentIndex() == index;
+			ui->comboBoxPreviewNode->removeItem(index);
+			if (currentlyActive)
+			{
+				ui->comboBoxPreviewNode->setCurrentIndex(0);
+			}
+			if (m_pParametersWidget && m_pParametersWidget->getNodeID() == nodeID)
+			{
+				hideParameters();
+			}
+		}
+	}
+
+	std::map<std::string, vec2i> MainWindow::computeNodePositions()
+	{
+		auto nodeIDs = p_manager->getNodeIDs();
+		auto connections = p_manager->getNodeConnections();
+
+		map <string, vector<string> > nodePredecessors;
+		map <string, int> nodeLevel;
+
+		for (auto node : nodeIDs)
+		{
+			nodeLevel[node] = -1;
+			nodePredecessors[node].resize(0);
+		}
+		for (auto connection : connections)
+		{
+			string nodeFrom = get<0>(connection);
+			string nodeTo = get<2>(connection);
+			nodePredecessors[nodeTo].push_back(nodeFrom);
+		}
+
+		for (auto nodePredecessor : nodePredecessors)
+		{
+			if (nodePredecessor.second.size() == 0)
+			{
+				nodeLevel[nodePredecessor.first] = 0;
+			}
+		}
+		for (size_t i = 0; i < nodeIDs.size(); i++)
+		{
+			for (auto& nodePredecessor : nodePredecessors)
+			{
+				if (nodePredecessor.second.size() != 0)
+				{
+					for (int pred = 0; pred < nodePredecessor.second.size(); pred++)
+					{
+						if (nodePredecessors[nodePredecessor.second[pred]].size() == 0)
+						{
+							nodeLevel[nodePredecessor.first] = max(nodeLevel[nodePredecessor.second[pred]] + 1, nodeLevel[nodePredecessor.first]);
+							nodePredecessor.second.erase(nodePredecessor.second.begin() + pred);
+							pred--;
+						}
+					}
+				}
+			}
+		}
+
+		int nodeLevels = -1;
+		for (auto node : nodeIDs)
+		{
+			nodeLevels = max(nodeLevels, nodeLevel[node]);
+		}
+		nodeLevels++;
+
+		vector<int> usedRowsPerLevel(nodeLevels, 0);
+		map<string, vec2i> positionMap;
+		for(auto node : nodeIDs)
+		{
+			int row = usedRowsPerLevel[nodeLevel[node]];
+			usedRowsPerLevel[nodeLevel[node]]++;
+			positionMap[node] = { nodeLevel[node], row };
+		}
+
+		return positionMap;
 	}
 
 	void MainWindow::setLogLevel()
@@ -326,26 +516,23 @@ namespace supra
 
 	void MainWindow::updateNodeTimings()
 	{
-		for (int itemIdx = 0; itemIdx < ui->list_allNodes->count(); itemIdx++)
-		{
-			auto item = ui->list_allNodes->item(itemIdx);
-			QVariant data = item->data(Qt::UserRole);
-			if (data.type() == data.String)
+		m_pNodeScene->iterateOverNodeData(
+			[this](QtNodes::NodeDataModel* nodeDataModel) {
+			NodeExplorerDataModel* specific = dynamic_cast<NodeExplorerDataModel*>(nodeDataModel);
+			if (specific)
 			{
-				QString nodeID = data.toString();
-
-				auto node = p_manager->getNode(nodeID.toStdString());
+				string nodeID = nodeDataModel->caption().toStdString();
+				auto node = p_manager->getNode(nodeID);
 
 				string timingInfo = node->getTimingInfo();
-				QString newText = nodeID;
+				string newText;
 				if (timingInfo != "")
 				{
-					newText += " (" + QString::fromStdString(timingInfo) + ")";
+					newText += "(" + timingInfo + ")";
 				}
-				item->setText(newText);
+				specific->setTimingText(newText);
 			}
-		}
-		setMinMaxWidthAdaptive(ui->list_allNodes, true);
+		});
 	}
 
 	void MainWindow::updateFreezeTimer()
@@ -412,16 +599,19 @@ namespace supra
 		}
 
 		string nodeID = text.toStdString();
-
-		string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
-		p_manager->addNodeConstruct<previewBuilderQT>(
-			previewNodeID, "Preview " + nodeID + stringify(0), ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
-		p_manager->connect(nodeID, 0, previewNodeID, 0);
-
-		previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
-		if (pPreview)
+		if (nodeID != "")
 		{
-			m_preview = pPreview;
+			string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
+			p_manager->addNodeConstruct<previewBuilderQT>(
+				previewNodeID, "Preview " + nodeID + stringify(0), "previewBuilderQT", 
+				ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
+			p_manager->connect(nodeID, 0, previewNodeID, 0);
+
+			previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
+			if (pPreview)
+			{
+				m_preview = pPreview;
+			}
 		}
 	}
 }

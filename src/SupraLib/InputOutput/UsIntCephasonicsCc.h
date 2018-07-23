@@ -71,6 +71,7 @@ namespace supra
 		double txDutyCycle;				// duty cycle (percent) used for pulse
 		double txFrequency;				// pulse frequency in MHz
 		double txPrf;					// pulse repetition frequency of image in Hz
+		size_t txRepeatFiring; 			// number of firings for specified pulse before moving to rx
 
 		
 
@@ -80,10 +81,10 @@ namespace supra
 	};
 
 
-	class UsIntCephasonicsCc : public AbstractInput<RecordObject>
+	class UsIntCephasonicsCc : public AbstractInput
 	{
 	public:
-		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID);
+		UsIntCephasonicsCc(tbb::flow::graph& graph, const std::string& nodeID, const size_t numPorts);
 		virtual ~UsIntCephasonicsCc();
 
 		//Functions to be overwritten
@@ -119,7 +120,7 @@ namespace supra
 		void setupRxCopying();
 		//void initBeams();
 		void createSequence();
-		std::pair<size_t, const cs::FrameDef*> createFrame(const std::vector<ScanlineTxParameters3D>* txBeamParams, const std::shared_ptr<USImageProperties> imageProps, const BeamEnsembleTxParameters& txParamsCs);
+		std::pair<size_t, const cs::FrameDef*> createFrame(const std::vector<ScanlineTxParameters3D>* txBeamParams, const std::shared_ptr<USImageProperties> imageProps, const BeamEnsembleTxParameters& txParamsCs, const bool disableRx);
 		const BeamEnsembleDef* createBeamEnsembleFromScanlineTxParameter(const BeamEnsembleTxParameters& txEnsembleParams, const vec2s numScanlines, const ScanlineTxParameters3D& txParameters);
 		void createFrame();
 		std::vector<uint8> createWeightedWaveform(const BeamEnsembleTxParameters& txParams, size_t numTotalEntries, float weight, uint8_t csTxOversample);
@@ -159,7 +160,7 @@ namespace supra
 		const cs::Probe*          m_pProbe;
 
 		// many Frame/SubFrames possible
-		std::map<size_t, size_t> m_pFrameMap; // mapping of linearized frameIDs in cusdk to seq and angle number
+		std::map<size_t, size_t> m_pFrameMap; // mapping of cusdk subframeIDS (key) to linearized frameIDs (value)
 		std::vector<const cs::FrameDef*> m_pFrameDefs;
 		std::vector<const cs::SubFrameDef*> m_pSubframeDefs;
 		std::vector<BeamEnsembleTxParameters> m_beamEnsembleTxParameters; // CS specific transmit parameters
