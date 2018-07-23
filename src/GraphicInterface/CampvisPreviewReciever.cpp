@@ -160,39 +160,45 @@ namespace supra
 		targetLayout->addWidget(m_canvas);
 	}
 
+	template <typename ElementType>
+	void CampvisPreviewReciever::previewReadyImageTemplated(const std::shared_ptr<USImage> image)
+	{
+		vec3s s;
+		s = image->getSize();
+
+		// create a new CAMPVis image of the right size
+		auto referenceImageCampvis = new campvis::ImageData(3, cgt::svec3(s.x, s.y, s.z), 1);
+		// create a campvis::GenericImageRepresentationItk to convert the ITK images to CAMPVis
+
+		//TODO maybe use persistent data here (look at campvis-oct branch)
+		auto imageCampvis = campvis::GenericImageRepresentationLocal<ElementType, 1>::create(referenceImageCampvis, image->getData<ElementType>()->getCopyHostRaw());
+		// add the image to the DataContainer
+		m_campvisDatacontainer->addData(m_name, referenceImageCampvis);
+	}
 
 	void CampvisPreviewReciever::previewReadyImage(const std::shared_ptr<RecordObject> image)
 	{
 		if (image && image->getType() == TypeUSImage)
 		{
-			auto inImage8Bit = std::dynamic_pointer_cast<USImage<uint8_t>>(image);
-			auto inImage16Bit = std::dynamic_pointer_cast<USImage<int16_t>>(image);
+			auto inImage = std::dynamic_pointer_cast<USImage>(image);
 
-			logging::log_error_if(!inImage8Bit && !inImage16Bit, "Error casting a record object to USImage, although the type was 'TypeUSImage'");
-			if (inImage8Bit || inImage16Bit)
+			logging::log_error_if(!inImage, "CampvisPreviewReciever: Error casting a record object to USImage, although the type was 'TypeUSImage'");
+			if (inImage)
 			{
-				vec3s s;
-				if (inImage8Bit)
+				switch (inImage->getDataType())
 				{
-					s = inImage8Bit->getSize();
-				}
-				else {
-					s = inImage16Bit->getSize();
-				}
-				// create a new CAMPVis image of the right size
-				auto referenceImageCampvis = new campvis::ImageData(3, cgt::svec3(s.x, s.y, s.z), 1);
-				// create a campvis::GenericImageRepresentationItk to convert the ITK images to CAMPVis
-				if (inImage8Bit)
-				{
-					//TODO maybe use persistent data here (look at campvis-oct branch)
-					auto image = campvis::GenericImageRepresentationLocal<uint8_t, 1>::create(referenceImageCampvis, inImage8Bit->getData()->getCopyHostRaw());
-					// add the image to the DataContainer
-					m_campvisDatacontainer->addData(m_name, referenceImageCampvis);
-				}
-				else {
-					auto image = campvis::GenericImageRepresentationLocal<int16_t, 1>::create(referenceImageCampvis, inImage16Bit->getData()->getCopyHostRaw());
-					// add the image to the DataContainer
-					m_campvisDatacontainer->addData(m_name, referenceImageCampvis);
+				case TypeUint8:
+					previewReadyImageTemplated<uint8_t>(inImage);
+					break;
+				case TypeInt16:
+					previewReadyImageTemplated<int16_t>(inImage);
+					break;
+				case TypeFloat:
+					previewReadyImageTemplated<float>(inImage);
+					break;
+				default:
+					logging::log_error("CampvisPreviewReciever: Image element type not supported");
+					break;
 				}
 
 				if (!m_pipeline->getEnabled())
