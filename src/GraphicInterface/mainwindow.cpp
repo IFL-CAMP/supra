@@ -11,7 +11,7 @@
 #include <parametersWidget.h>
 #include <previewBuilderQt.h>
 #include <previewWidget.h>
-#include <ui_PreviewWidget.h>
+#include <ui_previewWidget.h>
 #include "NodeExplorerDataModel.h"
 
 #include <utilities/utility.h>
