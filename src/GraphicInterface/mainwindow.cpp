@@ -10,6 +10,8 @@
 
 #include <parametersWidget.h>
 #include <previewBuilderQt.h>
+#include <previewWidget.h>
+#include <ui_previewWidget.h>
 #include "NodeExplorerDataModel.h"
 
 #include <utilities/utility.h>
@@ -45,7 +47,7 @@ namespace supra
 		m_sequenceStarted(false),
 		m_started(false),
 		m_pParametersWidget(nullptr),
-		m_preview(nullptr),
+		m_previews{},
 		m_previousCursorPosition(0, 0)
 	{
 		ui->setupUi(this);
@@ -72,8 +74,6 @@ namespace supra
 		connect(ui->actionPreviewSizeLarge, SIGNAL(triggered()), this, SLOT(setPreviewSize()));
 		connect(ui->actionPreviewSizeWambo, SIGNAL(triggered()), this, SLOT(setPreviewSize()));
 		connect(ui->actionPreviewLinearInterpolation, SIGNAL(triggered()), this, SLOT(setLinearInterpolation()));
-
-		connect(ui->comboBoxPreviewNode, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(previewSelected(const QString &)));
 
 		connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeTimings()));
 		connect(timerFreeze, SIGNAL(timeout()), this, SLOT(updateFreezeTimer()));
@@ -121,10 +121,13 @@ namespace supra
 	{
 		m_nodeSignalsDeactivated = true;
 		//remove the previews
-		if (m_preview)
+		std::vector<std::string> previewNodeIds(m_previews.size());
+		std::transform(m_previews.begin(), m_previews.end(), previewNodeIds.begin(),
+			[](std::pair < std::string, std::pair<previewWidget*, previewBuilderQT*> > keyVal)
+				->std::string {return keyVal.first; });
+		for (const auto& previewEntry : previewNodeIds)
 		{
-			m_preview->setParent(nullptr);
-			m_preview->removePreviews();
+			removePreview(previewEntry);
 		}
 	}
 
@@ -165,24 +168,24 @@ namespace supra
 			m_pNodeScene->setNodePosition(sceneNode, QPointF(position.x, position.y));
 			m_NodeSceneNodeIDs[node] = sceneNode.id();
 
-			if (p_manager->getNode(node)->getNumOutputs() > 0)
-			{
-				ui->comboBoxPreviewNode->addItem(QString::fromStdString(node));
-			}
+			auto dataModel = dynamic_cast<NodeExplorerDataModel*>(sceneNode.nodeDataModel());
+			assert(dataModel);
+			connect(dataModel->embeddedCheckbox(), SIGNAL(toggled(bool)), this, SLOT(previewCheckboxChanged(bool)));
 		}
 
 		m_pNodeScene->iterateOverNodes([this](QtNodes::Node* node) {
 			this->m_NodeSceneNodes[node->id()] = node;
 		});
-		string prevNodeID = "";
-		if (m_preview)
-		{
-			prevNodeID = m_preview->getNodeID();
-		}
 
 		for (auto connection : p_manager->getNodeConnections())
 		{
 			string fromNodeID = get<0>(connection);
+			string prevNodeID = "";
+			// Make sure to not add visual connections for the preview nodes
+			if (m_previews.find(fromNodeID) != m_previews.end())
+			{
+				prevNodeID = m_previews[fromNodeID].second->getNodeID();
+			}
 			string toNodeID = get<2>(connection);
 			if (prevNodeID == "" || toNodeID != prevNodeID)
 			{
@@ -283,10 +286,10 @@ namespace supra
 		if (!m_nodeSignalsDeactivated)
 		{
 			string nodeID = node.nodeDataModel()->caption().toStdString();
-			if (p_manager->getNode(nodeID)->getNumOutputs() > 0)
-			{
-				ui->comboBoxPreviewNode->addItem(QString::fromStdString(nodeID));
-			}
+
+			auto dataModel = dynamic_cast<NodeExplorerDataModel*>(node.nodeDataModel());
+			assert(dataModel);
+			connect(dataModel->embeddedCheckbox(), SIGNAL(toggled(bool)), this, SLOT(previewCheckboxChanged(bool)));
 		}
 	}
 
@@ -295,18 +298,55 @@ namespace supra
 		if (!m_nodeSignalsDeactivated)
 		{
 			QString nodeID = node.nodeDataModel()->caption();
-			int index = ui->comboBoxPreviewNode->findText(nodeID);
-			bool currentlyActive = ui->comboBoxPreviewNode->currentIndex() == index;
-			ui->comboBoxPreviewNode->removeItem(index);
-			if (currentlyActive)
-			{
-				ui->comboBoxPreviewNode->setCurrentIndex(0);
-			}
+			removePreview(nodeID.toStdString());
 			if (m_pParametersWidget && m_pParametersWidget->getNodeID() == nodeID)
 			{
 				hideParameters();
 			}
 		}
+	}
+
+	void MainWindow::addPreview(const std::string & nodeID)
+	{
+		if (nodeID != "" && m_previews.find(nodeID) == m_previews.end())
+		{
+			auto previewWidgetToAdd = new ::previewWidget(ui->group_previews);
+			ui->previewWidgets_layout->addWidget(previewWidgetToAdd);
+
+			previewWidgetToAdd->ui->groupBoxPreviews->setTitle(QString::fromStdString(nodeID));
+
+			string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
+			p_manager->addNodeConstruct<previewBuilderQT>(
+				previewNodeID, "Preview " + nodeID + stringify(0), "previewBuilderQT",
+				previewWidgetToAdd->ui->groupBoxPreviews, previewWidgetToAdd->ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
+			p_manager->connect(nodeID, 0, previewNodeID, 0);
+
+			previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
+			
+			m_previews[nodeID] = std::make_pair(previewWidgetToAdd, pPreview);
+		}
+	}
+
+	void MainWindow::removePreview(const std::string & nodeID)
+	{
+		if (m_previews.find(nodeID) != m_previews.end())
+		{
+			auto entry = m_previews[nodeID];
+			string existingNodeID = entry.second->getNodeID();
+			string existingSrcID = existingNodeID.substr(5, existingNodeID.length() - 5 - 2);
+
+			p_manager->disconnect(existingSrcID, 0, existingNodeID, 0);
+			p_manager->removeNode(existingNodeID);
+
+			entry.second->removePreviews();
+			entry.second->setParent(nullptr);
+
+			entry.first->setParent(nullptr);
+
+			m_previews.erase(nodeID);
+		}
+
+	
 	}
 
 	std::map<std::string, vec2i> MainWindow::computeNodePositions()
@@ -426,9 +466,9 @@ namespace supra
 			}
 
 			//set the new preview size
-			if (m_preview)
+			for (const auto& previewEntry : m_previews)
 			{
-				m_preview->setPreviewSize(m_previewSize);
+				previewEntry.second.second->setPreviewSize(m_previewSize);
 			}
 		}
 	}
@@ -437,9 +477,9 @@ namespace supra
 	{
 		bool linearInterpolation = ui->actionPreviewLinearInterpolation->isChecked();
 
-		if (m_preview)
+		for (const auto& previewEntry : m_previews)
 		{
-			m_preview->setLinearInterpolation(linearInterpolation);
+			previewEntry.second.second->setLinearInterpolation(linearInterpolation);
 		}
 	}
 
@@ -582,36 +622,25 @@ namespace supra
 		updateFreezeTimer();
 	}
 
-	void MainWindow::previewSelected(const QString & text)
+	void MainWindow::previewCheckboxChanged(bool state)
 	{
-		if (m_preview)
+		QObject* sender = QObject::sender();
+		QCheckBox* senderCheckBox = qobject_cast<QCheckBox*>(sender);
+		if (senderCheckBox)
 		{
-			string existingNodeID = m_preview->getNodeID();
-			string existingSrcID = existingNodeID.substr(5, existingNodeID.length() - 5 - 2);
-
-			p_manager->disconnect(existingSrcID, 0, existingNodeID, 0);
-			p_manager->removeNode(existingNodeID);
-
-			m_preview->removePreviews();
-			m_preview->setParent(nullptr);
-
-			m_preview = nullptr;
-		}
-
-		string nodeID = text.toStdString();
-		if (nodeID != "")
-		{
-			string previewNodeID = "PREV_" + nodeID + "_" + stringify(0);
-			p_manager->addNodeConstruct<previewBuilderQT>(
-				previewNodeID, "Preview " + nodeID + stringify(0), "previewBuilderQT", 
-				ui->group_previews, ui->verticalLayoutPreviews, m_previewSize, m_previewLinearInterpolation);
-			p_manager->connect(nodeID, 0, previewNodeID, 0);
-
-			previewBuilderQT* pPreview = dynamic_cast<previewBuilderQT*>(p_manager->getNode(previewNodeID).get());
-			if (pPreview)
+			if (senderCheckBox->property("nodeID").isValid())
 			{
-				m_preview = pPreview;
+				std::string nodeID = senderCheckBox->property("nodeID").toString().toStdString();
+				if (state)
+				{
+					addPreview(nodeID);
+				}
+				else
+				{
+					removePreview(nodeID);
+				}
 			}
+			
 		}
 	}
 }

@@ -13,14 +13,17 @@
 
 #include <SupraManager.h>
 
+#include <QVariant>
+
 namespace supra
 {
 	NodeExplorerDataModel::NodeExplorerDataModel(std::string nodeID, std::string nodeType)
 		: m_nodeID(nodeID)
 		, m_nodeType(nodeType)
-		, m_label(new QLabel())
+		, m_labeledCheckBox(new QCheckBox())
 	{
 		setTimingText("");
+		m_labeledCheckBox->setProperty("nodeID", QVariant(QString::fromStdString(nodeID)));
 	}
 	QString NodeExplorerDataModel::caption() const
 	{
@@ -70,10 +73,16 @@ namespace supra
 	}
 	QWidget * NodeExplorerDataModel::embeddedWidget()
 	{
-		return m_label;
+		return m_labeledCheckBox;
 	}
+
+	QCheckBox * NodeExplorerDataModel::embeddedCheckbox()
+	{
+		return m_labeledCheckBox;
+	}
+
 	void NodeExplorerDataModel::setTimingText(const std::string& text)
 	{
-		m_label->setText(QString::fromStdString(m_nodeType + "\n" + text));
+		m_labeledCheckBox->setText(QString::fromStdString(m_nodeType + "\n" + text));
 	}
 }

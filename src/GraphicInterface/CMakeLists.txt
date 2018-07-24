@@ -67,6 +67,7 @@ set ( SOURCES
  mainwindow.cpp
  parameterWidget.cpp
  parametersWidget.cpp
+ previewWidget.cpp
  previewBuilderQt.cpp
  QImagePreviewReciever.cpp
  QTrackerPreviewReciever.cpp
@@ -86,11 +87,13 @@ set ( HEADERS
 set ( MOC_HEADERS
  mainwindow.h
  parametersWidget.h
+ previewWidget.h
 )
 
 set ( UIS
  mainwindow.ui
  parametersWidget.ui
+ previewWidget.ui
 )
 
 # Tell CMake to run moc when necessary:
