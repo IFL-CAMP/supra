@@ -17,6 +17,7 @@
 
 #include <vec.h>
 
+class previewWidget;
 namespace Ui {
 	class MainWindow;
 }
@@ -64,6 +65,8 @@ namespace supra
 		void connectionDeleted(QtNodes::Connection& connection);
 		void nodeCreated(QtNodes::Node& node);
 		void nodeDeleted(QtNodes::Node& node);
+		void addPreview(const std::string& nodeID);
+		void removePreview(const std::string& nodeID);
 
 		std::map<std::string, vec2i> computeNodePositions();
 
@@ -77,7 +80,8 @@ namespace supra
 		bool m_sequenceStarted;
 		QSize m_previewSize;
 		bool m_previewLinearInterpolation;
-		previewBuilderQT* m_preview;
+		std::map<std::string, std::pair<previewWidget*, previewBuilderQT*> >
+			m_previews;
 		parametersWidget* m_pParametersWidget;
 		QtNodes::FlowScene* m_pNodeScene;
 		QtNodes::FlowView* m_pNodeView;
@@ -116,9 +120,8 @@ namespace supra
 		void toogleFreeze();
 		/// Slot to reset the freeze timer
 		void resetFreezeTimer();
-		/// Slot that exchanges the current preview widget (if any) 
-		///  with a new one for the given node ID
-		void previewSelected(const QString & text);
+		/// Slot that adds or removes preview widgets on selection
+		void previewCheckboxChanged(bool state);
 
 	signals:
 		void externClose();
