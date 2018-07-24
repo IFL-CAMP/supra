@@ -13,7 +13,7 @@
 #define __NODEEXPLORERDATAMODEL_H__
 
 #include <nodes/NodeDataModel>
-#include <QCheckbox>
+#include <QCheckBox>
 
 namespace supra
 {
