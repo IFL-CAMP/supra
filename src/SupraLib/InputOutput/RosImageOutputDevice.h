@@ -18,12 +18,14 @@
 
 namespace supra
 {
+	//forward declarations
+	class USImage;
 	class RosWrapper;
 
 	class RosImageOutputDevice : public AbstractOutput
 	{
 	public:
-		RosImageOutputDevice(tbb::flow::graph& graph, const std::string& nodeID);
+		RosImageOutputDevice(tbb::flow::graph& graph, const std::string& nodeID, bool queueing);
 		~RosImageOutputDevice();
 
 		//Functions to be overwritten
@@ -42,6 +44,8 @@ namespace supra
 	private:
 		void addData(std::shared_ptr<const RecordObject> data);
 		void addSyncRecord(std::shared_ptr<const RecordObject> _syncMessage);
+		template <typename ElementType>
+		void addImageTemplated(std::shared_ptr<const USImage> imageData);
 		void addImage(std::shared_ptr<const RecordObject> imageData);
 
 		bool m_isReady;
