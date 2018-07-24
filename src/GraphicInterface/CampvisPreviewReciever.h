@@ -32,6 +32,9 @@ namespace campvis{
 
 namespace supra
 {
+	//forward declarations
+	class USImage;
+
 	/**
 	 * Widget that employs CAMPvis to visualize volumes
 	 *
@@ -54,6 +57,9 @@ namespace supra
 		~CampvisPreviewReciever();
 
 	private:
+		template <typename ElementType>
+		void previewReadyImageTemplated(const std::shared_ptr<USImage> image);
+
 		std::string m_name;
 		std::unique_ptr<campvis::VolumeExplorerPipeline> m_pipeline;
 		std::unique_ptr<campvis::DataContainer> m_campvisDatacontainer;

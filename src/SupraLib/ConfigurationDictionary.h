@@ -222,16 +222,21 @@ namespace supra
 					{
 						logging::log_parameter("Parameter: ", nodeID, ".", key, " = ", pValueTyped->get());
 					}
+					else {
+						logging::log_log("Rejected out-of-range parameter: ", nodeID, ".", key, " = ", pValueTyped->get());
+					}
 					return entryGood;
 				}
 				else
 				{
 					//Types do not fit
+					logging::log_log("Rejected parameter of wrong type for: ", nodeID, ".", key);
 					return false;
 				}
 			}
 			else {
 				//The key is not even present
+				logging::log_log("Rejected unknown parameter: ", nodeID, ".", key);
 				return false;
 			}
 		}
