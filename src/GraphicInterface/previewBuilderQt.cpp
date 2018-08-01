@@ -12,6 +12,7 @@
 #include "previewBuilderQt.h"
 #include "QImagePreviewReciever.h"
 #include "QTrackerPreviewReciever.h"
+#include "Beamformer/USRawData.h"
 #ifdef HAVE_CAMPVIS
 #include "CampvisPreviewReciever.h"
 #endif
@@ -195,6 +196,89 @@ namespace supra
 
 						emit previewReadyImage(qtimage);
 					}
+				}
+			}
+			else if (inMessage->getType() == TypeUSRawData)
+			{
+				auto inRawData = std::dynamic_pointer_cast<USRawData>(inMessage);
+				logging::log_error_if(!inRawData, "Error casting a record object to USRawData, although the type was 'TypeUSRawData'");
+				if (inRawData)
+				{
+					shared_ptr<QImage> qtimage;
+					tuple<double, double, bool> worldSize;
+					m_layerToShow = m_layerToShow % inRawData->getNumScanlines();
+
+					auto numChannels = inRawData->getNumReceivedChannels();
+					auto numSamples = inRawData->getNumSamples();
+
+					qtimage = std::make_shared<QImage>(
+						static_cast<int>(numChannels),
+						static_cast<int>(numSamples),
+						QImage::Format_Grayscale8);
+
+					if (inRawData->getDataType() == TypeUint8)
+					{
+						auto inImageData = inRawData->getData<uint8_t>();
+						if (!inImageData->isHost())
+						{
+							inImageData = make_shared<Container<uint8_t> >(LocationHost, *inImageData);
+						}
+						for (size_t row = 0; row < numSamples; row++)
+						{
+							uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+							for (size_t col = 0; col < numChannels; col++)
+							{
+								auto val = inImageData->get()[row + col*numSamples + m_layerToShow * numChannels*numSamples];
+								destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(val)), 255.0));
+							}
+						}
+					}
+					else if (inRawData->getDataType() == TypeInt16)
+					{
+						auto inImageData = inRawData->getData<int16_t>();
+						if (!inImageData->isHost())
+						{
+							inImageData = make_shared<Container<int16_t> >(LocationHost, *inImageData);
+						}
+						for (size_t row = 0; row < numSamples; row++)
+						{
+							uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+							for (size_t col = 0; col < numChannels; col++)
+							{
+								auto val = inImageData->get()[row + col*numSamples + m_layerToShow * numChannels*numSamples];
+								destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(val)), 255.0));
+							}
+						}
+					}
+					else if (inRawData->getDataType() == TypeFloat)
+					{
+						auto inImageData = inRawData->getData<float>();
+						if (!inImageData->isHost())
+						{
+							inImageData = make_shared<Container<float> >(LocationHost, *inImageData);
+						}
+						for (size_t row = 0; row < numSamples; row++)
+						{
+							uchar* destRow = qtimage->scanLine(static_cast<int>(row));
+							for (size_t col = 0; col < numChannels; col++)
+							{
+								auto val = inImageData->get()[row + col*numSamples + m_layerToShow * numChannels*numSamples];
+								destRow[col] = static_cast<uint8_t>(min(static_cast<double>(abs(val)), 255.0));
+							}
+						}
+					}
+					m_layerToShow++;
+
+					int imageWidth = static_cast<int>(m_imageMaxSize.width()/384.0*numChannels);
+					int imageHeight = m_imageMaxSize.height();
+
+					*qtimage = qtimage->scaled(
+						imageWidth,
+						imageHeight,
+						Qt::IgnoreAspectRatio,
+						(m_linearInterpolation ? Qt::SmoothTransformation : Qt::FastTransformation));
+
+					emit previewReadyImage(qtimage);
 				}
 			}
 			else if (inMessage->getType() == TypeTrackerDataSet)
