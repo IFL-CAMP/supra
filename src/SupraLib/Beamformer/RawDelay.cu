@@ -46,21 +46,21 @@ namespace supra
 	{
 	}
 
-	void RawDelay::convertToDtSpace(double dt, size_t numTransducerElements) const
+	void RawDelay::convertToDtSpace(double dt, double speedOfSoundMMperS, size_t numTransducerElements) const
 	{
-		if (m_lastSeenDt != dt)
+		if (m_lastSeenDt != dt || m_speedOfSoundMMperS != speedOfSoundMMperS)
 		{
-			double factor = 1;
-			double factorTime = 1;
-			if (m_lastSeenDt == 0)
+			double oldFactor = 1;
+			double oldFactorTime = 1;
+			if (m_lastSeenDt != 0 && m_speedOfSoundMMperS != 0)
 			{
-				factor = 1 / (m_speedOfSoundMMperS * dt);
-				factorTime = 1 / dt;
+				oldFactor = 1 / (m_speedOfSoundMMperS * m_lastSeenDt);
+				oldFactorTime = 1 / m_lastSeenDt;
 			}
-			else {
-				factor = (m_lastSeenDt / dt);
-				factorTime = factor;
-			}
+
+			double factor = 1/oldFactor / (speedOfSoundMMperS * dt);
+			double factorTime = 1/oldFactorTime / dt;
+
 			m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
 			for (size_t i = 0; i < m_numRxScanlines; i++)
 			{
@@ -93,6 +93,7 @@ namespace supra
 			m_pRxElementYs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
 			
 			m_lastSeenDt = dt;
+			m_speedOfSoundMMperS = speedOfSoundMMperS;
 		}
 	}
 
@@ -532,6 +533,7 @@ namespace supra
 	shared_ptr<USRawData> RawDelay::performDelay(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter) const
 	{
@@ -553,7 +555,7 @@ namespace supra
 			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
 		}
 		
-		convertToDtSpace(dt, rawData->getNumElements());
+		convertToDtSpace(dt, speedOfSoundMMperS, rawData->getNumElements());
 		if (m_is3D)
 		{
 			rxDelayDTspaceCuda3D<m_windowFunctionNumEntries, ChannelDataType, OutputType, LocationType>(
@@ -628,24 +630,28 @@ namespace supra
 	shared_ptr<USRawData> RawDelay::performDelay<int16_t, int16_t>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<int16_t, float>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<float, int16_t>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<float, float>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 }

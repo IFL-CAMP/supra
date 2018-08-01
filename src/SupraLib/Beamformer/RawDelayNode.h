@@ -79,6 +79,7 @@ namespace supra
 		WindowType m_windowType;
 		DataType m_outputType;
 		double m_windowParameter;
+		double m_speedOfSoundMMperS;
 	};
 }
 
