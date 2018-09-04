@@ -37,7 +37,6 @@ namespace supra
 				printf("readRawData OOB: %d, %d, %d, %d, %d\n", sampleIdx, channelIdx, scanlineIdx,
 					numSamples, numChannels);
 			}*/
-
 			return rawData[sampleIdx + channelIdx*numSamples + scanlineIdx*numChannels*numSamples];
 		}
 
@@ -50,12 +49,6 @@ namespace supra
 			uint32_t firstValid = 0;
 			for (uint32_t channelIdx = 0; channelIdx < numChannels; channelIdx++)
 			{
-				if (sampleIdx >= numSamples || channelIdx >= numChannels)
-				{
-					printf("findFirstValidElement OOB: %d, %d, %d, %d, %d\n", sampleIdx, channelIdx, scanlineIdx,
-						numSamples, numChannels);
-				}
-
 				if (readRawData(rawData, sampleIdx, channelIdx, scanlineIdx, numSamples, numChannels) != 0)
 				{
 					firstValid = channelIdx;
@@ -74,12 +67,6 @@ namespace supra
 			uint32_t lastValid = 0;
 			for (int32_t channelIdx = numChannels - 1; channelIdx >= 0; channelIdx--)
 			{
-				if (sampleIdx >= numSamples || channelIdx >= numChannels)
-				{
-					printf("findLastValidElement OOB: %d, %d, %d, %d, %d\n", sampleIdx, channelIdx, scanlineIdx,
-						numSamples, numChannels);
-				}
-
 				if (readRawData(rawData, sampleIdx, channelIdx, scanlineIdx, numSamples, numChannels) != 0)
 				{
 					lastValid = channelIdx;
@@ -153,18 +140,6 @@ namespace supra
 						{
 							int colIdx = matrixIdx % subArraySizeLocal;
 							int rowIdx = matrixIdx / subArraySizeLocal;
-
-
-							if (sampleIdx >= numSamples || offset + colIdx >= numChannels)
-							{
-								printf("computeRmatrices OOB 1: %d, %d, %d, %d, %d\n", sampleIdx, offset + colIdx, scanlineIdx,
-									numSamples, numChannels);
-							}
-							if (sampleIdx >= numSamples || offset + rowIdx >= numChannels)
-							{
-								printf("computeRmatrices OOB 2: %d, %d, %d, %d, %d\n", sampleIdx, offset + rowIdx, scanlineIdx,
-									numSamples, numChannels);
-							}
 
 							float xCol = readRawData(rawData, sampleIdx, offset + colIdx, scanlineIdx, numSamples, numChannels);
 							float xRow = readRawData(rawData, sampleIdx, offset + rowIdx, scanlineIdx, numSamples, numChannels);
@@ -461,7 +436,6 @@ namespace supra
 					weightScaling += RinvAloc[vectorIdx] * Aloc[vectorIdx];
 				}
 				weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * numSubArraysActive);
-				//weightScaling = 1.0f / warpAllReduceSum(weightScaling);
 
 				// compute one sample at a time, according to spatial smoothing
 				float beamformedSample = 0.0f;
@@ -531,8 +505,6 @@ namespace supra
 				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
 			shared_ptr<Container<float> > Wvectors =
 				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 5.0f));
-			shared_ptr<Container<float> > AvectorsOrg =
-				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
 			shared_ptr<Container<uint8_t> > subArrayMasks =
 				std::make_shared<Container<uint8_t> >(ContainerLocation::LocationGpu, stream, numSubArrays*sampleBlockSize);
 			shared_ptr<Container<uint32_t> > subArraySizes = 
@@ -545,17 +517,6 @@ namespace supra
 			std::vector<int> cublasInfoArrayHost(sampleBlockSize);
 			shared_ptr<Container<int> > cublasInfoArrayDevice = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, sampleBlockSize);
 
-			int numelR = subArraySize*subArraySize;
-			std::vector<float*> Rpointers(sampleBlockSize);
-			std::vector<float*> Apointers(sampleBlockSize);
-			for (uint32_t sampleIdx = 0; sampleIdx < sampleBlockSize; sampleIdx++)
-			{
-				Rpointers[sampleIdx] = RmatricesTempSmooth->get() + sampleIdx* numelR;
-				Apointers[sampleIdx] = Avectors->get() + sampleIdx* subArraySize;
-			}
-			shared_ptr<Container<float*> > RpointersDevice = std::make_shared<Container<float*> >(ContainerLocation::LocationGpu, stream, Rpointers);
-			shared_ptr<Container<float*> > ApointersDevice = std::make_shared<Container<float*> >(ContainerLocation::LocationGpu, stream, Apointers);
-
 			for (uint32_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 			{
 				for (uint32_t sampleIdx = 0; sampleIdx < numSamples; sampleIdx += sampleBlockSize)
@@ -563,18 +524,15 @@ namespace supra
 					uint32_t numSamplesBatch = min(sampleBlockSize, numSamples - sampleIdx);
 
 					cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
-					cudaSafeCall(cudaMemcpyAsync(Avectors->get(), AvectorsOrg->get(), subArraySize*sampleBlockSize * sizeof(float), cudaMemcpyDefault, stream));
 					cudaSafeCall(cudaMemsetAsync(Wvectors->get(), 0, subArraySize*sampleBlockSize * sizeof(float), stream));
 					cudaSafeCall(cudaMemsetAsync(subArrayMasks->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint8_t), stream));
 					cudaSafeCall(cudaMemsetAsync(subArraySizes->get(), 0, sampleBlockSize * sizeof(uint32_t), stream));
 					cudaSafeCall(cudaMemsetAsync(subArrayOffsets->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint32_t), stream));
 
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
 					dim3 blockSize(32, 1);
 					dim3 gridSize(numSamplesBatch, 1);
 
+					// determine how large the subarrays will be depending on the aperture and which are active
 					dim3 gridSizeMasks((numSamplesBatch + blockSize.x - 1) / blockSize.x, 1);
 					computeSubArrayMasks << <gridSizeMasks, blockSize, 0, stream >> > (
 						gRawData->get(),
@@ -586,14 +544,9 @@ namespace supra
 						subArrayMasks->get(),
 						subArraySizes->get(),
 						subArrayOffsets->get());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-
-					auto subArraySizesHost = make_shared<Container<uint32_t> >(ContainerLocation::LocationHost, *subArraySizes);
-					auto subArrayOffsetsHost = make_shared<Container<uint32_t> >(ContainerLocation::LocationHost, *subArrayOffsets);
-					auto subArrayMasksHost = make_shared<Container<uint8_t> >(ContainerLocation::LocationHost, *subArrayMasks);
-
+					cudaSafeCall(cudaPeekAtLastError());
+					
+					// Compute the covariance matrices
 					computeRmatrices << <gridSize, blockSize, 0, stream >> > (
 						gRawData->get(),
 						numSamples,
@@ -607,12 +560,8 @@ namespace supra
 						Rmatrices->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					//TEST
-					//auto RmatHost1 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-
+					
+					// Smooth the covariance matrices
 					computeTemporalSmoothRmatrices << <gridSize, blockSize, 0, stream >> > (
 						Rmatrices->get(),
 						numSamplesBatch,
@@ -623,26 +572,16 @@ namespace supra
 						RmatricesTempSmooth->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					//TEST
-					//auto RmatHost2 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-
+					
+					// Improve condition of matrices
 					addDiagonalLoading << <gridSize, dim3(32, 1), 0, stream >> > (
 						RmatricesTempSmooth->get(),
 						numSamplesBatch, subArraySize,
 						subArraySizes->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					//TEST
-					auto RmatHost3 = make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
-
-					// solve with PCG
-					//Hier: CUDA Error(in "D:/git/supra/src/SupraLib/Beamformer/RxBeamformerMVpcg.cu", Line: 600, std::shared_ptr<supra::USImage> supra::RxBeamformerMVpcg::performRxBeamforming<ChannelDataType, ImageDataType>(std::shared_ptr<const supra::USRawData>, unsigned int, unsigned int, cublasContext *)) : 73 - an illegal instruction was encountered
+					
+					// solve for the beamforming weights with PCG
 					size_t sharedMemorySize = (5 * subArraySize + 1) * sizeof(float);
 					solveBlockwisePCGJacobi << <gridSize, blockSize, sharedMemorySize, stream >> >(
 						RmatricesTempSmooth->get(),
@@ -655,16 +594,8 @@ namespace supra
 						Wvectors->get()
 					);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-					// TODO remove AvectorsOrg, as Avectors should semantically not be changed anymore
 					
-					auto AvectorsHost = make_shared<Container<float> >(ContainerLocation::LocationHost, *Avectors);
-					auto WvectorsHost = make_shared<Container<float> >(ContainerLocation::LocationHost, *Wvectors);
-
-
-
-					// calculate beamforming weights from that and perform beamforming
+					// calculate beamforming weights from the solutions and perform beamforming
 					applyWeights << <gridSize, dim3(32, 1), 0, stream >> > (
 						Wvectors->get(),
 						Avectors->get(),
@@ -681,8 +612,6 @@ namespace supra
 						pData->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
 				}
 			}
 
