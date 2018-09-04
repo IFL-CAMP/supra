@@ -272,11 +272,15 @@ IF(SUPRA_BEAMFORMER)
 	IF(SUPRA_CUDA_CUBLAS)
 		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
 			Beamformer/BeamformingMVNode.h
-			Beamformer/RxBeamformerMV.h)
+			Beamformer/BeamformingMVpcgNode.h
+			Beamformer/RxBeamformerMV.h
+			Beamformer/RxBeamformerMVpcg.h)
 		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
-			Beamformer/BeamformingMVNode.cpp)
+			Beamformer/BeamformingMVNode.cpp
+			Beamformer/BeamformingMVpcgNode.cpp)
 		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
-			Beamformer/RxBeamformerMV.cu)
+			Beamformer/RxBeamformerMV.cu
+			Beamformer/RxBeamformerMVpcg.cu)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 			HAVE_BEAMFORMER_MINIMUM_VARIANCE)
 	ELSE()

@@ -26,6 +26,7 @@
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "Beamformer/BeamformingNode.h"
 #include "Beamformer/BeamformingMVNode.h"
+#include "Beamformer/BeamformingMVpcgNode.h"
 #include "Beamformer/IQDemodulatorNode.h"
 #include "Beamformer/HilbertEnvelopeNode.h"
 #include "Beamformer/LogCompressorNode.h"
@@ -196,6 +197,7 @@ namespace supra
 #endif
 #ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
 		{ "BeamformingMVNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BeamformingMVNode>(g, nodeID, queueing); } },
+		{ "BeamformingMVpcgNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BeamformingMVpcgNode>(g, nodeID, queueing); } },
 #endif
 	};
 }

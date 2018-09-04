@@ -311,7 +311,7 @@ namespace supra
 				cudaSafeCall(cudaDeviceSynchronize());
 
 				//TEST
-				auto RmatHost1 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
+				//auto RmatHost1 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
 
 				computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>> (
 					Rmatrices->get(),
@@ -326,7 +326,7 @@ namespace supra
 				cudaSafeCall(cudaDeviceSynchronize());
 
 				//TEST
-				auto RmatHost2 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
+				//auto RmatHost2 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
 
 				addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>> (
 					RmatricesTempSmooth->get(),
@@ -337,7 +337,7 @@ namespace supra
 				cudaSafeCall(cudaDeviceSynchronize());
 
 				//TEST
-				auto RmatHost3 = make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
+				//auto RmatHost3 = make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
 
 				cublasSafeCall(cublasSgetrfBatched(
 					cublasH,
