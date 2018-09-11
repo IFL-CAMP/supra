@@ -44,23 +44,26 @@ namespace supra
 		std::vector<std::string> getInputDeviceIDs();
 		std::vector<std::string> getOutputDeviceIDs();
 		std::vector<std::string> getNodeIDs();
+		std::map<std::string, std::string> getNodeTypes();
 		std::shared_ptr<AbstractNode> getNode(std::string nodeID);
-		std::shared_ptr<AbstractInput<RecordObject> > getInputDevice(std::string nodeID);
+		std::shared_ptr<AbstractInput> getInputDevice(std::string nodeID);
 		std::shared_ptr<AbstractOutput> getOutputDevice(std::string nodeID);
 		bool nodeExists(std::string nodeID);
+		std::vector<std::tuple<std::string, size_t, std::string, size_t> > getNodeConnections();
 		std::map<std::string, std::vector<size_t> > getImageOutputPorts();
 		std::map<std::string, std::vector<size_t> > getTrackingOutputPorts();
 
 		//Node modifications
-		bool addNode(std::string nodeID, std::shared_ptr<AbstractNode> node);
+		bool addNode(std::string nodeID, std::shared_ptr<AbstractNode> node, std::string nodeType);
+		std::string addNode(std::string nodeType, bool queueing = false);
 
 		template <class nodeToConstruct, typename... constructorArgTypes>
-		bool addNodeConstruct(std::string nodeID, constructorArgTypes... constructorArgs)
+		bool addNodeConstruct(std::string nodeID, std::string nodeType, constructorArgTypes... constructorArgs)
 		{
 			std::shared_ptr<AbstractNode> newNode = std::shared_ptr<AbstractNode>(
 				new nodeToConstruct(*m_graph, nodeID, constructorArgs...));
 
-			return addNode(nodeID, newNode);
+			return addNode(nodeID, newNode, nodeType);
 		}
 
 		bool removeNode(std::string nodeID);
@@ -93,11 +96,14 @@ namespace supra
 	private:
 		SupraManager();
 		void freezeThread();
+		std::string findUnusedID(std::string prefix);
 
 		std::shared_ptr<tbb::flow::graph> m_graph;
-		std::map<std::string, std::shared_ptr<AbstractInput<RecordObject> > > m_inputDevices;
+		std::map<std::string, std::shared_ptr<AbstractInput> > m_inputDevices;
 		std::map<std::string, std::shared_ptr<AbstractOutput> > m_outputDevices;
 		std::map<std::string, std::shared_ptr<AbstractNode> > m_nodes;
+		std::map<std::string, std::string > m_nodeTypes;
+		std::map<std::tuple<std::string, size_t, std::string, size_t>, bool> m_nodeConnections;
 		std::vector<std::shared_ptr<AbstractNode> > m_removedNodes;
 
 		std::unique_ptr<std::thread> m_freezeThread;

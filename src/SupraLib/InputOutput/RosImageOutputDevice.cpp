@@ -25,8 +25,8 @@ namespace supra
 	using namespace std;
 	using namespace logging;
 
-	RosImageOutputDevice::RosImageOutputDevice(tbb::flow::graph& graph, const std::string& nodeID)
-		: AbstractOutput(graph, nodeID)
+	RosImageOutputDevice::RosImageOutputDevice(tbb::flow::graph& graph, const std::string& nodeID, bool queueing)
+		: AbstractOutput(graph, nodeID, queueing)
 		, m_publisherNoImage(0)
 	{
 		m_valueRangeDictionary.set<string>("masterHostname", "localhost", "ROS Master");
@@ -111,10 +111,11 @@ namespace supra
 		}
 	}
 
-	void RosImageOutputDevice::addImage(shared_ptr<const RecordObject> _imageData)
+	template <typename ElementType>
+	void RosImageOutputDevice::addImageTemplated(shared_ptr<const USImage> _imageData)
 	{
 		//TODO check for other element types
-		auto imageData = dynamic_pointer_cast<const USImage<uint8_t>>(_imageData);
+		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
 
 		if (imageData)
 		{
@@ -126,13 +127,30 @@ namespace supra
 				vec3s imageSize = imageData->getSize();
 				supra_msgs::UInt8Image msg;
 				msg.header.stamp.fromSec(imageData->getSyncTimestamp());
-				msg.volume.resize(imageData->getData()->size());
-				imageData->getData()->copyTo(&(msg.volume[0]), msg.volume.size());
+				msg.volume.resize(imageData->getData<ElementType>()->size());
+				imageData->getData<ElementType>()->copyTo(&(msg.volume[0]), msg.volume.size());
 				msg.width = imageSize.x;
 				msg.height = imageSize.y;
 				msg.depth = imageSize.z;
 
 				m_rosWrapper->publish(msg, m_publisherNoImage);
+			}
+		}
+	}
+
+	void RosImageOutputDevice::addImage(shared_ptr<const RecordObject> _imageData)
+	{
+		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
+		if (imageData)
+		{
+			switch (imageData->getDataType())
+			{
+			case TypeUint8:
+				addImageTemplated<uint8_t>(imageData);
+				break;
+			default:
+				logging::log_error("RosImageOutputDevice: Image element type not supported");
+				break;
 			}
 		}
 	}

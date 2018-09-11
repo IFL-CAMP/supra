@@ -193,13 +193,12 @@ namespace supra
 
 	void IQDemodulator::prepareFilter()
 	{
-		//std::cout << "Filter stats:" << m_decimationLowpassFilterLength << std::endl;
-		auto filter = FirFilterFactory::createFilter<float>(
+		m_decimationLowpassFilter = FirFilterFactory::createFilter<float>(
 			m_decimationLowpassFilterLength,
 			FirFilterFactory::FilterTypeLowPass,
 			FirFilterFactory::FilterWindowHamming,
 			m_samplingFrequency, m_cutoffFrequency);
-		m_decimationLowpassFilter = make_shared<Container<float> >(LocationGpu, *filter);
+		m_decimationLowpassFilter = make_shared<Container<float> >(LocationGpu, *m_decimationLowpassFilter);
 	}
 
 	int IQDemodulator::decimatedSignalLength(int numSamples, uint32_t decimation)
@@ -244,7 +243,7 @@ namespace supra
 				m_frequencyCompoundingReferenceFrequencies[k] = referenceFrequencies[k];
 				m_frequencyCompoundingBandwidths[k] = bandwidths[k];
 
-				auto filter =
+				m_frequencyCompoundingBandpassFilters[k] =
 					FirFilterFactory::createFilter<WorkType>(
 						m_frequencyCompoundingBandpassFilterLength,
 						FirFilterFactory::FilterTypeBandPass,
@@ -252,7 +251,7 @@ namespace supra
 						m_samplingFrequency,
 						m_frequencyCompoundingReferenceFrequencies[k],
 						m_frequencyCompoundingBandwidths[k]);
-				m_frequencyCompoundingBandpassFilters[k] = make_shared<Container<WorkType> >(LocationGpu, *filter);
+				m_frequencyCompoundingBandpassFilters[k] = make_shared<Container<WorkType> >(LocationGpu, *m_frequencyCompoundingBandpassFilters[k]);
 				bankNeedsUpdate = true;
 			}
 
@@ -331,8 +330,6 @@ namespace supra
 		dim3 gridSizeDecimation(
 			static_cast<unsigned int>((numScanlines + blockSizeDecimation.x - 1) / blockSizeDecimation.x),
 			static_cast<unsigned int>((numSamplesDecimated + blockSizeDecimation.y - 1) / blockSizeDecimation.y));
-
-		//prepareFilter();
 
 		kernelFilterStrided <<<gridSizeDecimation, blockSizeDecimation, 0, inImageData->getStream()>>> (
 			pBandpass->get(),

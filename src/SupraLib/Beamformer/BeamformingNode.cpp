@@ -27,8 +27,6 @@ namespace supra
 		, m_beamformer(nullptr)
 		, m_lastSeenBeamformerParameters(nullptr)
 	{
-		
-
 		if (queueing)
 		{
 			m_node = unique_ptr<NodeTypeQueueing>(
@@ -40,7 +38,7 @@ namespace supra
 				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
 		}
 
-		m_callFrequency.setName("Beamforming");
+		m_callFrequency.setName("BeamformingDAS");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
@@ -48,7 +46,6 @@ namespace supra
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		configurationChanged();
-		
 	}
 
 	void BeamformingNode::configurationChanged()
@@ -163,7 +160,6 @@ namespace supra
 					updateImageProperties(pImageRF->getImageProperties());
 				}
 				pImageRF->setImageProperties(m_editedImageProperties);
-				//logging::log_log("BF: ", pImageRF->getSize().x, " ", pImageRF->getSize().y, " ", pImageRF->getSize().z);
 			}
 			else {
 				logging::log_error("BeamformingNode: could not cast object to USRawData type, is it in supported ElementType?");
@@ -172,7 +168,7 @@ namespace supra
 
 		Clock::time_point t1 = Clock::now();
 		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time to Beam Form: " << ms.count() << "ms\n";
+		//std::cout << "Time to Beam Form: " << ms.count() << "ms\n";
 
 		return pImageRF;
 	}

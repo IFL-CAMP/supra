@@ -34,7 +34,6 @@ namespace supra
 		std::shared_ptr<Container<uint8_t> > getMask();
 		void updateInternals(const std::shared_ptr<const USImageProperties> & inImageProps);
 		vec3s getImageSize() const { return m_imageSize; }
-		bool is2D() const { return m_is2D; }
 
 	private:
 		static constexpr double m_skewnessTestThreshold = 1e-6;

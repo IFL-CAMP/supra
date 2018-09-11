@@ -57,9 +57,9 @@ namespace supra
 
 	private:
 		template <typename T>
-		std::shared_ptr<RecordObject> convertTemplated(const std::shared_ptr<USImage> &pInImage);
-		std::shared_ptr<RecordObject> checkTypeAndConvert(const std::shared_ptr<RecordObject> &mainObj);
-		void sendMask(const std::shared_ptr<RecordObject> &pImage);
+		std::shared_ptr<RecordObject> convertTemplated(const std::shared_ptr<USImage> pInImage);
+		std::shared_ptr<RecordObject> checkTypeAndConvert(const std::shared_ptr<RecordObject> mainObj);
+		void sendMask(const std::shared_ptr<RecordObject> pImage);
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
 		std::unique_ptr<MaskOutputNodeType> m_maskOutputNode;

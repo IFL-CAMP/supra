@@ -49,7 +49,7 @@ namespace supra
 
 	void CallFrequency::measure() {
 		double thisTime = getCurrentTime();
-		//logging::log_profiling_if(LOG_PROFILING, "Profiling ", m_name, " ", thisTime, " S ", m_callNum);
+		logging::log_profiling_if(LOG_PROFILING, "Profiling ", m_name, " ", thisTime, " S ", m_callNum);
 		if (m_initialized) {
 			double delta = thisTime - m_flastTime;
 			m_ffiltTimeDelta = m_ffiltTimeDelta - (m_fFilter * (m_ffiltTimeDelta - delta));
@@ -74,7 +74,7 @@ namespace supra
 	void CallFrequency::measureEnd()
 	{
 		double thisTime = getCurrentTime();
-		//logging::log_profiling_if(LOG_PROFILING, "Profiling ", m_name, " ", thisTime, " E ", m_callNum-1);
+		logging::log_profiling_if(LOG_PROFILING, "Profiling ", m_name, " ", thisTime, " E ", m_callNum-1);
 		if (m_initialized && m_callNum > 10)
 		{
 			double timeDiff = thisTime - m_flastTime;
@@ -123,16 +123,16 @@ namespace supra
 	}
 
 	void CallFrequency::printFrequency(string name, double frequency) {
-		//logging::log_log_if(LOG_FREQUENCIES, "Freq ", name, " ", frequency, " Hz");
+		logging::log_log_if(LOG_FREQUENCIES, "Freq ", name, " ", frequency, " Hz");
 	}
 
 	void CallFrequency::printFrequencyAndRuntime(std::string name, double frequency, double runtime)
 	{
 		bool logInMs = runtime < 0.5;
-		//logging::log_log_if(LOG_FREQUENCIES, "Freq ", name, " ", frequency, " Hz, ", (logInMs ? runtime * 1000 : runtime), (logInMs ? " ms" : " s"));
+		logging::log_log_if(LOG_FREQUENCIES, "Freq ", name, " ", frequency, " Hz, ", (logInMs ? runtime * 1000 : runtime), (logInMs ? " ms" : " s"));
 	}
 
 	void CallFrequency::printEnd(string name, unsigned int callNum) {
-		//logging::log_log_if(LOG_FREQUENCIES, "CallFrequency ", name, " was called ", callNum, " times.");
+		logging::log_log_if(LOG_FREQUENCIES, "CallFrequency ", name, " was called ", callNum, " times.");
 	}
 }

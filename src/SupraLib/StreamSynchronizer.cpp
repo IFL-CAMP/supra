@@ -95,8 +95,8 @@ namespace supra
 			double latestTimestamp = (*(m_syncLists[channel].end() - 1))->getSyncTimestamp();
 			if (latestTimestamp >= syncObj->getSyncTimestamp())
 			{
-				//logging::log_log("StreamSynchronizer (channel ", channel, ") did not accept sync object with timestamp ", syncObj->getSyncTimestamp(),
-				//	"because it is older than the latest contained timestamp ", latestTimestamp);
+				logging::log_log("StreamSynchronizer (channel ", channel, ") did not accept sync object with timestamp ", syncObj->getSyncTimestamp(),
+					"because it is older than the latest contained timestamp ", latestTimestamp);
 				return;
 			}
 		}

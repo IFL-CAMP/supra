@@ -24,8 +24,6 @@ namespace supra
 		, m_maskSent(false)
 		, m_parameterChangeRequiresInternalUpdate(false)
 	{
-		
-
 		if (queueing)
 		{
 			m_node = unique_ptr<NodeTypeQueueing>(
@@ -45,8 +43,6 @@ namespace supra
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16, TypeUint8}, TypeFloat, "Output type");
 
 		configurationChanged();
-
-		
 	}
 
 	void ScanConverterNode::configurationChanged()
@@ -69,12 +65,12 @@ namespace supra
 			m_forceImageResolution = m_configurationDictionary.get<bool>("imageResolutionForced");
 
 			m_parameterChangeRequiresInternalUpdate = true;
-			//logging::log_log_if(m_parameterChangeRequiresInternalUpdate,
-			//	"ScanConverterNode: Update of internals required because scanconversion parameters have changed.");
+			logging::log_log_if(m_parameterChangeRequiresInternalUpdate,
+				"ScanConverterNode: Update of internals required because scanconversion parameters have changed.");
 		}
 	}
 
-	void ScanConverterNode::sendMask(const shared_ptr<RecordObject> &pImage)
+	void ScanConverterNode::sendMask(const shared_ptr<RecordObject> pImage)
 	{
 		auto mask = m_converter->getMask();
 		auto maskImage =
@@ -90,9 +86,8 @@ namespace supra
 	}
 
 	template <typename T>
-	shared_ptr<RecordObject> ScanConverterNode::convertTemplated(const shared_ptr<USImage> &pInImage)
+	shared_ptr<RecordObject> ScanConverterNode::convertTemplated(const shared_ptr<USImage> pInImage)
 	{
-
 		m_callFrequency.measure();
 		std::shared_ptr<ContainerBase> pImageData;
 		switch (m_outputType)
@@ -118,11 +113,9 @@ namespace supra
 			m_scanConvImageProperties,
 			pInImage->getReceiveTimestamp(),
 			pInImage->getSyncTimestamp());
-
-
 	}
 
-	shared_ptr<RecordObject> ScanConverterNode::checkTypeAndConvert(const shared_ptr<RecordObject> &inObj)
+	shared_ptr<RecordObject> ScanConverterNode::checkTypeAndConvert(const shared_ptr<RecordObject> inObj)
 	{
 		typedef std::chrono::high_resolution_clock Clock;
 		typedef std::chrono::milliseconds milliseconds;
@@ -136,7 +129,6 @@ namespace supra
 			shared_ptr<USImage> pInImage = dynamic_pointer_cast<USImage>(inObj);
 			if (pInImage)
 			{
-				
 				unique_lock<mutex> l(m_mutex);
 				shared_ptr<const USImageProperties> currentProperties = pInImage->getImageProperties();
 
@@ -153,7 +145,7 @@ namespace supra
 							m_lastSeenImageProperties->getScanlineInfo() == currentProperties->getScanlineInfo());
 					if (imagePropertiesChanged)
 					{
-						//logging::log_log_if(!m_lastSeenImageProperties, "ScanConverterNode: Update of internals required because we received the first image properties.");
+						logging::log_log_if(!m_lastSeenImageProperties, "ScanConverterNode: Update of internals required because we received the first image properties.");
 						if (m_lastSeenImageProperties)
 						{
 							logging::log_log_if(imagePropertiesChanged, "ScanConverterNode: Update of internals required because the image properties have changed. ",
@@ -181,7 +173,7 @@ namespace supra
 
 				t1_1 = Clock::now();
 				ms = std::chrono::duration_cast<milliseconds>(t1_1 - t0);
-				std::cout << "Time in Scan Conversion (initial): " << ms.count() << "ms\n";				
+				//std::cout << "Time in Scan Conversion (initial): " << ms.count() << "ms\n";				
 
 				if (internalUpdateNeeded)
 				{
@@ -195,14 +187,13 @@ namespace supra
 						m_scanConvImageProperties->setImageResolution(m_lastSeenImageProperties->getImageResolution());
 					}
 
-					//std::cout << "2D scan lines?: " << this->m_converter->is2D() << std::endl;
 					m_converter->updateInternals(m_scanConvImageProperties);
 					m_maskSent = false;
 				}
 
 				t1 = Clock::now();
 				ms = std::chrono::duration_cast<milliseconds>(t1 - t1_1);
-				std::cout << "Time in Scan Conversion (updateInternal): " << ms.count() << "ms\n";
+				//std::cout << "Time in Scan Conversion (updateInternal): " << ms.count() << "ms\n";
 
 				switch (pInImage->getDataType())
 				{
@@ -223,7 +214,7 @@ namespace supra
 				if (!m_maskSent)
 				{
 					sendMask(inObj);
-				}				
+				}
 			}
 			else {
 				logging::log_error("ScanConverterNode: could not cast object to USImage type");
@@ -232,7 +223,7 @@ namespace supra
 
 		Clock::time_point t2 = Clock::now();
 		ms = std::chrono::duration_cast<milliseconds>(t2 - t1);
-		std::cout << "Time for Scan Conversion: convert() " << ms.count() << "ms\n";
+		//std::cout << "Time for Scan Conversion: convert() " << ms.count() << "ms\n";
 		return pImage;
 	}
 }

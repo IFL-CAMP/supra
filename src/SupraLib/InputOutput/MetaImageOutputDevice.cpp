@@ -40,6 +40,9 @@ namespace supra
 		, m_active(true)
 		, m_pWriter(nullptr)
 		, m_lastElementNumber(0)
+		, m_mockDataWritten(false)
+		, m_writeMockData(false)
+		, m_mockDataFilename("")
 	{
 		m_callFrequency.setName("MHD");
 
@@ -47,6 +50,9 @@ namespace supra
 		m_valueRangeDictionary.set<bool>("createSequences", { false, true }, true, "Sequences");
 		m_valueRangeDictionary.set<bool>("active", { false, true }, true, "Active");
 		m_valueRangeDictionary.set<uint32_t>("maxElements", 1, std::numeric_limits<uint32_t>::max(), 10000, "Maximum elements");
+
+		m_valueRangeDictionary.set<bool>("writeMockData", { false, true }, false, "(Write mock)");
+		m_valueRangeDictionary.set<string>("mockDataFilename", "", "(Mock meta filename)");
 
 		m_isReady = false;
 	}
@@ -81,20 +87,16 @@ namespace supra
 
 	void MetaImageOutputDevice::startOutput()
 	{
-		startSequence();
 	}
 
 	void MetaImageOutputDevice::stopOutput()
 	{
-		stopSequence();
 	}
 
 	void MetaImageOutputDevice::startSequence()
 	{
-		//std::cout << "Entered meta image startSequence" << std::endl;
 		if (m_createSequences)
 		{
-			//std::cout << "Initializing meta image sequence" << std::endl;
 			lock_guard<mutex> l(m_writerMutex);
 			initializeSequence();
 			m_isRecording = true;
@@ -120,6 +122,9 @@ namespace supra
 		m_createSequences = m_configurationDictionary.get<bool>("createSequences");
 		m_active = m_configurationDictionary.get<bool>("active");
 		m_maxElementNumber = m_configurationDictionary.get<uint32_t>("maxElements")-1;
+
+		m_writeMockData = m_configurationDictionary.get<bool>("writeMockData");
+		m_mockDataFilename = m_configurationDictionary.get<string>("mockDataFilename");
 	}
 
 	void MetaImageOutputDevice::writeData(std::shared_ptr<RecordObject> data)
@@ -136,7 +141,7 @@ namespace supra
 		}
 		Clock::time_point t1 = Clock::now();
 		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time to write data: " << ms.count() << "ms\n";
+		//std::cout << "Time to write data: " << ms.count() << "ms\n";
 	}
 
 	void MetaImageOutputDevice::initializeSequence()
@@ -146,8 +151,7 @@ namespace supra
 		{
 			filename += "_" + std::to_string(m_sequencesWritten);
 		}
-		//log_info("MetaImage file Name: ", filename);
-		std::cout << "output file: " << filename << std::endl;
+		log_info("MetaImage file Name: ", filename);
 
 		if (m_pWriter)
 		{
@@ -208,9 +212,15 @@ namespace supra
 				frameNum = get<1>(successframeNum);
 
 				if (success)
+				{
 					for (shared_ptr<const RecordObject> syncedO : syncMessage->getSyncedRecords())
+					{
 						if (syncedO->getType() == TypeTrackerDataSet)
+						{
 							addTracking(syncedO, frameNum);
+						}
+					}
+				}
 			}
 		}
 
@@ -247,7 +257,6 @@ namespace supra
 					pData = pDataCopy;
 				}
 
-				std::cout << "output image data size: " << imageSize.x << " " << imageSize.y << " " << imageSize.z << std::endl;
 				auto successframeNum = m_pWriter->addImage(
 					pData->get(), imageSize.x, imageSize.y, imageSize.z,
 					imageData->getSyncTimestamp(), resolution,
@@ -299,7 +308,12 @@ namespace supra
 		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
 		if (imageData)
 		{
-			//std::cout << "output image data type: " << imageData->getDataType() << std::endl;
+			if (m_writeMockData && !m_mockDataWritten)
+			{
+				imageData->getImageProperties()->writeMetaDataForMock(m_mockDataFilename);
+				m_mockDataWritten = true;
+			}
+
 			switch (imageData->getDataType())
 			{
 			case TypeUint8:

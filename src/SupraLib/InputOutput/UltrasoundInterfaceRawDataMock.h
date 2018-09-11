@@ -28,7 +28,7 @@ namespace supra
 	//forward declaration
 	class USRawData;
 
-	class UltrasoundInterfaceRawDataMock : public AbstractInput<RecordObject>
+	class UltrasoundInterfaceRawDataMock : public AbstractInput
 	{
 	public:
 		UltrasoundInterfaceRawDataMock(tbb::flow::graph& graph, const std::string & nodeID);
@@ -63,7 +63,7 @@ namespace supra
 		std::vector<std::string> m_mockDataFilenames;
 		bool m_singleImage;
 		bool m_streamSequenceOnce;
-		int m_frequency;
+		double m_frequency;
 		std::shared_ptr<USRawData> m_protoRawData;
 		std::shared_ptr<Container<int16_t> > m_pMockData;
 

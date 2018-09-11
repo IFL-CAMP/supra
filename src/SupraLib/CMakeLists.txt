@@ -34,6 +34,8 @@ IF(SUPRA_CUDA)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
 	IF(WIN32)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
+	ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 7.2)
 	ELSE()
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
@@ -48,13 +50,30 @@ IF(SUPRA_CUDA)
 		SET(SUPRA_CUFFT TRUE)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES} HAVE_CUFFT)
 	ENDIF()
+	LIST(APPEND CUDA_LIBRARIES ${CUDA_curand_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppial_LIBRARY})
 	
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
+		
+	IF(CUDA_CUBLAS_LIBRARIES AND CUDA_cublas_LIBRARY AND CUDA_cublas_device_LIBRARY)
+		SET(SUPRA_CUDA_CUBLAS ON)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_CUDA_CUBLAS)
+		SET(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+	ELSEIF(CUDA_cublas_LIBRARY)
+		SET(SUPRA_CUDA_CUBLAS ON)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_CUDA_CUBLAS)
+		SET(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_cublas_LIBRARY})
+	ENDIF()
 ENDIF(SUPRA_CUDA)
 
+#find IGTL Interface
+IF(SUPRA_DEVICE_IGTL_OUTPUT OR SUPRA_DEVICE_TRACKING_IGTL)
+find_package(OpenIGTLink REQUIRED)
+ENDIF(SUPRA_DEVICE_IGTL_OUTPUT OR SUPRA_DEVICE_TRACKING_IGTL)
 
 
 IF(SUPRA_PROFILING)
@@ -83,6 +102,7 @@ SET(SUPRA_Lib_SOURCE
 	utilities/DataType.cpp
 	utilities/SingleThreadTimer.cpp
 	utilities/tinyxml2/tinyxml2.cpp
+	utilities/jsoncpp/jsoncpp.cpp
 	FrequencyLimiterNode.cpp
 	StreamSyncNode.cpp
 	AutoQuitNode.cpp
@@ -115,6 +135,8 @@ SET(SUPRA_Lib_HEADERS
 	utilities/SingleThreadTimer.h
 	utilities/FirFilterFactory.h
 	utilities/tinyxml2/tinyxml2.h
+	utilities/jsoncpp/json/json.h
+	utilities/jsoncpp/json/json-forwards.h
 	FrequencyLimiterNode.h
 	StreamSyncNode.h
 	AutoQuitNode.h
@@ -124,17 +146,22 @@ IF(SUPRA_CUDA)
 	SET(SUPRA_Lib_SOURCE
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
-		ExampleNodes/ImageProcessingCuda.cu)
+		ExampleNodes/ImageProcessingCuda.cu
+		NoiseNode.cpp
+		NoiseCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
-		ExampleNodes/ImageProcessingCuda.h)
+		ExampleNodes/ImageProcessingCuda.h
+		NoiseNode.h
+		NoiseCuda.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
 	${SUPRA_Lib_INCLUDEDIRS}
 	${TBB_INCLUDE}
-	${CMAKE_CURRENT_SOURCE_DIR})
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/jsoncpp)
 SET(SUPRA_Lib_LIBDIRS 
 	${TBB_LIBS})
 SET(SUPRA_Lib_LIBRARIES
@@ -155,7 +182,8 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
 		Beamformer/RawDelayNode.cpp
-		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
+		InputOutput/UltrasoundInterfaceRawDataMock.cpp
+		InputOutput/UltrasoundInterfaceBeamformedMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
 		Beamformer/IQDemodulator.cu
@@ -186,7 +214,8 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USRawData.h
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
-		InputOutput/UltrasoundInterfaceRawDataMock.h)
+		InputOutput/UltrasoundInterfaceRawDataMock.h
+		InputOutput/UltrasoundInterfaceBeamformedMock.h)
 	IF(SUPRA_CUFFT)
 		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 			Beamformer/HilbertEnvelopeNode.cpp)
@@ -201,6 +230,24 @@ IF(SUPRA_BEAMFORMER)
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
 		${CUDA_LIBRARIES})
+	
+	IF(SUPRA_CUDA_CUBLAS)
+		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+			Beamformer/BeamformingMVNode.h
+			Beamformer/BeamformingMVpcgNode.h
+			Beamformer/RxBeamformerMV.h
+			Beamformer/RxBeamformerMVpcg.h)
+		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+			Beamformer/BeamformingMVNode.cpp
+			Beamformer/BeamformingMVpcgNode.cpp)
+		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
+			Beamformer/RxBeamformerMV.cu
+			Beamformer/RxBeamformerMVpcg.cu)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_BEAMFORMER_MINIMUM_VARIANCE)
+	ELSE()
+		MESSAGE(STATUS "CUBLAS found, NOT adding minimum variance beamformer")
+	ENDIF()
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
@@ -217,6 +264,20 @@ IF(SUPRA_DEVICE_TRACKING_SIM)
 		InputOutput/TrackerInterfaceSimulated.h)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_TRACKING_SIM)
+ENDIF()
+IF(SUPRA_DEVICE_IGTL_OUTPUT)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/OpenIGTLinkOutputDevice.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/OpenIGTLinkOutputDevice.h)
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${OpenIGTLink_INCLUDE_DIRS})
+	SET(SUPRA_Lib_LIBDIRS ${SUPRA_Lib_LIBDIRS}
+		${OpenIGTLink_LIBRARY_DIRS})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${OpenIGTLink_LIBRARIES})
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_IGTL_OUTPUT)
 ENDIF()
 
 IF(SUPRA_DEVICE_ITK_FILE_OUT)

@@ -130,14 +130,12 @@ namespace supra
 					logging::log_error("LogCompressorNode: Input image type not supported");
 					break;
 				}
-				m_callFrequency.measureEnd();				
+				m_callFrequency.measureEnd();
 
 				if (pInImage->getImageProperties() != m_lastSeenImageProperties)
 				{
 					updateImageProperties(pInImage->getImageProperties());
 				}
-
-				//logging::log_log("LC: ", pInImage->getSize().x, " ", pInImage->getSize().y, " ", pInImage->getSize().z);
 
 				pImage = make_shared<USImage>(
 					pInImage->getSize(),
@@ -152,7 +150,7 @@ namespace supra
 		}
 		Clock::time_point t1 = Clock::now();
 		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time in Log Compression: " << ms.count() << "ms\n";
+		//std::cout << "Time in Log Compression: " << ms.count() << "ms\n";
 		return pImage;
 	}
 

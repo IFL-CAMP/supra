@@ -57,6 +57,8 @@ namespace supra
 
 		void writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData> rawData) const;
 		static std::shared_ptr<USRawData> readMetaDataForMock(const std::string & mockMetadataFilename);
+		static std::shared_ptr<USRawData> readMetaDataForMockAscii(const std::string & mockAsciiMetadataFilename);
+		static std::shared_ptr<USRawData> readMetaDataForMockJson(const std::string & mockJsonMetadataFilename);
 		
 	private:
 

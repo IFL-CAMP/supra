@@ -16,7 +16,7 @@ time. Even on hardware as small as the CUDA enabled Jetson TX2 **SUPRA** can be 
 
 License
 ----------------
-LGPL v3
+LGPL v2.1
 see [LICENSE](LICENSE)
 
 Publication

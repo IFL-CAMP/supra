@@ -181,7 +181,7 @@ namespace supra
 	}
 
 	template <typename InputType>
-	std::shared_ptr<ContainerBase> IQDemodulatorNode::demodulateTemplated(const std::shared_ptr<USImage> &inImage)
+	std::shared_ptr<ContainerBase> IQDemodulatorNode::demodulateTemplated(const std::shared_ptr<USImage> inImage)
 	{
 		switch (m_outputType)
 		{
@@ -209,7 +209,7 @@ namespace supra
 		return nullptr;
 	}
 
-	shared_ptr<RecordObject> IQDemodulatorNode::checkTypeAndDemodulate(const shared_ptr<RecordObject> &inObj)
+	shared_ptr<RecordObject> IQDemodulatorNode::checkTypeAndDemodulate(const shared_ptr<RecordObject> inObj)
 	{
 		typedef std::chrono::high_resolution_clock Clock;
 		typedef std::chrono::milliseconds milliseconds;
@@ -257,7 +257,7 @@ namespace supra
 
 		Clock::time_point t1 = Clock::now();
 		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time in IQ demodulation: " << ms.count() << "ms\n";
+		//std::cout << "Time in IQ demodulation: " << ms.count() << "ms\n";
 		return pImageDemod;
 	}
 }

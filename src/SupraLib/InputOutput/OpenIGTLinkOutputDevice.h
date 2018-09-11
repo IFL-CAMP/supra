@@ -70,6 +70,7 @@ namespace supra
 		std::unique_ptr<std::thread> m_pConnectionThread;
 
 		int m_port;
+		std::string m_streamName;
 
 	};
 }

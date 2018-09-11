@@ -65,7 +65,6 @@
 
 namespace supra
 {
-	using namespace std;
 	using namespace ::cs;
 	using ::cs::USPlatformMgr;
 	using logging::log_error;
@@ -143,8 +142,8 @@ namespace supra
 	}
 
 
-	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+	UsIntCephasonicsCc::UsIntCephasonicsCc(tbb::flow::graph & graph, const std::string& nodeID, const size_t numPorts)
+		: AbstractInput(graph, nodeID, numPorts)
 		, m_pTransducer(nullptr)
 		, m_pSequencer(nullptr)
 		, m_pProbe(nullptr)
@@ -257,11 +256,13 @@ namespace supra
 				std::string idApp = getBeamSequenceApp(oldBeamSequenceValueRange,numSeq);
 
 				m_valueRangeDictionary.remove(idApp+"scanType");
+				m_valueRangeDictionary.remove(idApp+"rxModeActive");
 				m_valueRangeDictionary.remove(idApp+"txVoltage");
 				m_valueRangeDictionary.remove(idApp+"txPulseType");
 				m_valueRangeDictionary.remove(idApp+"txPulseInversion");
 				m_valueRangeDictionary.remove(idApp+"txFrequency");
 				m_valueRangeDictionary.remove(idApp+"txPulseRepetitionFrequency");
+				m_valueRangeDictionary.remove(idApp+"txPulseRepeatFiring");
 				m_valueRangeDictionary.remove(idApp+"txWindowType");
 				m_valueRangeDictionary.remove(idApp+"txWindowParameter");
 				m_valueRangeDictionary.remove(idApp+"txDutyCycle");
@@ -304,20 +305,20 @@ namespace supra
 
 			// overall scan type for sequence
 			m_valueRangeDictionary.set<string>(idApp+"scanType", {"linear", "phased", "biphased", "planewave"}, "linear", descApp+"Scan Type");
+			m_valueRangeDictionary.set<bool>(idApp+"rxModeActive", {false, true}, true, descApp+"Activate Rx mode");
 
-			// beam ensemble specific settings
+			// beam specific settings
 			m_valueRangeDictionary.set<double>(idApp+"txVoltage", 6, 140, 6, descApp+"Pulse voltage [V]");
 			m_valueRangeDictionary.set<string>(idApp+"txPulseType", {"unipolar", "bipolar"}, "bipolar", descApp+"Pulse Type");
 			m_valueRangeDictionary.set<bool>(idApp+"txPulseInversion", {false, true}, false, descApp+"Pulse Inversion [negative V]");
 			m_valueRangeDictionary.set<double>(idApp+"txFrequency", 0.0, 20.0, 7.0, descApp+"Pulse frequency [MHz]");
 			m_valueRangeDictionary.set<double>(idApp+"txPulseRepetitionFrequency", 0.0, 10000.0, 0.0, descApp+"Pulse repetition frequency [Hz]");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txPulseRepeatFiring", 1, 255, 1, descApp+"Number of Firings");
 			m_valueRangeDictionary.set<double>(idApp+"txDutyCycle", 0.0, 1.0, 1.0, descApp+"Duty cycle [percent]");
-
-			// further global parameters for one imaging sequence
-			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 10, 1, descApp+"Number Pulse Cycles (ceph)");
+			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesCephasonics", 1, 20000, 1, descApp+"Number Pulse Cycles (ceph)");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"txNumCyclesManual", 1, 10, 1, descApp+"Number Pulse Cycles (manual)");
 
-			// beam specific settings
+			// beam ensemble specific settings
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numScanlinesX", 1, 512, 256, descApp+"Number of scanlines X");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"numScanlinesY", 1, 512, 1, descApp+"Number of scanlines Y");
 			m_valueRangeDictionary.set<uint32_t>(idApp+"rxScanlineSubdivisionX", 1, 512, 256, descApp+"Rx scanline supersampling X");
@@ -539,13 +540,22 @@ namespace supra
 			vec2s bfTxApertureSize = bf->getTxApertureSize();
 			vec2s bfApertureSize = bf->getApertureSize();
 
-			if(bfTxApertureSize.x == 0 || bfTxApertureSize.y == 0)
+			if(bfTxApertureSize.x == 0)
 			{
-				bfTxApertureSize = maxAperture;
+				bfTxApertureSize.x = maxAperture.x;
 			}
-			if(bfApertureSize.x == 0 || bfApertureSize.y == 0)
+			if(bfTxApertureSize.y == 0)
 			{
-				bfApertureSize = maxAperture;
+				bfTxApertureSize.y = maxAperture.y;
+			}
+
+			if(bfApertureSize.x == 0)
+			{
+				bfApertureSize.x = maxAperture.x;
+			}
+			if(bfApertureSize.y == 0)
+			{
+				bfApertureSize.y = maxAperture.y;
 			}
 			bfApertureSize = min(bfApertureSize, maxAperture);
 			bfTxApertureSize = min(bfTxApertureSize, maxAperture);
@@ -631,11 +641,14 @@ namespace supra
 			newProps->setSpecificParameter("UsIntCepCc.txCorrectMatchingLayers", bf->getTxCorrectMatchingLayers());
 			newProps->setSpecificParameter("UsIntCepCc.numSamplesRecon", bf->getNumDepths());
 			newProps->setSpecificParameter("UsIntCepCc.scanType", bf->getScanType());
+			newProps->setSpecificParameter("UsIntCepCc.rxModeActive", bf->getRxModeActive());
+
 
 
 			// setting specific for beam ensemble transmit, not handled not within beamformer
 			newProps->setSpecificParameter("UsIntCepCc.txFrequency",m_beamEnsembleTxParameters.at(numSeq).txFrequency);
 			newProps->setSpecificParameter("UsIntCepCc.txPrf", m_beamEnsembleTxParameters.at(numSeq).txPrf);
+			newProps->setSpecificParameter("UsIntCepCc.txRepeatFiring", m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring);
 			newProps->setSpecificParameter("UsIntCepCc.txVoltage", m_beamEnsembleTxParameters.at(numSeq).txVoltage);
 			newProps->setSpecificParameter("UsIntCepCc.txPulseType", m_beamEnsembleTxParameters.at(numSeq).txPulseType);
 			newProps->setSpecificParameter("UsIntCepCc.txPulseInversion", m_beamEnsembleTxParameters.at(numSeq).txPulseInversion);
@@ -833,6 +846,7 @@ namespace supra
 			std::string scanType = m_configurationDictionary.get<std::string>(seqIdApp+"scanType");
 			bf->setScanType(scanType);
 
+			bf->setRxModeActive(m_configurationDictionary.get<bool>(seqIdApp+"rxModeActive"));
 			bf->setTxFocusActive(m_configurationDictionary.get<bool>(seqIdApp+"txFocusActive"));
 			bf->setTxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth"));
 			bf->setRxFocusDepth(m_configurationDictionary.get<double>(seqIdApp+"txFocusDepth")); // currently rx and tx focus are the same
@@ -881,6 +895,7 @@ namespace supra
 
 			// ensemble-specific parameters (valid for a whole image irrespective of whether it is linear, phased, planewave, or push)
 			m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
+			m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring = m_configurationDictionary.get<uint32_t>(seqIdApp+"txPulseRepeatFiring");
 			m_beamEnsembleTxParameters.at(numSeq).txVoltage = m_configurationDictionary.get<double>(seqIdApp+"txVoltage");
 
 			std::string pulseType = m_configurationDictionary.get<string>(seqIdApp+"txPulseType");
@@ -900,6 +915,11 @@ namespace supra
 			m_beamEnsembleTxParameters.at(numSeq).txFrequency = m_configurationDictionary.get<double>(seqIdApp+"txFrequency");
 			m_beamEnsembleTxParameters.at(numSeq).txDutyCycle = m_configurationDictionary.get<double>(seqIdApp+"txDutyCycle");
 			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
+			if (m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics > 20)
+			{
+				logging::log_warn("UsIntCephasonicsCc: : Selected more than 20 cycles for pulse - Too long pulsing can damage hardware permanently!");
+			}
+
 			m_beamEnsembleTxParameters.at(numSeq).txNumCyclesManual = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesManual");
 		}
 		
@@ -1101,6 +1121,10 @@ namespace supra
 				{
 					m_beamEnsembleTxParameters.at(numSeq).txPrf = m_configurationDictionary.get<double>(seqIdApp+"txPulseRepetitionFrequency");
 				}
+				if(configKey == seqIdApp+"txPulseRepeatFiring")
+				{
+					m_beamEnsembleTxParameters.at(numSeq).txRepeatFiring = m_configurationDictionary.get<uint32_t>(seqIdApp+"txPulseRepeatFiring");
+				}	
 				if(configKey == seqIdApp+"txNumCyclesCephasonics")
 				{
 					m_beamEnsembleTxParameters.at(numSeq).txNumCyclesCephasonics = m_configurationDictionary.get<uint32_t>(seqIdApp+"txNumCyclesCephasonics");
@@ -1338,8 +1362,9 @@ namespace supra
 
 			// Get the Tx scanline parameters to program the Hardware with them
 			const std::vector<ScanlineTxParameters3D>* beamTxParams = bf->getTxParameters();
+			bool disableRx = !bf->getRxModeActive();
 
-			std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq));
+			std::pair<size_t, const cs::FrameDef*> fdef = createFrame(beamTxParams, props, m_beamEnsembleTxParameters.at(numSeq), disableRx);
 										
 			// store framedef and add it to Cephasonics interface
 			m_pFrameMap[fdef.first] = m_sequenceNumFrames;
@@ -1356,7 +1381,8 @@ namespace supra
 	std::pair<size_t, const cs::FrameDef*> UsIntCephasonicsCc::createFrame(
 		const std::vector<ScanlineTxParameters3D>* txBeamParams, 
 		const std::shared_ptr<USImageProperties> imageProps, 
-		const BeamEnsembleTxParameters& txEnsembleParams)
+		const BeamEnsembleTxParameters& txEnsembleParams,
+		const bool disableRx)
 	{
 
 		// publish Rx Scanline parameters together with the RawData
@@ -1385,14 +1411,12 @@ namespace supra
 		double centerAngle = 0; 			//ignored if making full custom beams
 		rxWindowType rxWindow = RECTANGULAR;//ignored if making full custom beams
 
-
-
 		// create a new SubFrameDef and provide it with the vector of BeamEnsembleDefs
 		const SubFrameDef* sf = &SubFrameDef::createSubFrameDef(*m_cPlatformHandle,
 				LINEAR, //not used for fully custom beams beam creation
 				numScanlines.x*numScanlines.y, npb, txFreq, txEnsembleParams.txNumCyclesCephasonics, m_startDepth/1000, m_endDepth/1000,
 				focalDepth, txFstop, rxFstop, rxWindow, angle, centerAngle,
-				beamEnsembles);
+				beamEnsembles, -1, -1, false, disableRx);
 		m_pSubframeDefs.push_back(sf);
 		size_t subframeID = sf->getID();
 
@@ -1405,10 +1429,12 @@ namespace supra
 		
 		bool isUniPolar = BeamEnsembleTxParameters::Unipolar == txEnsembleParams.txPulseType;
 		double targetVoltage = txEnsembleParams.txVoltage * (isUniPolar ? 2.0 : 1.0);
-		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN)
+		bool alternateRail = m_pSubframeDefs.size() > 1;
+
+		if (targetVoltage <= pC.RAILB_VOLTAGE_MAX && targetVoltage >= pC.RAILB_VOLTAGE_MIN && !alternateRail)
 		{
-			//TODO Rail B only allows for 110V right now...weird
-			//rail = RAIL_B;
+			// Beware that Rail B only reports 110V right now...weird
+			// Rail B is 6 times stronger thatn Rail A, thus we use B per default
 			rail = RAIL_B;
 			logging::log_log("UsIntCephasonicsCc: Setting rail B");
 		}
@@ -1433,7 +1459,7 @@ namespace supra
 		// add frame to scan to allow proper handling of parent-child structure
 		m_pScan->update(AddFrame(*fdef));
 
-		fdef->update(SetPRF(txEnsembleParams.txPrf,1));
+		fdef->update(SetPRF(txEnsembleParams.txPrf,txEnsembleParams.txRepeatFiring));
 
 		//We cannot check the voltage right now, as the frameDef is not completely determined
 		applyVoltageSetting(fdef, txEnsembleParams.txVoltage, isUniPolar);
@@ -1724,13 +1750,15 @@ namespace supra
 				lock_guard<mutex> lock(m_objectMutex);
 				m_callFrequency.measure();
 
+				size_t linFrID = m_pFrameMap[frameIndex];
+
 				//build filename
 				/*std::stringstream filename;
 				filename << "/mnt/data/ascii_test/rawData_copiedtogether.txt";
 				writeAscii(filename.str(), pData.get(), sArraySize);*/
 
-				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(m_pFrameMap[frameIndex]);
-				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(m_pFrameMap[frameIndex]);
+				std::shared_ptr<Beamformer> bf = m_pSequencer->getBeamformer(linFrID);
+				std::shared_ptr<USImageProperties> imProps = m_pSequencer->getUSImgProperties(linFrID);
 
 				// we received the data from all necessary platforms, now we can start the beamforming
 				shared_ptr<USRawData> rawData = make_shared<USRawData>
@@ -1755,7 +1783,26 @@ namespace supra
 				pData = make_shared<Container<int16_t> >(ContainerLocation::LocationGpu, ContainerFactory::getNextStream(), sArraySize);
 				platformsReceived.assign(m_numPlatforms, false);
 
-				addData<0>(rawData);
+				// switch outputs for sequences. I.e. first sequence transmitted on output port 0, second port 1, etc.
+				// max ouptut ports is 2 for the moment.
+				if (linFrID<m_numOutputs)
+				{
+					switch (linFrID)
+					{
+						case 0:	addData<0>(rawData); break;
+						case 1: addData<1>(rawData); break;
+						case 2: addData<2>(rawData); break;
+						case 3: addData<3>(rawData); break;
+						case 4: addData<4>(rawData); break;
+						case 5: addData<5>(rawData); break;
+						case 6: addData<6>(rawData); break;
+						case 7: addData<7>(rawData); break;
+						case 8: addData<8>(rawData); break;
+						case 9: addData<9>(rawData); break;
+						default: addData<0>(rawData);
+						break;
+					}
+				}
 			}
 		}
 

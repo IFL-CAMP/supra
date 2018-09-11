@@ -46,21 +46,21 @@ namespace supra
 	{
 	}
 
-	void RawDelay::convertToDtSpace(double dt, size_t numTransducerElements) const
+	void RawDelay::convertToDtSpace(double dt, double speedOfSoundMMperS, size_t numTransducerElements) const
 	{
-		if (m_lastSeenDt != dt)
+		if (m_lastSeenDt != dt || m_speedOfSoundMMperS != speedOfSoundMMperS)
 		{
-			double factor = 1;
-			double factorTime = 1;
-			if (m_lastSeenDt == 0)
+			double oldFactor = 1;
+			double oldFactorTime = 1;
+			if (m_lastSeenDt != 0 && m_speedOfSoundMMperS != 0)
 			{
-				factor = 1 / (m_speedOfSoundMMperS * dt);
-				factorTime = 1 / dt;
+				oldFactor = 1 / (m_speedOfSoundMMperS * m_lastSeenDt);
+				oldFactorTime = 1 / m_lastSeenDt;
 			}
-			else {
-				factor = (m_lastSeenDt / dt);
-				factorTime = factor;
-			}
+
+			double factor = 1/oldFactor / (speedOfSoundMMperS * dt);
+			double factorTime = 1/oldFactorTime / dt;
+
 			m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
 			for (size_t i = 0; i < m_numRxScanlines; i++)
 			{
@@ -93,12 +93,14 @@ namespace supra
 			m_pRxElementYs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
 			
 			m_lastSeenDt = dt;
+			m_speedOfSoundMMperS = speedOfSoundMMperS;
 		}
 	}
 
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
 	static __device__ void sampleDelay3D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
+		int rxScanlineIdx,
 		const RFType* RF,
 		vec2T<uint32_t> elementLayout,
 		uint32_t numReceivedChannels,
@@ -146,7 +148,11 @@ namespace supra
 				}
 			}
 		}
-		float weightingScale = 1 / weightAcum * numAdds;
+		float weightingScale = 1.0f;
+		if (numAdds > 0)
+		{
+			weightingScale = 1.0f / weightAcum * numAdds;
+		}
 
 		for (uint32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
 		{
@@ -190,7 +196,7 @@ namespace supra
 				}
 
 				uint32_t elemIdxLocal = (elemIdxX - txParams.firstActiveElementIndex.x) + (elemIdxY - txParams.firstActiveElementIndex.y)*elementLayout.x;
-				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
+				RFdelayed[depthIndex + elemIdxLocal*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
 					clampCast<ResultType>(sample * weightingScale);
 			}
 		}
@@ -199,6 +205,7 @@ namespace supra
 	template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
 	static __device__ void sampleDelay2D(
 		ScanlineRxParameters3D::TransmitParameters txParams,
+		int rxScanlineIdx,
 		const RFType* RF,
 		uint32_t numTransducerElements,
 		uint32_t numReceivedChannels,
@@ -237,8 +244,12 @@ namespace supra
 				numAdds++;
 			}
 		}
-		float weightingScale = 1 / weightAcum * numAdds;
-
+		float weightingScale = 1.0f;
+		if (numAdds > 0)
+		{
+			weightingScale = 1.0f / weightAcum * numAdds;
+		}
+		
 		int32_t localElemIdxX = 0;
 		for (int32_t elemIdxX = txParams.firstActiveElementIndex.x;
 			 elemIdxX < txParams.lastActiveElementIndex.x;
@@ -278,7 +289,7 @@ namespace supra
 					}
 				}
 			}
-			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + txScanlineIdx*numReceivedChannels*numTimestepsOut] =
+			RFdelayed[depthIndex + localElemIdxX*numTimestepsOut + rxScanlineIdx*numReceivedChannels*numTimestepsOut] =
 				clampCast<ResultType>(sample * weightingScale);
 
 			localElemIdxX++;
@@ -367,7 +378,7 @@ namespace supra
 					}
 					
 					sampleDelay3D<interpolateRFlines, RFType, ResultType, LocationType>(
-						txParams, RF, elementLayout, numReceivedChannels, numTimesteps,
+						txParams, scanlineIdx, RF, elementLayout, numReceivedChannels, numTimesteps,
 						x_elemsDTsh, z_elemsDTsh, scanline_x, scanline_z, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, functionShared, RFdelayed);
 				}
@@ -433,7 +444,7 @@ namespace supra
 					}
 
 					sampleDelay2D<interpolateRFlines, RFType, ResultType, LocationType>(
-						txParams, RF, numTransducerElements, numReceivedChannels, numTimesteps,
+						txParams, scanlineIdx, RF, numTransducerElements, numReceivedChannels, numTimesteps,
 						x_elemsDT, scanline_x, dirX, dirY, dirZ,
 						aDT, d, r, numDs, invMaxElementDistance, speedOfSound, dt, &windowFunction, RFdelayed);
 				}
@@ -530,6 +541,7 @@ namespace supra
 	shared_ptr<USRawData> RawDelay::performDelay(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter) const
 	{
@@ -551,7 +563,7 @@ namespace supra
 			m_windowFunction = std::unique_ptr<WindowFunction>(new WindowFunction(windowType, windowParameter, m_windowFunctionNumEntries));
 		}
 		
-		convertToDtSpace(dt, rawData->getNumElements());
+		convertToDtSpace(dt, speedOfSoundMMperS, rawData->getNumElements());
 		if (m_is3D)
 		{
 			rxDelayDTspaceCuda3D<m_windowFunctionNumEntries, ChannelDataType, OutputType, LocationType>(
@@ -607,7 +619,7 @@ namespace supra
 		}
 
 		shared_ptr<USRawData> rawDataDelayed = std::make_shared<USRawData>
-			   (rawData->getNumScanlines(),
+			   (m_numRxScanlines,
 				rawData->getNumElements(),
 				rawData->getElementLayout(),
 				rawData->getNumReceivedChannels(),
@@ -615,7 +627,7 @@ namespace supra
 				1 / (m_depth / m_speedOfSoundMMperS / m_rxNumDepths),
 				pData,
 				rawData->getRxBeamformerParameters(),
-				rawData->getImageProperties(),
+				m_editedImageProperties,
 				rawData->getReceiveTimestamp(),
 				rawData->getSyncTimestamp());
 
@@ -626,24 +638,28 @@ namespace supra
 	shared_ptr<USRawData> RawDelay::performDelay<int16_t, int16_t>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<int16_t, float>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<float, int16_t>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 	template
 	shared_ptr<USRawData> RawDelay::performDelay<float, float>(
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameters) const;
 }

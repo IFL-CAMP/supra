@@ -71,8 +71,6 @@ namespace supra
 			{
 				stopOutput();
 			}
-			else
-				startOutput();
 			return (oldState || newState) && !(oldState && oldState);
 		}
 

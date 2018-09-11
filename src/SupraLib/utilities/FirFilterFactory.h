@@ -41,10 +41,13 @@ namespace supra
 		static std::shared_ptr<Container<ElementType> >
 			createFilter(const size_t &length, const FilterType &type, const FilterWindow &window, const double &samplingFrequency, const double &frequency, const double &bandwidth = 0.0)
 		{
-			std::shared_ptr<Container<ElementType> > filter = createFilterNoWindow<ElementType>(length, type, samplingFrequency, frequency, bandwidth);			
+			std::shared_ptr<Container<ElementType> > filter = createFilterNoWindow<ElementType>(length, type, samplingFrequency, frequency, bandwidth);
 			applyWindowToFilter<ElementType>(filter, window);
 			if (type == FilterTypeBandPass)
+			{
 				normalizeGain<ElementType>(filter, samplingFrequency, frequency);
+			}
+
 			return filter;
 		}
 
@@ -113,9 +116,11 @@ namespace supra
 			}
 
 			//create the filter
-			for (size_t k = 0; k < length; k++) {
+			for (size_t k = 0; k < length; k++)
+			{
 				filter->get()[k] = filterFunction((int)k);
 			}
+
 			return filter;
 		}
 
@@ -150,7 +155,9 @@ namespace supra
 			}
 
 			for (size_t k = 0; k < filterLength; k++)
+			{
 				filter->get()[k] *= windowFunction((int)k);
+			}
 		}
 
 		template <typename ElementType>

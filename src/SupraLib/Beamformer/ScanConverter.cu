@@ -496,7 +496,7 @@ namespace supra
 
 	void ScanConverter::updateInternals(const std::shared_ptr<const USImageProperties>& inImageProps)
 	{
-		//logging::log_log("Scanconverter: Updating scanconversion internals");
+		logging::log_log("Scanconverter: Updating scanconversion internals");
 
 		//Check the scanline configuration for validity
 		m_is2D = inImageProps->is2D();
@@ -603,6 +603,7 @@ namespace supra
 
 		if (scanlinesGood)
 		{
+			//find scan bounding box
 			vec bbMin{ numeric_limits<double>::max(),  numeric_limits<double>::max(),  numeric_limits<double>::max() };
 			vec bbMax{ -numeric_limits<double>::max(), -numeric_limits<double>::max(), -numeric_limits<double>::max() };
 			for (size_t scanlineIdxY = 0; scanlineIdxY < layout.y; scanlineIdxY++)

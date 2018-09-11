@@ -37,6 +37,7 @@ namespace supra
 		m_callFrequency.setName("IGTL");
 
 		m_valueRangeDictionary.set<uint32_t>("port", 1, 65535, 18944, "Port");
+		m_valueRangeDictionary.set<std::string>("streamName", "IGTL", "Stream name");
 		m_isReady = false;
 		m_isConnected = false;
 	}
@@ -86,6 +87,7 @@ namespace supra
 	void OpenIGTLinkOutputDevice::configurationDone()
 	{
 		m_port = m_configurationDictionary.get<uint32_t>("port");
+		m_streamName = m_configurationDictionary.get<std::string>("streamName");
 	}
 
 	void OpenIGTLinkOutputDevice::writeData(std::shared_ptr<RecordObject> data)
@@ -163,8 +165,15 @@ namespace supra
 				pImageMsg->SetScalarType(igtl::ImageMessage::TYPE_FLOAT32);
 			}
 
+			pImageMsg->SetEndian(igtl::ImageMessage::ENDIAN_LITTLE);
+			igtl::Matrix4x4 m;
+			igtl::IdentityMatrix(m);
+			m[0][0] = -1;
+			m[1][1] = -1;
+			
+			pImageMsg->SetMatrix(m);
 			pImageMsg->SetNumComponents(1);
-			pImageMsg->SetDeviceName("SUPRA");
+			pImageMsg->SetDeviceName(m_streamName.c_str());
 			pImageMsg->AllocateScalars();
 			igtl::TimeStamp::Pointer pTimestamp = igtl::TimeStamp::New();
 			double timestampSeconds;
@@ -224,7 +233,7 @@ namespace supra
 
 			for (size_t i = 0; i < trackData->getSensorData().size(); ++i)
 				addTrackingData(msg, trackData->getSensorData()[i], static_cast<int>(i));
-			msg->SetDeviceName("SUPRA");
+			msg->SetDeviceName(m_streamName.c_str());
 			igtl::TimeStamp::Pointer pTimestamp = igtl::TimeStamp::New();
 			double timestampSeconds;
 			double timestampFrac = modf(trackData->getSyncTimestamp(), &timestampSeconds);

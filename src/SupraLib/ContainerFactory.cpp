@@ -37,15 +37,12 @@ namespace supra
 	{
 		assert(location < LocationINVALID);
 		
-		uint8_t* buffer = nullptr;
-		
 		// Check whether the queue for this location and size has a buffer left
-		
+		uint8_t* buffer = nullptr;
 		{
 			// by directly accessing the desired length in the map sm_bufferMaps[location],
 			// the map entry is created if it does not already exist. That means the map is
 			// modified here
-
 			tbb::concurrent_queue<std::pair<uint8_t*, double> >* queuePointer =
 				&(sm_bufferMaps[location][numBytes]);
 
@@ -56,7 +53,7 @@ namespace supra
 				buffer = queueEntry.first;
 			}
 		}
-		
+
 		// If the queue did not contain a buffer, allocate a new one
 		if (!buffer)
 		{
@@ -70,10 +67,14 @@ namespace supra
 				memoryFree = static_cast<size_t>(std::max(static_cast<double>(memoryFree) - (static_cast<double>(memoryTotal) *0.02), 0.0));
 			}
 			else
-				memoryFree = numBytes;
 #endif
+			{
+				// For the host memory we just rely on the 
+				memoryFree = numBytes;
+			}
+
 			// If not, relase enough unused buffers, starting with the ones that have been returned the longest time ago.
-			if(memoryFree < numBytes)
+			if (memoryFree < numBytes)
 			{
 				freeBuffers(numBytes, location);
 			}
@@ -81,6 +82,7 @@ namespace supra
 			// additionaly, release memory that has been returned over XX (e.g. 30) seconds ago
 			freeOldBuffers();
 
+			// Now that we have made the required memory available, we can allocate the buffer
 			buffer = allocateMemory(numBytes, location);
 		}
 
@@ -104,7 +106,7 @@ namespace supra
 	}
 	void ContainerFactory::initStreams()
 	{
-		//logging::log_log("ContainerFactory: Initializing ", sm_numberStreams, " streams.");
+		logging::log_log("ContainerFactory: Initializing ", sm_numberStreams, " streams.");
 		sm_streamIndex = 0;
 #ifdef HAVE_CUDA
 		sm_streams.resize(sm_numberStreams);
@@ -165,7 +167,6 @@ namespace supra
 			{
 				size_t numBytesBuffer = mapIterator->first;
 				std::pair<uint8_t*, double> queueEntry;
-				//if(mapIterator->second.try_pop(queueEntry))
 				if(mapIterator->second.try_pop(queueEntry))
 				{
 					// If there is an element in this queue, remove it and free the memory
@@ -174,8 +175,7 @@ namespace supra
 					numBuffersFreed++;
 				}
 			}
-		} while (numBytesFreed < numBytesMin);
-		//while (numBytesFreed < numBytesMin && numBuffersFreed > 0);
+		} while (numBytesFreed < numBytesMin && numBuffersFreed > 0);
 	}
 
 	void ContainerFactory::freeOldBuffers()
@@ -196,8 +196,6 @@ namespace supra
 					if (mapIterator->second.try_pop(bufferPair))
 					{
 						lastTime = bufferPair.second;
-						//freeMemory(bufferPair.first, numBytesBuffer, location);
-						
 						if (lastTime < deleteTime)
 						{
 							freeMemory(bufferPair.first, numBytesBuffer, location);
@@ -255,9 +253,8 @@ namespace supra
 	std::mutex ContainerFactory::sm_streamMutex;
 
 	constexpr double ContainerFactory::sm_deallocationTimeout;
-	
+
 	std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_queue<std::pair<uint8_t*, double> > >, LocationINVALID> ContainerFactory::sm_bufferMaps;
-	//std::array<tbb::concurrent_unordered_map<size_t, tbb::concurrent_bounded_queue<std::pair<uint8_t*, double> > >, LocationINVALID> ContainerFactory::sm_bufferMaps;
 
 	std::thread ContainerFactory::sm_garbageCollectionThread(&ContainerFactory::garbageCollectionThreadFunction);
 }

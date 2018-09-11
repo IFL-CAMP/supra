@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
 		Clock::time_point t1 = Clock::now();
 		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time for reading XML: " << ms.count() << "ms\n";
+		//std::cout << "Time for reading XML: " << ms.count() << "ms\n";
 
 		t0 = Clock::now();
 		SupraManager::Get()->startOutputs();
@@ -41,26 +41,26 @@ int main(int argc, char** argv) {
 		t1 = Clock::now();
 
 		ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time for start outputs and start inputs: " << ms.count() << "ms\n";
+		//std::cout << "Time for start outputs and start inputs: " << ms.count() << "ms\n";
 
 		t0 = Clock::now();
 		SupraManager::Get()->stopAndWaitInputs();
 		t1 = Clock::now();
 
 		ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time for stopandWaitinputs: " << ms.count() << "ms\n";
+		//std::cout << "Time for stopandWaitinputs: " << ms.count() << "ms\n";
 
 		t0 = Clock::now();
 		SupraManager::Get()->waitForGraph();
 		t1 = Clock::now();
 
 		ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		std::cout << "Time for waitForGraph: " << ms.count() << "ms\n";
+		//std::cout << "Time for waitForGraph: " << ms.count() << "ms\n";
 		
 		Clock::time_point t2 = Clock::now();
 		ms = std::chrono::duration_cast<milliseconds>(t2 - t00);
-		std::cout << "Time for Reconstruction: " << ms.count() << "ms\n";
+		//std::cout << "Time for Reconstruction: " << ms.count() << "ms\n";
 	
-		std::cout << "all done" << std::endl;
+		//std::cout << "all done" << std::endl;
 	}
 }

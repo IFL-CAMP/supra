@@ -70,6 +70,10 @@ namespace supra
 		std::atomic_bool m_isRecording;
 		size_t m_sequencesWritten;
 
+		bool m_writeMockData;
+		std::string m_mockDataFilename;
+		bool m_mockDataWritten;
+
 		// maximum number of individual elements (frames,sequences,trackingSets) to be written
 		size_t m_maxElementNumber;
 		size_t m_lastElementNumber;

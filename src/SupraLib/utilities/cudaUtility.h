@@ -12,6 +12,7 @@
 #ifndef __CUDAUTILITY_H__
 #define __CUDAUTILITY_H__
 
+#include <cmath>
 #ifdef HAVE_CUDA
 #include <cuda_runtime_api.h>
 #ifdef HAVE_CUFFT
@@ -23,7 +24,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cfloat>
-
 
 namespace supra
 {

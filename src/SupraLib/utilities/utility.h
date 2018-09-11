@@ -38,7 +38,6 @@ namespace supra
 #ifndef M_PI
 	/// Definition of pi for the cuda compile path, as cuda math.h does not seem to provide it.
 	constexpr auto M_PI = 3.14159265358979323846;
-	constexpr auto M_PIx2 = 3.14159265358979323846;
 #endif //!M_PI
 	/// Definition of eps following the value of matlabs "eps()"
 	constexpr double M_EPS = 2.2204e-16;
@@ -76,13 +75,13 @@ namespace supra
 
 	/// Conversion function from degree to radian
 	template <typename T>
-	constexpr T degToRad(const T &deg)
+	constexpr T degToRad(T deg)
 	{
 		return deg*M_PI / 180.0;
 	}
 	/// Conversion function from radian to degree
 	template <typename T>
-	constexpr T radToDeg(const T &rad)
+	constexpr T radToDeg(T rad)
 	{
 		return rad * 180 / M_PI;
 	}

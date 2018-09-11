@@ -91,6 +91,7 @@ namespace supra
 
 		enum ImageState {
 			Raw,
+			RawDelayed,
 			RF,
 			EnvDetected,
 			PreScan,
@@ -108,6 +109,7 @@ namespace supra
 		USImageProperties();
 		USImageProperties(vec2s scanlineLayout, size_t numSamples, USImageProperties::ImageType imageType, USImageProperties::ImageState imageState, USImageProperties::TransducerType transducerType, double depth);
 		USImageProperties(const USImageProperties& a);
+		USImageProperties(const std::string & mockJsonMetadataFilename);
 
 	public:
 		/////////////////////////////////////////////////////////////////////
@@ -126,6 +128,8 @@ namespace supra
 
 		template <typename valueType>
 		void setSpecificParameter(std::string parameterName, valueType value);	// set one interface-specific parameter
+
+		void writeMetaDataForMock(std::string filename) const;
 
 		/////////////////////////////////////////////////////////////////////
 		// simple getters

@@ -40,6 +40,7 @@ namespace supra
 				const std::vector<double>& bandwidths,
 				const std::vector<double>& weights);
 		int decimatedSignalLength(int numSamples, uint32_t decimation);
+
 	private:
 		void prepareFilter();
 

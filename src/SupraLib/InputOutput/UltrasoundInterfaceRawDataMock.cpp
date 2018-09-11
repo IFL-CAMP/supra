@@ -27,7 +27,7 @@ using namespace std;
 namespace supra
 {
 	UltrasoundInterfaceRawDataMock::UltrasoundInterfaceRawDataMock(tbb::flow::graph & graph, const std::string & nodeID)
-		: AbstractInput<RecordObject>(graph, nodeID)
+		: AbstractInput(graph, nodeID,1)
 		, m_sequenceIndex(0)
 		, m_frameIndex(0)
 		, m_numel(0)
@@ -38,7 +38,7 @@ namespace supra
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<bool>("singleImage", { true, false }, false, "Single image");
 		m_valueRangeDictionary.set<bool>("streamSequenceOnce", { true, false }, false, "Emit sequences once");
-		m_valueRangeDictionary.set<int>("frequency", 1, 100, 5, "Frequency");
+		m_valueRangeDictionary.set<double>("frequency", 0.001, 100, 5, "Frequency");
 		m_valueRangeDictionary.set<string>("mockMetaDataFilename", "", "Mock meta data filename");
 		m_valueRangeDictionary.set<string>("mockDataFilename", "", "Mock data filename");
 
@@ -74,7 +74,6 @@ namespace supra
 			m_sequenceLengths[k] = filesizeBytes / (m_numel * sizeof(int16_t));
 		}
 
-		//std::cout << "Mock data filenames size: " << m_mockDataFilenames.size() << std::endl;
 		readNextFrame();
 	}
 
@@ -99,7 +98,7 @@ namespace supra
 		lock_guard<mutex> lock(m_objectMutex);
 		if (configKey == "frequency")
 		{
-			m_frequency = m_configurationDictionary.get<int>("frequency");
+			m_frequency = m_configurationDictionary.get<double>("frequency");
 			if (getTimerFrequency() != m_frequency)
 			{
 				setUpTimer(m_frequency);
@@ -162,7 +161,7 @@ namespace supra
 		//read conf values
 		m_singleImage = m_configurationDictionary.get<bool>("singleImage");
 		m_streamSequenceOnce = m_configurationDictionary.get<bool>("streamSequenceOnce");
-		m_frequency = m_configurationDictionary.get<int>("frequency");
+		m_frequency = m_configurationDictionary.get<double>("frequency");
 		m_mockMetadataFilename = m_configurationDictionary.get<string>("mockMetaDataFilename");
 		m_mockDataFilenames = split(m_configurationDictionary.get<string>("mockDataFilename"), ',');
 		for (auto& filename : m_mockDataFilenames)
@@ -172,16 +171,11 @@ namespace supra
 	}
 
 	void UltrasoundInterfaceRawDataMock::readNextFrame()
-	{	
-		auto mockDataHost = new Container<int16_t>(LocationHost, ContainerFactory::getNextStream(), m_numel);
-		//auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, ContainerFactory::getNextStream(), m_numel);
+	{
+		auto mockDataHost = make_shared<Container<int16_t> >(LocationHost, ContainerFactory::getNextStream(), m_numel);
 
 		m_mockDataStreams[m_sequenceIndex]->read(reinterpret_cast<char*>(mockDataHost->get()), m_numel * sizeof(int16_t));
 		m_pMockData = make_shared<Container<int16_t> >(LocationGpu, *mockDataHost);
-
-		delete mockDataHost;
-		mockDataHost = nullptr;
-		
 		// advance to the next image and sequence where required
 		m_frameIndex = (m_frameIndex + 1) % m_sequenceLengths[m_sequenceIndex];
 		if (m_frameIndex == 0)
@@ -189,7 +183,9 @@ namespace supra
 			m_mockDataStreams[m_sequenceIndex]->seekg(0);
 			m_sequenceIndex = (m_sequenceIndex + 1) % m_sequenceLengths.size();
 			if (m_sequenceIndex == 0 && m_streamSequenceOnce)
+			{
 				m_lastFrame = true;
+			}
 		}
 	}
 
