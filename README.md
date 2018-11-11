@@ -59,47 +59,21 @@ Building
 ### Requirements
 
 * cmake &ge; 3.4
-* gcc &ge; 4.8 or min. Visual Studio 2015
+* gcc &ge; 4.8 or min. Visual Studio 2015 (Compiler needs to be supported by CUDA! For that, see the CUDA installation instructions.)
 * QT &ge; 5.5
 * TBB
 * CUDA &ge; 7.0
 	
 	
-### Build instructions (Ubuntu 16.04 / 17.10)
-
-Only 17.10:
-Install GCC 6 (or any other version lower), as 6.3 is latest supported by CUDA 9.0
-	
-	sudo apt-get install gcc-6 g++-6
-
-Install CMake (&ge; 3.4):	
-(installs 3.5 or up on current 16.04, and 3.9 on 17.10)
-
-	sudo apt-get install cmake cmake-gui
-
-Install QT dev libraries (&ge; 5.5):
-	
-	sudo apt-get install qt5-default
-
-Install Intel Thread Building Blocks
-
-	sudo apt-get install libtbb-dev
+### Build instructions (Ubuntu 16.04 / 18.04)
 
 Install CUDA (&ge; 7.0) as described by NVIDIA https://developer.nvidia.com/cuda-downloads .
 Keep in mind that the C++ host compiler has to be supported by the CUDA version.
 (Check http://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html and http://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html for details.)
 
-Build OpenIGTLink (*OPTIONAL*, but recommended)
+Build requirements
 
-	sudo apt-get install git
-	mkdir -p $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
-	git clone https://github.com/openigtlink/OpenIGTLink.git
-	cd OpenIGTLink
-	git checkout release-2.1
-	mkdir -p build && cd build
-	cmake -D BUILD_TESTING=OFF ..
-	make -j5
-	cd $HOME/git
+	apt-get install cmake cmake-gui qt5-default libtbb-dev libopenigtlink-dev git
 	
 SUPRA
 
@@ -113,13 +87,12 @@ SUPRA
 1. Configure
 2. For systems with multiple gcc versions, make sure to select one supported by the installed CUDA version
 3. You might need to specify the CUDA toolkit directory (usually "`/usr/local/cuda`")
-4. Specify OpenIGTLink build directory for OpenIGTLink_DIR
-5. Configure & Generate, then close cmake and build
-6. Build SUPRA
+4. Configure & Generate, then close cmake and build
+5. Build SUPRA
 	
 	make -j5
 	
-7. Start SUPRA: See below
+6. Start SUPRA: See below
 	
 Demo (No US-system required!)
 ----------------

@@ -7,6 +7,13 @@ include(supraIncludeITK)
 # Widgets finds its own dependencies.
 find_package(Qt5 REQUIRED Widgets)
 
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed
+set(CMAKE_AUTOMOC ON)
+# Create code from a list of Qt designer ui files
+set(CMAKE_AUTOUIC ON)
+
 include(ExternalProject)
 
 SET(NodeEditor_DIR "${CMAKE_CURRENT_BINARY_DIR}/NodeEditor")
@@ -95,15 +102,6 @@ set ( UIS
  parametersWidget.ui
  previewWidget.ui
 )
-
-# Tell CMake to run moc when necessary:
-set(CMAKE_AUTOMOC ON)
-# As moc files are generated in the binary dir, tell CMake
-# to always look for includes there:
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-QT5_WRAP_CPP(HEADER_MOC ${MOC_HEADERS})
-QT5_WRAP_UI(FORMS ${UIS})
 
 IF(${SUPRA_USE_CAMPVIS})
 	# The available CAMPVis linking targets are campvis-core, campvis-modules, or campvis-application-lib
