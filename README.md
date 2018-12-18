@@ -62,12 +62,12 @@ Building
 * gcc &ge; 4.8 or min. Visual Studio 2015 (Compiler needs to be supported by CUDA! For that, see the CUDA installation instructions.)
 * QT &ge; 5.5
 * TBB
-* CUDA &ge; 7.0
+* CUDA &ge; 10.0
 	
 	
 ### Build instructions (Ubuntu 16.04 / 18.04)
 
-Install CUDA (&ge; 7.0) as described by NVIDIA https://developer.nvidia.com/cuda-downloads .
+Install CUDA (&ge; 10.0) as described by NVIDIA https://developer.nvidia.com/cuda-downloads .
 Keep in mind that the C++ host compiler has to be supported by the CUDA version.
 (Check http://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html and http://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html for details.)
 
