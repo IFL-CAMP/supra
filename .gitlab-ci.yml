@@ -30,7 +30,7 @@ build_ubuntu_1804_cuda_ros:
   tags:
     - linux
     - g++
-  image: supra-builder:ros-lunar-cuda-10.0-ubuntu-18.04
+  image: supra-builder:ros-melodic-cuda-10.0-ubuntu-18.04
   script:
     - mkdir -p build_gcc
     - cd build_gcc
