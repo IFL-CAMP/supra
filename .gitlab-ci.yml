@@ -1,67 +1,37 @@
 stages:
   - build
 
-build_ubuntu_1604_cuda9_ros:
+build_ubuntu_1604_cuda10_ros:
   stage: build
   tags:
     - linux
     - g++
-  image: supra-builder:ros-kinetic-cuda-9.0-ubuntu-16.04
+  image: supra-builder:ros-kinetic-cuda-10.0-ubuntu-16.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
-    - mv openigtlink* OpenIGTLink
-    - cd OpenIGTLink
-    - mkdir -p build
-    - cd build
-    - cmake .. -DBUILD_TESTING=OFF
-    - make
-    - make install
-    - cd ../..
-    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON -DSUPRA_WARNINGS_AS_ERRORS=ON
     - make
     
-build_ubuntu_1604_cuda8_nohw:
+build_ubuntu_1604_cuda10_nohw:
   stage: build
   tags:
     - linux
     - g++
-  image: supra-builder:cuda-8.0-ubuntu-16.04
+  image: supra-builder:cuda-10.0-ubuntu-16.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
-    - mv openigtlink* OpenIGTLink
-    - cd OpenIGTLink
-    - mkdir -p build
-    - cd build
-    - cmake .. -DBUILD_TESTING=OFF
-    - make
-    - make install
-    - cd ../..
-    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_WARNINGS_AS_ERRORS=ON
     - make
     
-build_ubuntu_1704_cuda_ros:
+build_ubuntu_1804_cuda_ros:
   stage: build
   tags:
     - linux
     - g++
-  image: supra-builder:ros-lunar-cuda-9.0-ubuntu-17.04
+  image: supra-builder:ros-melodic-cuda-10.0-ubuntu-18.04
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
-    - mv openigtlink* OpenIGTLink
-    - cd OpenIGTLink
-    - mkdir -p build
-    - cd build
-    - cmake .. -DBUILD_TESTING=OFF
-    - make
-    - make install
-    - cd ../..
-    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON -DSUPRA_WARNINGS_AS_ERRORS=ON
@@ -72,18 +42,8 @@ build_ubuntu_1404_cuda_cephasonics:
   tags:
     - linux
     - g++
-  image: supra-builder:ros-indigo-cuda-8.0-ubuntu-14.04-cephasonics
+  image: supra-builder:ros-indigo-cuda-10.0-ubuntu-14.04-cephasonics
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
-    - mv openigtlink* OpenIGTLink
-    - cd OpenIGTLink
-    - mkdir -p build
-    - cd build
-    - cmake .. -DBUILD_TESTING=OFF
-    - make
-    - make install
-    - cd ../..
-    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=ON -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=ON -DSUPRA_WARNINGS_AS_ERRORS=ON
@@ -96,16 +56,6 @@ build_ubuntu_nocuda:
     - g++
   image: supra-builder:nocuda-ubuntu
   script:
-    - wget -q -O - `curl -s https://api.github.com/repos/openigtlink/OpenIGTLink/releases/tags/v2.1 | grep tarball_url | head -n 1 | cut -d '"' -f 4` | tar -xz
-    - mv openigtlink* OpenIGTLink
-    - cd OpenIGTLink
-    - mkdir -p build
-    - cd build
-    - cmake .. -DBUILD_TESTING=OFF
-    - make
-    - make install
-    - cd ../..
-    - export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/usr/local/lib/igtl
     - mkdir -p build_gcc
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_BEAMFORMER=OFF -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_DEVICE_TRACKING_ROS=OFF -DSUPRA_CUDA=OFF -DSUPRA_WARNINGS_AS_ERRORS=ON
@@ -128,5 +78,5 @@ build_windows_win32:
   script:
     - IF NOT EXIST "build_msvs_win32" mkdir "build_msvs_win32"
     - cd build_msvs_win32
-    - cmake .. -G "Visual Studio 14 2015" -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=ON -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_EXTERNALS="C:/Users/ifl-ci/repo" -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build_win32 -DQt5_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015/lib/cmake/Qt5
+    - cmake .. -G "Visual Studio 14 2015" -DSUPRA_CUDA=OFF -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=ON -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_EXTERNALS="C:/Users/ifl-ci/repo" -DOpenIGTLink_DIR=C:/Users/ifl-ci/repo/OpenIGTLink/build_win32 -DQt5_DIR=C:/Users/ifl-ci/repo/QT5/5.10.0/msvc2015/lib/cmake/Qt5
     - cmake --build .
