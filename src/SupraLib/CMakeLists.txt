@@ -222,6 +222,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
 		Beamformer/RawDelayNode.cpp
+		Beamformer/RxEventLimiterNode.cpp
 		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
@@ -253,6 +254,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USRawData.h
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
+		Beamformer/RxEventLimiterNode.h
 		InputOutput/UltrasoundInterfaceRawDataMock.h)
 	IF(SUPRA_CUFFT)
 		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
