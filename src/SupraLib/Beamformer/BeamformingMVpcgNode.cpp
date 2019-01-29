@@ -42,6 +42,8 @@ namespace supra
 		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 0, "Sub-array size");
 		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
+		m_valueRangeDictionary.set<uint32_t>("maxIterations", 0, 10000, 1000, "Max iterations");
+		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100, 0, -15, "Convergence threshold exponent");
 		
 		configurationChanged();
 
@@ -56,6 +58,8 @@ namespace supra
 		m_subArraySize = m_configurationDictionary.get<uint32_t>("subArraySize");
 		m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
 		m_outputType = m_configurationDictionary.get<DataType>("outputType");
+		m_maxIterations = m_configurationDictionary.get<uint32_t>("maxIterations");
+		m_convergenceThreshold = std::pow(10, m_configurationDictionary.get<double>("convergenceThresholdExponent"));
 	}
 
 	void BeamformingMVpcgNode::configurationEntryChanged(const std::string& configKey)
@@ -73,6 +77,14 @@ namespace supra
 		{
 			m_outputType = m_configurationDictionary.get<DataType>("outputType");
 		}
+		else if (configKey == "maxIterations")
+		{
+			m_maxIterations = m_configurationDictionary.get<uint32_t>("maxIterations");
+		}
+		else if (configKey == "convergenceThresholdExponent")
+		{
+			m_convergenceThreshold = std::pow(10, m_configurationDictionary.get<double>("convergenceThresholdExponent"));
+		}
 		if (m_lastSeenImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
@@ -88,11 +100,11 @@ namespace supra
 		{
 		case supra::TypeInt16:
 			pImageRF = performRxBeamforming<RawDataType, int16_t>(
-				rawData, m_subArraySize, m_temporalSmoothing);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterations, m_convergenceThreshold);
 			break;
 		case supra::TypeFloat:
 			pImageRF = performRxBeamforming<RawDataType, float>(
-				rawData, m_subArraySize, m_temporalSmoothing);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterations, m_convergenceThreshold);
 			break;
 		default:
 			logging::log_error("BeamformingMVNode: Output image type not supported:");

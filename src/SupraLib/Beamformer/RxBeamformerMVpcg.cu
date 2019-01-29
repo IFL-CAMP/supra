@@ -470,7 +470,9 @@ namespace supra
 		shared_ptr<USImage> performRxBeamforming(
 			shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
-			uint32_t temporalSmoothing)
+			uint32_t temporalSmoothing,
+			uint32_t maxIterations,
+			double convergenceThreshold)
 		{
 			uint32_t sampleBlockSize = 2000;//128;
 
@@ -583,8 +585,8 @@ namespace supra
 						Avectors->get(),
 						subArraySize,
 						numSamplesBatch,
-						30,
-						1e-6f,
+						maxIterations,
+						(float)convergenceThreshold,
 						Wvectors->get()
 					);
 					cudaSafeCall(cudaPeekAtLastError());
@@ -623,21 +625,29 @@ namespace supra
 			shared_ptr<USImage> performRxBeamforming<int16_t, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing);
+				uint32_t temporalSmoothing,
+				uint32_t maxIterations,
+				double convergenceThreshold);
 		template
 			shared_ptr<USImage> performRxBeamforming<int16_t, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing);
+				uint32_t temporalSmoothing,
+				uint32_t maxIterations,
+				double convergenceThreshold);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing);
+				uint32_t temporalSmoothing,
+				uint32_t maxIterations,
+				double convergenceThreshold);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing);
+				uint32_t temporalSmoothing,
+				uint32_t maxIterations,
+				double convergenceThreshold);
 	}
 }

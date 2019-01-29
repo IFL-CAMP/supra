@@ -27,7 +27,9 @@ namespace supra
 		std::shared_ptr<USImage> performRxBeamforming(
 			std::shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
-			uint32_t temporalSmoothing);
+			uint32_t temporalSmoothing,
+			uint32_t maxIterations,
+			double convergenceThreshold);
 	}
 }
 
