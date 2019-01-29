@@ -197,6 +197,11 @@ namespace supra
 
 		template <typename T>
 		__device__ void blockReduceWarpAtomic(T in, T* out) {
+			// We only add to the output, so set it to zero first
+			if (threadIdx.x == 0)
+			{
+				*out = 0;
+			}
 			auto warpSum = warpAllReduceSum(in);
 			if ((threadIdx.x & (warpSize - 1)) == 0)
 			{
@@ -271,6 +276,9 @@ namespace supra
 			uint32_t stride, uint32_t numElements)
 		{
 			int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
+			// Because we only add atomically to the output, we need to set the target vector to 0 first
+			setVectorBlockWise(vect, 0.0f, numElements);
+
 			uint32_t numElementsMatrix = numElements*numElements;
 			for (int matrixIdx = tIdx; matrixIdx < numElementsMatrix; matrixIdx += blockDim.x*blockDim.y)
 			{
