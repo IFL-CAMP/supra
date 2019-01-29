@@ -172,15 +172,15 @@ namespace supra
 				float scaling = 1.0f;
 				for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
 				{
-					float finalEntry = 0.0f;
-					for (int tempIdx = firstIdx; tempIdx <= lastIdx; tempIdx++)
-					{
-						finalEntry += Rmatrices[matrixIdx + tempIdx*numelRfull];
-					}
-
 					int colIdx = matrixIdx % subArraySizeLocal;
 					int rowIdx = matrixIdx / subArraySizeLocal;
 					int matrixStorageIdx = colIdx + rowIdx * subArraySize;
+
+					float finalEntry = 0.0f;
+					for (int tempIdx = firstIdx; tempIdx <= lastIdx; tempIdx++)
+					{
+						finalEntry += Rmatrices[matrixStorageIdx + tempIdx*numelRfull];
+					}
 					TempRmatrices[matrixStorageIdx + sampleIdx*numelRfull] = finalEntry*scaling;
 				}
 			}
