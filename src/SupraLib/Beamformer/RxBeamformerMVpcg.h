@@ -16,8 +16,6 @@
 
 #include <memory>
 
-#include <cublas_v2.h>
-
 namespace supra
 {
 	class USRawData;
@@ -29,8 +27,7 @@ namespace supra
 		std::shared_ptr<USImage> performRxBeamforming(
 			std::shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
-			uint32_t temporalSmoothing,
-			cublasHandle_t cublasH);
+			uint32_t temporalSmoothing);
 	}
 }
 

@@ -20,8 +20,6 @@
 #include "AbstractNode.h"
 #include "RecordObject.h"
 
-#include <cublas_v2.h>
-
 namespace supra
 {
 	//forward declarations
@@ -67,7 +65,6 @@ namespace supra
 		std::shared_ptr<USImageProperties> m_editedImageProperties;
 
 		std::mutex m_mutex;
-		cublasHandle_t m_cublasH;
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
 

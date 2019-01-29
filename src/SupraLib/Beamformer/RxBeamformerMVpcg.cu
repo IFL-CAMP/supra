@@ -470,8 +470,7 @@ namespace supra
 		shared_ptr<USImage> performRxBeamforming(
 			shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
-			uint32_t temporalSmoothing,
-			cublasHandle_t cublasH)
+			uint32_t temporalSmoothing)
 		{
 			uint32_t sampleBlockSize = 2000;//128;
 
@@ -511,11 +510,6 @@ namespace supra
 				std::make_shared<Container<uint32_t> >(ContainerLocation::LocationGpu, stream, sampleBlockSize);
 			shared_ptr<Container<uint32_t> > subArrayOffsets =
 				std::make_shared<Container<uint32_t> >(ContainerLocation::LocationGpu, stream, numSubArrays*sampleBlockSize);
-
-			shared_ptr<Container<int> > pivotizationArray =
-				std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, subArraySize* sampleBlockSize);
-			std::vector<int> cublasInfoArrayHost(sampleBlockSize);
-			shared_ptr<Container<int> > cublasInfoArrayDevice = std::make_shared<Container<int> >(ContainerLocation::LocationGpu, stream, sampleBlockSize);
 
 			for (uint32_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 			{
@@ -629,25 +623,21 @@ namespace supra
 			shared_ptr<USImage> performRxBeamforming<int16_t, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing,
-				cublasHandle_t cublasH);
+				uint32_t temporalSmoothing);
 		template
 			shared_ptr<USImage> performRxBeamforming<int16_t, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing,
-				cublasHandle_t cublasH);
+				uint32_t temporalSmoothing);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing,
-				cublasHandle_t cublasH);
+				uint32_t temporalSmoothing);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
-				uint32_t temporalSmoothing,
-				cublasHandle_t cublasH);
+				uint32_t temporalSmoothing);
 	}
 }

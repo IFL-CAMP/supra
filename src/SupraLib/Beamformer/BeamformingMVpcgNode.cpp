@@ -17,7 +17,6 @@
 
 #include <utilities/Logging.h>
 #include <utilities/cudaUtility.h>
-#include <utilities/cublasUtility.h>
 using namespace std;
 using namespace supra::RxBeamformerMVpcg;
 
@@ -46,13 +45,10 @@ namespace supra
 		
 		configurationChanged();
 
-		cublasSafeCall(cublasCreate(&m_cublasH));
-		cublasSafeCall(cublasSetAtomicsMode(m_cublasH, CUBLAS_ATOMICS_ALLOWED));
 	}
 
 	BeamformingMVpcgNode::~BeamformingMVpcgNode()
 	{
-		cublasSafeCall(cublasDestroy(m_cublasH));
 	}
 
 	void BeamformingMVpcgNode::configurationChanged()
@@ -88,16 +84,15 @@ namespace supra
 	{
 		shared_ptr<USImage> pImageRF = nullptr;
 		cudaSafeCall(cudaDeviceSynchronize());
-		cublasSafeCall(cublasSetStream(m_cublasH, rawData->getData<RawDataType>()->getStream()));
 		switch (m_outputType)
 		{
 		case supra::TypeInt16:
 			pImageRF = performRxBeamforming<RawDataType, int16_t>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
+				rawData, m_subArraySize, m_temporalSmoothing);
 			break;
 		case supra::TypeFloat:
 			pImageRF = performRxBeamforming<RawDataType, float>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_cublasH);
+				rawData, m_subArraySize, m_temporalSmoothing);
 			break;
 		default:
 			logging::log_error("BeamformingMVNode: Output image type not supported:");
