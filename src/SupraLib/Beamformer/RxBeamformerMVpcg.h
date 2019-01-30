@@ -29,7 +29,8 @@ namespace supra
 			uint32_t subArraySize,
 			uint32_t temporalSmoothing,
 			uint32_t maxIterations,
-			double convergenceThreshold);
+			double convergenceThreshold,
+			double subArrayScalingPower);
 	}
 }
 

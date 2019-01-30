@@ -73,6 +73,7 @@ namespace supra
 		DataType m_outputType;
 		uint32_t m_maxIterations;
 		double m_convergenceThreshold;
+		double m_subArrayScalingPower;
 	};
 }
 

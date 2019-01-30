@@ -412,6 +412,7 @@ namespace supra
 			uint32_t scanlineIdx,
 			uint32_t sampleIdxStart,
 			uint32_t subArraySize,
+			float subArrayScalingPower,
 			const uint8_t * subArrayMasks,
 			const uint32_t * subArraySizes,
 			const uint32_t * subArrayOffsets,
@@ -443,7 +444,7 @@ namespace supra
 				{
 					weightScaling += RinvAloc[vectorIdx] * Aloc[vectorIdx];
 				}
-				weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * numSubArraysActive);
+				weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * pow(static_cast<float>(numSubArraysActive), subArrayScalingPower));
 
 				// compute one sample at a time, according to spatial smoothing
 				float beamformedSample = 0.0f;
@@ -480,7 +481,8 @@ namespace supra
 			uint32_t subArraySize,
 			uint32_t temporalSmoothing,
 			uint32_t maxIterations,
-			double convergenceThreshold)
+			double convergenceThreshold,
+			double subArrayScalingPower)
 		{
 			uint32_t sampleBlockSize = 2000;//128;
 
@@ -610,6 +612,7 @@ namespace supra
 						scanlineIdx,
 						sampleIdx,
 						subArraySize,
+						(float)subArrayScalingPower,
 						subArrayMasks->get(),
 						subArraySizes->get(),
 						subArrayOffsets->get(),
@@ -635,27 +638,31 @@ namespace supra
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
 				uint32_t maxIterations,
-				double convergenceThreshold);
+				double convergenceThreshold,
+				double subArrayScalingPower);
 		template
 			shared_ptr<USImage> performRxBeamforming<int16_t, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
 				uint32_t maxIterations,
-				double convergenceThreshold);
+				double convergenceThreshold,
+				double subArrayScalingPower);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
 				uint32_t maxIterations,
-				double convergenceThreshold);
+				double convergenceThreshold,
+				double subArrayScalingPower);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
 				uint32_t maxIterations,
-				double convergenceThreshold);
+				double convergenceThreshold,
+				double subArrayScalingPower);
 	}
 }
