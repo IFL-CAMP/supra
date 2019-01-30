@@ -101,7 +101,6 @@ namespace supra
 	std::shared_ptr<USImage> BeamformingMVpcgNode::beamformTemplated(shared_ptr<const USRawData> rawData)
 	{
 		shared_ptr<USImage> pImageRF = nullptr;
-		cudaSafeCall(cudaDeviceSynchronize());
 		switch (m_outputType)
 		{
 		case supra::TypeInt16:
@@ -116,7 +115,6 @@ namespace supra
 			logging::log_error("BeamformingMVNode: Output image type not supported:");
 			break;
 		}
-		cudaSafeCall(cudaDeviceSynchronize());
 		return pImageRF;
 	}
 
