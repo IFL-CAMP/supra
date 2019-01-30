@@ -114,7 +114,7 @@ namespace supra
 	__inline__ __device__ T warpAllReduceSum(T val) {
 		for (int mask = warpSize / 2; mask > 0; mask /= 2)
 		{
-			val += __shfl_xor(val, mask);
+			val += __shfl_xor_sync(0xFFFFFFFF, val, mask);
 		}
 		return val;
 	}
@@ -218,7 +218,7 @@ namespace supra
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH)
 	{
-		int sampleBlockSize = 2000;//128;
+		uint32_t sampleBlockSize = 2000;//128;
 
 		//Ensure the raw-data are on the gpu
 		auto gRawData = rawData->getData<ChannelDataType>();
