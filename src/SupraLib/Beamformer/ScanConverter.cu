@@ -570,7 +570,7 @@ namespace supra
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
-							//logging::log_error(":(  5 ", scanlineIdxX, ", ", scanlineIdxY);
+							logging::log_error(":(  5 ", scanlineIdxX, ", ", scanlineIdxY);
 						}
 						//scanline end points are increasing in z, that means scanlines do not intersect
 						scanlinesGood = scanlinesGood &&
@@ -578,7 +578,7 @@ namespace supra
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
-							//logging::log_error(":(  6 ", scanlineIdxX, ", ", scanlineIdxY);
+							logging::log_error(":(  6 ", scanlineIdxX, ", ", scanlineIdxY);
 						}
 						//scanlines can not be identical
 						scanlinesGood = scanlinesGood &&
@@ -586,7 +586,7 @@ namespace supra
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
-							//logging::log_error(":(  7 ", scanlineIdxX, ", ", scanlineIdxY);
+							logging::log_error(":(  7 ", scanlineIdxX, ", ", scanlineIdxY);
 						}
 						//scanlines are not skew
 						scanlinesGood = scanlinesGood &&
@@ -594,7 +594,7 @@ namespace supra
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
-							//logging::log_error(":(  8 ", scanlineIdxX, ", ", scanlineIdxY, "   det = ", det(start - endbefore, startbefore - endbefore, end - endbefore));
+							logging::log_error(":(  8 ", scanlineIdxX, ", ", scanlineIdxY, "   det = ", det(start - endbefore, startbefore - endbefore, end - endbefore));
 						}
 					}
 				}

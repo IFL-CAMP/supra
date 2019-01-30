@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceUltrasonix" id="US-Ult">
+				<param name="remoteIP" type="string">
+					160.69.69.1
+				</param>
+				<param name="RF" type="bool">
+					0
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
+			<output type="MetaImageOutputDevice" id="MHD">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					ultrasonix
+				</param>
+			</output>
+		</outputs>
+		<nodes>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Ult" port="0" />
+			<to id="MHD" port="0" />
+		</connection>
+		<connection>
+			<from id="US-Ult" port="0" />
+			<to id="IGTL" port="0" />
+		</connection>
+	</connections>
+</supra_config>

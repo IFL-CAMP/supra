@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceCephasonicsCC" id="US-Cep">
+				<param name="voltage" type="double">
+					60
+				</param>
+				<param name="endDepth" type="double">
+					60
+				</param>
+				<param name="txFocusActive" type="bool">
+					1
+				</param>
+				<param name="txFocusDepth" type="double">
+					30
+				</param>
+				<param name="txSectorAngleX" type="double">
+					0
+				</param>
+				<param name="txSectorAngleY" type="double">
+					0
+				</param>
+				<param name="numScanlinesX" type="uint32_t">
+					128
+				</param>
+				<param name="numScanlinesY" type="uint32_t">
+					1
+				</param>
+				<param name="rxScanlineSubdivisionX" type="uint32_t">
+					4
+				</param>
+				<param name="rxScanlineSubdivisionY" type="uint32_t">
+					1
+				</param>
+				<param name="numSamplesRecon" type="uint32_t">
+					2000
+				</param>
+				<param name="scanType" type="string">
+					linear
+				</param> 
+				<param name="probeName" type="string">
+					Linear
+				</param>
+				<param name="txCorrectMatchingLayers" type="bool">
+					1
+				</param>
+				<param name="txWindowType" type="string">
+					Hamming
+				</param>
+				<param name="highPassFilterBypass" type="bool">
+					0
+				</param>
+				<param name="tgc0" type="double">
+					20
+				</param>
+				<param name="tgc1" type="double">
+					21
+				</param>
+				<param name="tgc2" type="double">
+					22
+				</param>
+				<param name="tgc3" type="double">
+					24
+				</param>
+				<param name="tgc4" type="double">
+					28
+				</param>
+				<param name="tgc5" type="double">
+					34
+				</param>
+				<param name="tgc6" type="double">
+					35
+				</param>
+				<param name="tgc7" type="double">
+					38
+				</param>
+				<param name="tgc8" type="double">
+					42
+				</param>
+				<param name="tgc9" type="double">
+					44
+				</param>
+				<param name="txApertureSizeX" type="uint32_t">
+					32
+				</param>
+				<param name="txApertureSizeY" type="uint32_t">
+					1
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
+			<output type="MetaImageOutputDevice" id="MHD_Raw">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					rawData
+				</param>
+			</output>
+			<output type="MetaImageOutputDevice" id="MHD">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					beamformed_correction
+				</param>
+			</output>
+		</outputs>
+		<nodes>
+			<node type="BeamformingNode" id="BEAM">
+				<param name="windowType" type="string">
+					Hamming
+				</param>
+			</node>
+			<node type="TemporalFilterNode" id="FILT">
+			</node>
+			<node type="IQDemodulatorNode" id="DEMO">
+				<param name="decimation" type="uint32_t">
+					1
+				</param>
+			</node>
+			<node type="LogCompressorNode" id="LOGC">
+				<param name="dynamicRange" type="double">
+					40
+				</param>
+			</node>
+			<node type="ScanConverterNode" id="SCAN">
+			</node>
+			<node type="AutoQuitNode" id="AutoQuit">
+				<param name="maxMessage" type="uint32_t">
+					200
+				</param>
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Cep" port="0" />
+			<to id="BEAM" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM" port="0" />
+			<to id="DEMO" port="0" />
+		</connection>
+		<connection>
+			<from id="DEMO" port="0" />
+			<to id="FILT" port="0" />
+		</connection>
+		<connection>
+			<from id="FILT" port="0" />
+			<to id="LOGC" port="0" />
+		</connection>
+		<connection>
+			<from id="LOGC" port="0" />
+			<to id="SCAN" port="0" />
+		</connection>
+		<connection>
+			<from id="SCAN" port="0" />
+			<to id="MHD" port="0" />
+		</connection>
+		<connection>
+			<from id="SCAN" port="0" />
+			<to id="AutoQuit" port="0" />
+		</connection>
+	</connections>
+</supra_config>

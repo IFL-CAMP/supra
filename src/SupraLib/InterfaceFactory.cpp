@@ -34,6 +34,7 @@
 #include "Beamformer/ScanConverterNode.h"
 #include "Beamformer/TemporalFilterNode.h"
 #include "Beamformer/RawDelayNode.h"
+#include "Beamformer/RxEventLimiterNode.h"
 #include "StreamSyncNode.h"
 #include "TemporalOffsetNode.h"
 #include "StreamSynchronizer.h"
@@ -57,6 +58,57 @@ namespace supra
 	{
 		shared_ptr<AbstractInput> retVal = shared_ptr<AbstractInput>(nullptr);
 
+		if (numPorts>1 && deviceType != "UltrasoundInterfaceCephasonicsCC")
+		{
+			logging::log_warn("InterfaceFactory: More than one port currently not supported for input device " + deviceType + ".");
+		}
+
+#ifdef HAVE_DEVICE_TRACKING_SIM
+		if (deviceType == "TrackerInterfaceSimulated")
+		{
+			retVal = make_shared<TrackerInterfaceSimulated>(*pG, nodeID);
+		}
+#endif //HAVE_DEVICE_TRACKING_SIM
+#ifdef HAVE_DEVICE_TRACKING_IGTL
+		if (deviceType == "TrackerInterfaceIGTL")
+		{
+			retVal = make_shared<TrackerInterfaceIGTL>(*pG, nodeID);
+		}
+#endif //HAVE_DEVICE_TRACKING_IGTL
+#ifdef HAVE_DEVICE_TRACKING_ROS
+		if (deviceType == "TrackerInterfaceROS")
+		{
+			retVal = make_shared<TrackerInterfaceROS>(*pG, nodeID);
+		}
+#endif //HAVE_DEVICE_TRACKING_IGTL
+#ifdef HAVE_DEVICE_ULTRASOUND_SIM
+		if (deviceType == "UltrasoundInterfaceSimulated")
+		{
+			retVal = make_shared<UltrasoundInterfaceSimulated>(*pG, nodeID);
+		}
+#endif //HAVE_DEVICE_ULTRASOUND_SIM
+#ifdef HAVE_DEVICE_ULTRASONIX
+		if (deviceType == "UltrasoundInterfaceUltrasonix")
+		{
+			retVal = make_shared<UltrasoundInterfaceUltrasonix>(*pG, nodeID);
+		}
+#endif //HAVE_DEVICE_ULTRASONIX
+#ifdef HAVE_DEVICE_CEPHASONICS
+		if (deviceType == "UltrasoundInterfaceCephasonics")
+		{
+			retVal = make_shared<UsIntCephasonicsBmode>(*pG, nodeID);
+		}
+		if (deviceType == "UltrasoundInterfaceCephasonicsBTCC")
+		{
+			retVal = make_shared<UsIntCephasonicsBtcc>(*pG, nodeID);
+		}
+#ifdef HAVE_CUDA
+		if (deviceType == "UltrasoundInterfaceCephasonicsCC")
+		{
+			retVal = make_shared<UsIntCephasonicsCc>(*pG, nodeID, numPorts);
+		}
+#endif //HAVE_CUDA
+#endif //HAVE_DEVICE_CEPHASONICS
 #ifdef HAVE_BEAMFORMER
 		if (deviceType == "UltrasoundInterfaceRawDataMock")
 		{
@@ -90,6 +142,12 @@ namespace supra
 			retVal = make_shared<MetaImageOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_METAIMAGE_OUTPUT
+#ifdef HAVE_DEVICE_ROSIMAGE_OUTPUT
+		if (deviceType == "RosImageOutputDevice")
+		{
+			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID, queueing);
+		}
+#endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
 		logging::log_error_if(!((bool)retVal),
 			"Error creating output device. Requested type '", deviceType, "' is unknown. Did you activate the corresponding module in the build of the library?");
 		logging::log_info_if((bool)retVal,
@@ -144,6 +202,7 @@ namespace supra
 		{ "ScanConverterNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ScanConverterNode>(g, nodeID, queueing); } },
 		{ "TemporalFilterNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TemporalFilterNode>(g, nodeID, queueing); } },
 		{ "RawDelayNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<RawDelayNode>(g, nodeID, queueing); } },
+		{ "RxEventLimiterNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<RxEventLimiterNode>(g, nodeID, queueing); } },
 #endif
 #ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
 		{ "BeamformingMVNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BeamformingMVNode>(g, nodeID, queueing); } },

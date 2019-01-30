@@ -1,6 +1,9 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 3.0.0 FATAL_ERROR )
 MESSAGE(STATUS "Building SUPRA Executor")
 
+# if ITK is used we need to include this for each executable
+include(supraIncludeITK)
+
 ############################################
 #Program base source files
 SET(SUPRA_EXECUTOR_SOURCE 

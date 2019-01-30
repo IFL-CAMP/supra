@@ -21,7 +21,7 @@ void quitCallback()
 }
 
 int main(int argc, char** argv) {
-	logging::Base::setLogLevel(logging::info | logging::warning | logging::error | logging::external);
+	logging::Base::setLogLevel(logging::info);
 
 	if (argc == 1)
 	{

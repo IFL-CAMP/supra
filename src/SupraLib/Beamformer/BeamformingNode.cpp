@@ -117,10 +117,6 @@ namespace supra
 	{
 		unique_lock<mutex> l(m_mutex);
 
-		typedef std::chrono::high_resolution_clock Clock;
-		typedef std::chrono::milliseconds milliseconds;
-		Clock::time_point t0 = Clock::now();
-
 		shared_ptr<USImage> pImageRF = nullptr;
 		if (inObj->getType() == TypeUSRawData)
 		{
@@ -165,11 +161,6 @@ namespace supra
 				logging::log_error("BeamformingNode: could not cast object to USRawData type, is it in supported ElementType?");
 			}
 		}
-
-		Clock::time_point t1 = Clock::now();
-		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		//std::cout << "Time to Beam Form: " << ms.count() << "ms\n";
-
 		return pImageRF;
 	}
 

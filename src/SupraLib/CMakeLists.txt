@@ -27,11 +27,45 @@ ELSE()
 	SET(TBB_LIBRARIES tbb pthread)
 ENDIF(WIN32)
 
+# find Ultrasonix interface
+IF (SUPRA_DEVICE_ULTRASONIX)
+	IF(WIN32)
+		IF(CMAKE_CL_64)
+			MESSAGE(FATAL_ERROR "The Ultrasonix API can only be built on Win32")
+		ENDIF(CMAKE_CL_64)
+	ELSE(WIN32)
+		MESSAGE(FATAL_ERROR "The Ultrasonix API can only be built on Win32")
+	ENDIF(WIN32)
+	SET( ULTRASONIX_SDK_DIR "${SUPRA_EXTERNALS}/Ultrasonix_${SUPRA_DEVICE_ULTRASONIX_V}")
+	
+	# external library ulterius
+	add_library( ULTERIUS STATIC IMPORTED)
+
+	IF (${SUPRA_DEVICE_ULTRASONIX_V} MATCHES "5.7")
+		SET(UltrasonixHandler_LIBNAME ulterius)
+	ELSEIF (${SUPRA_DEVICE_ULTRASONIX_V} MATCHES "6.07")
+		SET(UltrasonixHandler_LIBNAME ulterius_old)
+	ENDIF()
+	SET(UltrasonixHandler_LIB_DIRS "${ULTRASONIX_SDK_DIR}/ulterius/lib/")
+	SET(UltrasonixHandler_INCLUDE_DIRS "${ULTRASONIX_SDK_DIR}/ulterius/inc" )
+ENDIF()
+
+IF (SUPRA_DEVICE_CEPHASONICS)
+	IF(WIN32)
+		MESSAGE(FATAL_ERROR "The Cephasonics interface can only be built on linux")
+	ENDIF(WIN32)
+
+	INCLUDE(supraIncludeCephasonics)
+ENDIF()
+
 IF(SUPRA_CUDA)
 	include(supraIncludeCuda)
 	set(CUDA_SEPARABLE_COMPILATION ON)
 	MESSAGE(STATUS "Found Cuda Version " ${CUDA_VERSION_STRING})
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
+	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
+	ENDIF()
 	IF(WIN32)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
 	ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
@@ -75,6 +109,15 @@ IF(SUPRA_DEVICE_IGTL_OUTPUT OR SUPRA_DEVICE_TRACKING_IGTL)
 find_package(OpenIGTLink REQUIRED)
 ENDIF(SUPRA_DEVICE_IGTL_OUTPUT OR SUPRA_DEVICE_TRACKING_IGTL)
 
+IF(SUPRA_DEVICE_ITK_FILE_OUT)
+	#SET(SUPRA_Lib_NEED_ITK TRUE)
+	include(supraIncludeITK)
+ENDIF(SUPRA_DEVICE_ITK_FILE_OUT)
+
+IF(SUPRA_DEVICE_ROS_IMAGE_OUT OR SUPRA_DEVICE_TRACKING_ROS)
+	# Add rosserial for this project
+	include(supraIncludeRos)
+ENDIF(SUPRA_DEVICE_ROS_IMAGE_OUT OR SUPRA_DEVICE_TRACKING_ROS)
 
 IF(SUPRA_PROFILING)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
@@ -166,7 +209,20 @@ SET(SUPRA_Lib_LIBDIRS
 	${TBB_LIBS})
 SET(SUPRA_Lib_LIBRARIES
 	${TBB_LIBRARIES})
-
+	
+IF(ROS_FOUND)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		${ROS_SOURCES})
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		${ROS_HEADERS})
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${ROS_INCLUDE})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${ROS_LIBRARIES})
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		${ROS_DEFINES})
+ENDIF(ROS_FOUND)
+	
 ############################################
 #Lib modules
 IF(SUPRA_BEAMFORMER)
@@ -182,6 +238,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
 		Beamformer/RawDelayNode.cpp
+		Beamformer/RxEventLimiterNode.cpp
 		InputOutput/UltrasoundInterfaceRawDataMock.cpp
 		InputOutput/UltrasoundInterfaceBeamformedMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
@@ -214,6 +271,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USRawData.h
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
+		Beamformer/RxEventLimiterNode.h
 		InputOutput/UltrasoundInterfaceRawDataMock.h
 		InputOutput/UltrasoundInterfaceBeamformedMock.h)
 	IF(SUPRA_CUFFT)
@@ -246,7 +304,7 @@ IF(SUPRA_BEAMFORMER)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 			HAVE_BEAMFORMER_MINIMUM_VARIANCE)
 	ELSE()
-		MESSAGE(STATUS "CUBLAS found, NOT adding minimum variance beamformer")
+		MESSAGE(STATUS "CUBLAS not found, NOT adding minimum variance beamformer")
 	ENDIF()
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
@@ -265,6 +323,45 @@ IF(SUPRA_DEVICE_TRACKING_SIM)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_TRACKING_SIM)
 ENDIF()
+IF(SUPRA_DEVICE_TRACKING_IGTL)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/TrackerInterfaceIGTL.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/TrackerInterfaceIGTL.h)
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${OpenIGTLink_INCLUDE_DIRS})
+	SET(SUPRA_Lib_LIBDIRS ${SUPRA_Lib_LIBDIRS}
+		${OpenIGTLink_LIBRARY_DIRS})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${OpenIGTLink_LIBRARIES})
+	IF(WIN32)
+		SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES} ws2_32 wsock32)
+	ENDIF(WIN32)
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_TRACKING_IGTL)
+ENDIF()
+IF(SUPRA_DEVICE_TRACKING_ROS)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/TrackerInterfaceROS.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/TrackerInterfaceROS.h)
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_TRACKING_ROS)
+ENDIF()
+IF(SUPRA_DEVICE_ULTRASONIX)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/UltrasoundInterfaceUltrasonix.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/UltrasoundInterfaceUltrasonix.h)
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${UltrasonixHandler_INCLUDE_DIRS})
+	SET(SUPRA_Lib_LIBDIRS ${SUPRA_Lib_LIBDIRS}
+		${UltrasonixHandler_LIB_DIRS})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${UltrasonixHandler_LIBNAME})
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_ULTRASONIX)
+ENDIF()
 IF(SUPRA_DEVICE_IGTL_OUTPUT)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		InputOutput/OpenIGTLinkOutputDevice.cpp)
@@ -279,7 +376,37 @@ IF(SUPRA_DEVICE_IGTL_OUTPUT)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_IGTL_OUTPUT)
 ENDIF()
+IF(SUPRA_DEVICE_CEPHASONICS)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/UsIntCephasonicsBmode.cpp
+		InputOutput/UsIntCephasonicsBmodeProc.cpp
+		InputOutput/UsIntCephasonicsBtcc.cpp
+		InputOutput/UsIntCephasonicsBtccProc.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/UsIntCephasonicsBmode.h
+		InputOutput/UsIntCephasonicsBmodeProc.h
+		InputOutput/UsIntCephasonicsBtcc.h
+		InputOutput/UsIntCephasonicsBtccProc.h)
 
+	IF(SUPRA_CUDA)
+		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
+			InputOutput/UsIntCephasonicsCc.cu
+			InputOutput/UsIntCephasonicsCcProc.cpp)
+		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+			InputOutput/UsIntCephasonicsCc.h
+			InputOutput/UsIntCephasonicsCcProc.h)
+	ENDIF(SUPRA_CUDA)
+
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${CEPHASONICS_INCLUDE})
+	SET(SUPRA_Lib_LIBDIRS ${SUPRA_Lib_LIBDIRS}
+		${CEPHASONICS_LIBDIRS})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${CEPHASONICS_LIBRARIES})
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_CEPHASONICS
+		${CEPHASONICS_DEFINES}) #needed for cephasonics interface
+ENDIF()
 IF(SUPRA_DEVICE_ITK_FILE_OUT)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		InputOutput/MetaImageOutputDevice.cpp
@@ -289,6 +416,14 @@ IF(SUPRA_DEVICE_ITK_FILE_OUT)
 		InputOutput/MhdSequenceWriter.h)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_METAIMAGE_OUTPUT)
+ENDIF()
+IF(SUPRA_DEVICE_ROS_IMAGE_OUT)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		InputOutput/RosImageOutputDevice.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		InputOutput/RosImageOutputDevice.h)
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_DEVICE_ROSIMAGE_OUTPUT)
 ENDIF()
 
 IF(WIN32)
@@ -333,3 +468,9 @@ SET(SUPRA_Lib_LIBDIRS ${SUPRA_Lib_LIBDIRS} PARENT_SCOPE)
 SET(SUPRA_Lib_LIBRARIES $<TARGET_FILE:SUPRA_Lib> ${SUPRA_Lib_LIBRARIES} PARENT_SCOPE)
 SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES} PARENT_SCOPE)
 
+IF(${SUPRA_Lib_NEED_ITK})
+	SET(SUPRA_Lib_NEED_ITK TRUE PARENT_SCOPE)
+ENDIF()
+IF(${ROSSERIAL_HAVE_SOURCE_FILES})
+	SET(ROSSERIAL_HAVE_SOURCE_FILES TRUE PARENT_SCOPE)
+ENDIF()

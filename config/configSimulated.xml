@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceSimulated" id="US-Sim">
+				<param name="frequency" type="int">
+					25
+				</param>
+				<param name="numVectors" type="size_t">
+					128
+				</param>
+				<param name="numSamples" type="size_t">
+					512
+				</param>
+				<param name="gain" type="double">
+					0.5
+				</param>
+			</input>
+			<input type="TrackerInterfaceSimulated" id="TR-Sim1">
+				<param name="frequency" type="int">
+					100
+				</param>
+			</input>
+			<input type="TrackerInterfaceSimulated" id="TR-Sim2">
+				<param name="frequency" type="int">
+					100
+				</param>
+				<param name="trackerID" type="int">
+					124
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="MetaImageOutputDevice" id="MHD">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					mhd_output
+				</param>
+			</output>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL">
+			</output>
+		</outputs>
+		<nodes>
+			<node type="StreamSynchronizer" id="SYNC">
+				<param name="numStreamsToSync" type="uint32_t">
+					2
+				</param>
+			</node>
+			<node type="TemporalOffsetNode" id="TempOff">
+				<param name="offset" type="double">
+					2.5
+				</param>
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Sim" port="0" />
+			<to id="SYNC" port="0" />
+		</connection>
+		<connection>
+			<from id="TR-Sim1" port="0" />
+			<to id="SYNC" port="1" />
+		</connection>
+		<connection>
+			<from id="TR-Sim2" port="0" />
+			<to id="TempOff" port="0" />
+		</connection>
+		<connection>
+			<from id="TempOff" port="0" />
+			<to id="SYNC" port="2" />
+		</connection>
+		<connection>
+			<from id="SYNC" port="0" />
+			<to id="MHD" port="0" />
+		</connection>
+		<connection>
+			<from id="SYNC" port="0" />
+			<to id="IGTL" port="0" />
+		</connection>
+	</connections>
+</supra_config>

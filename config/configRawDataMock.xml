@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceRawDataMock" id="US-Mock">
+				<param name="frequency" type="int">
+					10
+				</param>
+				<param name="mockMetaDataFilename" type="string">
+					/mnt/data/mockData/linearProbe_CIRS.mock
+				</param>
+				<param name="mockDataFilename" type="string">
+					/mnt/data/mockData/linearProbe_CIRS_0.raw
+				</param>
+			</input>
+		</inputs>
+		<nodes>
+			<node type="BeamformingNode" id="BEAM">
+				<param name="windowType" type="string">
+					Hamming
+				</param>
+				<param name="windowParameter" type="double">
+					0.5
+				</param>
+			</node>
+			<node type="TemporalFilterNode" id="FILT">
+			</node>
+			<node type="IQDemodulatorNode" id="DEMO">
+				<param name="decimation" type="uint32_t">
+					1
+				</param>
+				<param name="referenceFrequency" type="double">
+					7000000
+				</param>
+				<param name="bandwidth" type="double">
+					3000000
+				</param>
+				<param name="weight" type="double">
+					1
+				</param>
+
+				<param name="referenceFrequencyAdd0" type="double">
+					6500000
+				</param>
+				<param name="weightAdd0" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd1" type="double">
+					7500000
+				</param>
+				<param name="weightAdd1" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+	
+				<param name="referenceFrequencyAdd2" type="double">
+					6000000
+				</param>
+				<param name="weightAdd2" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd3" type="double">
+					8000000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+
+				<param name="referenceFrequencyAdd4" type="double">
+					5500000
+				</param>
+				<param name="weightAdd3" type="double">
+					1
+				</param>
+				<param name="bandwidthAdd0" type="double">
+					3000000
+				</param>
+			</node>
+			<node type="LogCompressorNode" id="LOGC">
+				<param name="dynamicRange" type="double">
+					80
+				</param>
+				<param name="inMax" type="double">
+					32600
+				</param>
+			</node>
+			<node type="ScanConverterNode" id="SCAN">
+			</node>
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="US-Mock" port="0" />
+			<to id="BEAM" port="0" />
+		</connection>
+		<connection>
+			<from id="BEAM" port="0" />
+			<to id="DEMO" port="0" />
+		</connection>
+		<connection>
+			<from id="DEMO" port="0" />
+			<to id="FILT" port="0" />
+		</connection>
+		<connection>
+			<from id="FILT" port="0" />
+			<to id="LOGC" port="0" />
+		</connection>
+		<connection>
+			<from id="LOGC" port="0" />
+			<to id="SCAN" port="0" />
+		</connection>
+	</connections>
+</supra_config>

@@ -53,6 +53,12 @@ namespace supra
 				uint32_t sampleIdx, uint32_t channelIdx, uint32_t scanlineIdx,
 				uint32_t numSamples, uint32_t numChannels)
 		{
+			//TEST
+		/*	if (sampleIdx >= numSamples || channelIdx >= numChannels)
+			{
+				printf("readRawData OOB: %d, %d, %d, %d, %d\n", sampleIdx, channelIdx, scanlineIdx,
+					numSamples, numChannels);
+			}*/
 			return rawData[sampleIdx + channelIdx*numSamples + scanlineIdx*numChannels*numSamples];
 		}
 
@@ -649,8 +655,8 @@ namespace supra
 				/*cudaSafeCall(cudaDeviceSynchronize());
 				auto RmatricesHost =
 					std::make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-				std::copy_n(RmatricesHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/				
-									
+				std::copy_n(RmatricesHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/
+				
 				// Smooth the covariance matrices
 				computeTemporalSmoothRmatrices <<<gridSize, blockSize, 0, stream >>> (
 					Rmatrices->get(),
@@ -667,7 +673,7 @@ namespace supra
 				auto RmatricesTempSmoothHost =
 					std::make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
 				std::copy_n(RmatricesTempSmoothHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/
-									
+				
 				// Improve condition of matrices
 				addDiagonalLoading <<<gridSize, dim3(32, 1), 0, stream >>> (
 					RmatricesTempSmooth->get(),
@@ -683,7 +689,6 @@ namespace supra
 				
 				// solve for the beamforming weights with PCG
 				typedef double pcgWorkType;
-				//typedef float pcgWorkType;
 				size_t sharedMemorySize = (4 * subArraySize + 1) * sizeof(pcgWorkType) + (subArraySize * (subArraySize + 1) /2) * sizeof(float);
 				solveBlockwisePCGJacobi<pcgWorkType, float, float> <<<gridSize, blockSize, sharedMemorySize, stream >>>(
 					RmatricesTempSmooth->get(),
@@ -722,13 +727,7 @@ namespace supra
 				rawData->getImageProperties(),
 				rawData->getReceiveTimestamp(),
 				rawData->getSyncTimestamp());
-			/*auto retImage = std::make_shared<USImage>(
-				vec3s{ subArraySize*subArraySize, numSamples, numScanlines },
-				allMatrices,
-				rawData->getImageProperties(),
-				rawData->getReceiveTimestamp(),
-				rawData->getSyncTimestamp());*/
-
+			
 			return retImage;
 		}
 

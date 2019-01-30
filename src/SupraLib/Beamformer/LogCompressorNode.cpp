@@ -101,10 +101,6 @@ namespace supra
 
 	shared_ptr<RecordObject> LogCompressorNode::checkTypeAndCompress(shared_ptr<RecordObject> inObj)
 	{
-		typedef std::chrono::high_resolution_clock Clock;
-		typedef std::chrono::milliseconds milliseconds;
-		Clock::time_point t0 = Clock::now();
-
 		shared_ptr<USImage> pImage = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)
 		{
@@ -148,9 +144,6 @@ namespace supra
 				logging::log_error("LogCompressorNode: could not cast object to USImage type, is it in suppored ElementType?");
 			}
 		}
-		Clock::time_point t1 = Clock::now();
-		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		//std::cout << "Time in Log Compression: " << ms.count() << "ms\n";
 		return pImage;
 	}
 

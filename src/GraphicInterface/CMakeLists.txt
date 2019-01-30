@@ -1,11 +1,18 @@
 cmake_minimum_required( VERSION 3.0.0 FATAL_ERROR )
 MESSAGE(STATUS "Building SUPRA Graphic Interface")
 
+# if ITK is used we need to include this for each executable
+include(supraIncludeITK)
+
 # Widgets finds its own dependencies.
 find_package(Qt5 REQUIRED Widgets)
-SET(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-SET(CMAKE_AUTORCC ON)
+
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed
+set(CMAKE_AUTOMOC ON)
+# Create code from a list of Qt designer ui files
+set(CMAKE_AUTOUIC ON)
 
 include(ExternalProject)
 
@@ -82,9 +89,9 @@ set ( HEADERS
  QTrackerPreviewReciever.h
  NodeExplorerDataModel.h
  ${CAMPVIS_HEADERS}
-#)
+)
 
-#set ( MOC_HEADERS
+set ( MOC_HEADERS
  mainwindow.h
  parametersWidget.h
  previewWidget.h
@@ -95,15 +102,6 @@ set ( UIS
  parametersWidget.ui
  previewWidget.ui
 )
-
-# Tell CMake to run moc when necessary:
-set(CMAKE_AUTOMOC ON)
-# As moc files are generated in the binary dir, tell CMake
-# to always look for includes there:
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-QT5_WRAP_CPP(HEADER_MOC ${MOC_HEADERS})
-QT5_WRAP_UI(FORMS ${UIS})
 
 IF(${SUPRA_USE_CAMPVIS})
 	# The available CAMPVis linking targets are campvis-core, campvis-modules, or campvis-application-lib

@@ -51,58 +51,35 @@ namespace supra
 		if (configElement)
 		{
 			XMLElement* devicesElement = configElement->FirstChildElement("devices");
-			typedef std::chrono::high_resolution_clock Clock;
-			typedef std::chrono::milliseconds milliseconds;
-			Clock::time_point t0;
-			Clock::time_point t1;
-			milliseconds ms;
 			//Inputs
 			if (devicesElement)
 			{
-				t0 = Clock::now();
 				XMLElement* inputsElement = devicesElement->FirstChildElement("inputs");
 
 				if (inputsElement)
 				{
 					readInputDevicesFromXml(inputsElement);
 				}
-				t1 = Clock::now();
-				ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-				//std::cout << "Time for reading XML Inputs: " << ms.count() << "ms\n";
-				
 				//Outputs
-				t0 = Clock::now();
 				XMLElement* outputsElement = devicesElement->FirstChildElement("outputs");
 				if (outputsElement)
 				{
 					readOutputDevicesFromXml(outputsElement, queueing);
 				}
-				t1 = Clock::now();
-				ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-				//std::cout << "Time for reading XML outputs: " << ms.count() << "ms\n";
-				
 				//Other nodes
-				t0 = Clock::now();
 				XMLElement* nodesElement = devicesElement->FirstChildElement("nodes");
 				if (nodesElement)
 				{
 					readNodesFromXml(nodesElement, queueing);
 				}
-				t1 = Clock::now();
-				ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-				//std::cout << "Time for reading XML Nodes: " << ms.count() << "ms\n";
 			}
 
 			//Read the edges from the XML file
-			t0 = Clock::now();
 			XMLElement* connectionsElement = configElement->FirstChildElement("connections");
 			if (connectionsElement)
 			{
 				readConnectionsFromXml(connectionsElement);
 			}
-			t1 = Clock::now();
-			ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-			//std::cout << "Time for reading XML Connections: " << ms.count() << "ms\n";
 		}
 	}
 
@@ -178,11 +155,6 @@ namespace supra
 
 	void SupraManager::readNodesFromXml(tinyxml2::XMLElement * nodesElement, bool queueing)
 	{
-		typedef std::chrono::high_resolution_clock Clock;
-		typedef std::chrono::milliseconds milliseconds;
-		Clock::time_point t0;
-		Clock::time_point t1;
-		milliseconds ms;
 		XMLElement* nextNode = nodesElement->FirstChildElement("node");
 		while (nextNode)
 		{
@@ -190,14 +162,9 @@ namespace supra
 			string nodeType = nextNode->Attribute("type");
 			string nodeID = nextNode->Attribute("id");
 
-			t0 = Clock::now();
-			
 			//create node
 			auto node = InterfaceFactory::createNode(m_graph, nodeID, nodeType, queueing);
 
-			t1 = Clock::now();
-			ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-			//std::cout << "Time for Creating " << nodeID << ": " << ms.count() << "ms\n";
 			if (node)
 			{
 				//load parameters for this element

@@ -106,7 +106,7 @@ namespace supra
 			break;
 		}
 		m_callFrequency.measureEnd();
-		//logging::log_log("ScanConv: ", m_converter->getImageSize().x, " ", m_converter->getImageSize().y," " ,m_converter->getImageSize().z);
+
 		return make_shared<USImage>(
 			m_converter->getImageSize(),
 			pImageData,
@@ -117,12 +117,6 @@ namespace supra
 
 	shared_ptr<RecordObject> ScanConverterNode::checkTypeAndConvert(const shared_ptr<RecordObject> inObj)
 	{
-		typedef std::chrono::high_resolution_clock Clock;
-		typedef std::chrono::milliseconds milliseconds;
-		Clock::time_point t0 = Clock::now();
-		Clock::time_point t1,t1_1;
-		milliseconds ms;
-
 		shared_ptr<RecordObject> pImage = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)
 		{
@@ -171,10 +165,6 @@ namespace supra
 					}
 				}
 
-				t1_1 = Clock::now();
-				ms = std::chrono::duration_cast<milliseconds>(t1_1 - t0);
-				//std::cout << "Time in Scan Conversion (initial): " << ms.count() << "ms\n";				
-
 				if (internalUpdateNeeded)
 				{
 					m_parameterChangeRequiresInternalUpdate = false;
@@ -190,10 +180,6 @@ namespace supra
 					m_converter->updateInternals(m_scanConvImageProperties);
 					m_maskSent = false;
 				}
-
-				t1 = Clock::now();
-				ms = std::chrono::duration_cast<milliseconds>(t1 - t1_1);
-				//std::cout << "Time in Scan Conversion (updateInternal): " << ms.count() << "ms\n";
 
 				switch (pInImage->getDataType())
 				{
@@ -220,10 +206,6 @@ namespace supra
 				logging::log_error("ScanConverterNode: could not cast object to USImage type");
 			}
 		}
-
-		Clock::time_point t2 = Clock::now();
-		ms = std::chrono::duration_cast<milliseconds>(t2 - t1);
-		//std::cout << "Time for Scan Conversion: convert() " << ms.count() << "ms\n";
 		return pImage;
 	}
 }

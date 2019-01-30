@@ -130,18 +130,12 @@ namespace supra
 	void MetaImageOutputDevice::writeData(std::shared_ptr<RecordObject> data)
 	{
 		lock_guard<mutex> l(m_writerMutex);
-		typedef std::chrono::high_resolution_clock Clock;
-		typedef std::chrono::milliseconds milliseconds;
-		Clock::time_point t0 = Clock::now();
 		if (m_isReady && m_isRecording && getRunning())
 		{
 			m_callFrequency.measure();
 			addData(data);
 			m_callFrequency.measureEnd();
 		}
-		Clock::time_point t1 = Clock::now();
-		milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		//std::cout << "Time to write data: " << ms.count() << "ms\n";
 	}
 
 	void MetaImageOutputDevice::initializeSequence()

@@ -189,9 +189,7 @@ namespace supra
 			for (int k = 1; k < 10; k++)
 			{
 				T xPower = pow(x / (T)2.0, (T)k);
-				//factorial *= k; // like this factorial is indeed equal k!
 				// 1, 2, 6, 24, 120, 720, 5040, 40320, 362880
-				//sum += pow(xPower / (T)factorial, (T)2.0);
 				sum += pow(xPower / (T)factorial[k-1], (T)2.0);
 			}
 			return (T)1.0 + sum;

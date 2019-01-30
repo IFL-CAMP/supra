@@ -1,1 +1,8 @@
+external/
 build/*
+\.project
+\.cproject
+*~
+doc/doxy/
+tools/.idea/
+doc/supraParameters/

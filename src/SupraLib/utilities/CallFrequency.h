@@ -17,7 +17,7 @@
 #include <mutex>
 
 #ifndef LOG_FREQUENCIES
-#define LOG_FREQUENCIES false
+#define LOG_FREQUENCIES true
 #endif //!LOG_FREQUENCIES
 #ifndef LOG_PROFILING
 #define LOG_PROFILING false

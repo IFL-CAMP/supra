@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<supra_config>
+	<devices>
+		<inputs>
+			<input type="UltrasoundInterfaceSimulated" id="SCAN">
+				<param name="frequency" type="int">
+					25
+				</param>
+				<param name="numVectors" type="size_t">
+					128
+				</param>
+				<param name="numSamples" type="size_t">
+					512
+				</param>
+				<param name="gain" type="double">
+					0.5
+				</param>
+			</input>
+		</inputs>
+		<outputs>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL" />
+			<output type="MetaImageOutputDevice" id="MHD_Beam">
+		                <param name="active" type="bool">
+                		    0
+		                </param>
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					beamformed
+				</param>
+			</output>
+			<output type="MetaImageOutputDevice" id="MHD_Scan">
+				<param name="createSequences" type="bool">
+					1
+				</param>
+				<param name="filename" type="string">
+					scanconverted
+				</param>
+			</output>
+		</outputs>
+		<nodes>
+			
+		</nodes>
+	</devices>
+	<connections>
+		<connection>
+			<from id="SCAN" port="0" />
+			<to id="MHD_Scan" port="0" />
+		</connection>
+        <connection>
+			<from id="SCAN" port="0" />
+			<to id="IGTL" port="0" />
+		</connection>
+	</connections>
+</supra_config>
