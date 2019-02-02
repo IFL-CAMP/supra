@@ -323,13 +323,14 @@ namespace supra
 
 		__global__ void solveBlockwisePCGJacobi(
 			const float* Amatrices, const uint32_t* systemSizes, const float* rightHandSides, 
-			uint32_t stride, uint32_t numSystems, int maxIterations, float convergenceThreshold, float* solutions)
+			uint32_t stride, uint32_t numSystems, int maxIterationsOverride, float convergenceThreshold, float* solutions)
 		{
 			int systemIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
 
 			if (systemIdx < numSystems)
 			{
 				uint32_t systemSize = systemSizes[systemIdx];
+				int maxIterations = (maxIterationsOverride != 0 ? maxIterationsOverride : systemSize);
 
 				// We use the following vectors: x, b, r, d, q, s
 				// From them, we hold in shared memory: x, r, d, q, s
@@ -379,8 +380,20 @@ namespace supra
 					//x = x + alpha d;
 					saxpyVectorBlockWise(shX, alpha, shD, shX, systemSize);
 
-					//r = r - alpha q;
-					saxpyVectorBlockWise(shR, -alpha, shQ, shR, systemSize);
+					if (i % 10 == 9)
+					{
+						// because q will not be used anymore in this operation, we can use it as tmp
+						auto shTmp = shQ;
+						// tmp = Ax
+						applyMatrixBlockWise(shTmp, A, shX, stride, systemSize);
+
+						// r = b - tmp
+						saxpyVectorBlockWise(shR, -1.0f, shTmp, b, systemSize);
+					}
+					else {
+						//r = r - alpha q;
+						saxpyVectorBlockWise(shR, -alpha, shQ, shR, systemSize);
+					}
 
 					//s = M^-1 r;
 					applyJacobiPreconditionerBlockWise(shS, A, shR, stride, systemSize);
@@ -480,7 +493,7 @@ namespace supra
 			shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
 			uint32_t temporalSmoothing,
-			uint32_t maxIterations,
+			uint32_t maxIterationsOverride,
 			double convergenceThreshold,
 			double subArrayScalingPower)
 		{
@@ -595,7 +608,7 @@ namespace supra
 						Avectors->get(),
 						subArraySize,
 						numSamplesBatch,
-						maxIterations,
+						maxIterationsOverride,
 						(float)convergenceThreshold,
 						Wvectors->get()
 					);
@@ -637,7 +650,7 @@ namespace supra
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
 				double subArrayScalingPower);
 		template
@@ -645,7 +658,7 @@ namespace supra
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
 				double subArrayScalingPower);
 		template
@@ -653,7 +666,7 @@ namespace supra
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
 				double subArrayScalingPower);
 		template
@@ -661,7 +674,7 @@ namespace supra
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
 				double subArrayScalingPower);
 	}

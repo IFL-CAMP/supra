@@ -28,7 +28,7 @@ namespace supra
 			std::shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
 			uint32_t temporalSmoothing,
-			uint32_t maxIterations,
+			uint32_t maxIterationsOverride,
 			double convergenceThreshold,
 			double subArrayScalingPower);
 	}
