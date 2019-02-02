@@ -25,7 +25,8 @@ namespace supra
 		enum FilterType {
 			FilterTypeLowPass,
 			FilterTypeHighPass,
-			FilterTypeBandPass
+			FilterTypeBandPass,
+			FilterTypeHilbertTransformer
 		};
 
 		/// Enum for the different window types used in creating filters
@@ -39,7 +40,7 @@ namespace supra
 		/// Returns a FIR filter constructed with the window-method
 		template <typename ElementType>
 		static std::shared_ptr<Container<ElementType> >
-			createFilter(size_t length, FilterType type, FilterWindow window, double samplingFrequency, double frequency, double bandwidth = 0.0)
+			createFilter(size_t length, FilterType type, FilterWindow window, double samplingFrequency = 2.0, double frequency = 0.0, double bandwidth = 0.0)
 		{
 			std::shared_ptr<Container<ElementType> > filter = createFilterNoWindow<ElementType>(length, type, samplingFrequency, frequency, bandwidth);
 			applyWindowToFilter<ElementType>(filter, window);
@@ -56,6 +57,16 @@ namespace supra
 		static std::shared_ptr<Container<ElementType> >
 			createFilterNoWindow(size_t length, FilterType type, double samplingFrequency, double frequency, double bandwidth)
 		{
+			if (type == FilterTypeHighPass || type == FilterTypeBandPass || type == FilterTypeLowPass)
+			{
+				assert(samplingFrequency != 0.0);
+				assert(frequency != 0.0);
+			}
+			if (type == FilterTypeBandPass)
+			{
+				assert(bandwidth != 0.0);
+			}
+
 			ElementType omega = static_cast<ElementType>(2 * M_PI* frequency / samplingFrequency);
 			ElementType omegaBandwidth = static_cast<ElementType>(2 * M_PI* bandwidth / samplingFrequency);
 			int halfWidth = ((int)length - 1) / 2;
@@ -74,6 +85,21 @@ namespace supra
 			};
 			switch (type)
 			{
+			case FilterTypeHilbertTransformer:
+				// Following formula 2 in
+				// "Carrick, Matt, and Doug Jaeger. "Design and Application of a Hilbert Transformer in a Digital Receiver." (2011)."
+				filterFunction = [halfWidth](int n) -> ElementType {
+					auto k = (n - halfWidth);
+					if (k % 2 == 0)
+					{
+						return static_cast<ElementType>(0);
+					}
+					else
+					{
+						return static_cast<ElementType>(2.0 / (M_PI * k));
+					}
+				};
+				break;
 			case FilterTypeHighPass:
 				filterFunction = [omega, halfWidth](int n) -> ElementType {
 					if (n == halfWidth)
