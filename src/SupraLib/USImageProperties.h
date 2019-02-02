@@ -91,6 +91,7 @@ namespace supra
 
 		enum ImageState {
 			Raw,
+			RawDelayed,
 			RF,
 			EnvDetected,
 			PreScan,

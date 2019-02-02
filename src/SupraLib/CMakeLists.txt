@@ -63,6 +63,9 @@ IF(SUPRA_CUDA)
 	set(CUDA_SEPARABLE_COMPILATION ON)
 	MESSAGE(STATUS "Found Cuda Version " ${CUDA_VERSION_STRING})
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
+	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
+	ENDIF()
 	IF(WIN32)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
 	ELSE()
@@ -84,6 +87,13 @@ IF(SUPRA_CUDA)
 		HAVE_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
+		
+	IF(CUDA_cublas_LIBRARY)
+		SET(SUPRA_CUDA_CUBLAS ON)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_CUDA_CUBLAS)
+		SET(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_cublas_LIBRARY})
+	ENDIF()
 ENDIF(SUPRA_CUDA)
 
 #find IGTL Interface
@@ -212,6 +222,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
 		Beamformer/RawDelayNode.cpp
+		Beamformer/RxEventLimiterNode.cpp
 		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
@@ -243,6 +254,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USRawData.h
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
+		Beamformer/RxEventLimiterNode.h
 		InputOutput/UltrasoundInterfaceRawDataMock.h)
 	IF(SUPRA_CUFFT)
 		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
@@ -258,6 +270,24 @@ IF(SUPRA_BEAMFORMER)
 		HAVE_BEAMFORMER)
 	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
 		${CUDA_LIBRARIES})
+	
+	IF(SUPRA_CUDA_CUBLAS)
+		SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+			Beamformer/BeamformingMVNode.h
+			Beamformer/BeamformingMVpcgNode.h
+			Beamformer/RxBeamformerMV.h
+			Beamformer/RxBeamformerMVpcg.h)
+		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+			Beamformer/BeamformingMVNode.cpp
+			Beamformer/BeamformingMVpcgNode.cpp)
+		SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
+			Beamformer/RxBeamformerMV.cu
+			Beamformer/RxBeamformerMVpcg.cu)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_BEAMFORMER_MINIMUM_VARIANCE)
+	ELSE()
+		MESSAGE(STATUS "CUBLAS not found, NOT adding minimum variance beamformer")
+	ENDIF()
 ENDIF(SUPRA_BEAMFORMER)
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}

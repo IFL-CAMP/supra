@@ -40,10 +40,11 @@ namespace supra
 		}
 
 		m_callFrequency.setName("Beamforming");
-		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
+		m_valueRangeDictionary.set<double>("fNumber", 0.01, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
-		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
+		m_valueRangeDictionary.set<double>("speedOfSound", 1000, 2000, 1540.0, "Speed of sound [m/s]");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		configurationChanged();
 	}
 
@@ -52,6 +53,7 @@ namespace supra
 		m_fNumber = m_configurationDictionary.get<double>("fNumber");
 		readWindowType();
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
+		m_speedOfSoundMMperS = m_configurationDictionary.get<double>("speedOfSound") * 1000.0;
 		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
@@ -70,6 +72,10 @@ namespace supra
 		{
 			m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
 		}
+		else if (configKey == "speedOfSound")
+		{
+			m_speedOfSoundMMperS = m_configurationDictionary.get<double>("speedOfSound") * 1000.0;
+		}
 		else if (configKey == "outputType")
 		{
 			m_outputType = m_configurationDictionary.get<DataType>("outputType");
@@ -87,11 +93,11 @@ namespace supra
 		{
 		case TypeFloat:
 			return m_rawDelayCuda->performDelay<RawElementType, float>(
-				pRawData, m_fNumber,
+				pRawData, m_fNumber, m_speedOfSoundMMperS,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
-		case TypeUint16:
+		case TypeInt16:
 			return m_rawDelayCuda->performDelay<RawElementType, int16_t>(
-				pRawData, m_fNumber,
+				pRawData, m_fNumber, m_speedOfSoundMMperS,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter));
 		default:
 			logging::log_error("RawDelayNode: Output type not supported");
@@ -181,8 +187,10 @@ namespace supra
 	{
 		m_lastSeenImageProperties = imageProperties;
 		m_editedImageProperties = make_shared<USImageProperties>(*imageProperties);
-		m_editedImageProperties->setSpecificParameter("Beamformer.FNumber", m_fNumber);
-		m_editedImageProperties->setSpecificParameter("Beamformer.WindowType", m_windowType);
-		m_editedImageProperties->setSpecificParameter("Beamformer.WindowParameter", m_windowParameter);
+		m_editedImageProperties->setImageState(USImageProperties::RawDelayed);
+		m_editedImageProperties->setSpecificParameter("RawDelay.FNumber", m_fNumber);
+		m_editedImageProperties->setSpecificParameter("RawDelay.WindowType", m_windowType);
+		m_editedImageProperties->setSpecificParameter("RawDelay.WindowParameter", m_windowParameter);
+		m_editedImageProperties->setSpecificParameter("RawDelay.RxSpeedOfSound", m_speedOfSoundMMperS);
 	}
 }

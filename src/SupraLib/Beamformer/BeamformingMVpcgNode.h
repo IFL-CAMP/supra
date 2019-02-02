@@ -1,6 +1,6 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
+// If not explicitly stated: Copyright (C) 2017, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
@@ -9,32 +9,28 @@
 // 
 // ================================================================================================
 
-#ifndef __RAWDELAYNODE_H__
-#define __RAWDELAYNODE_H__
+#ifndef __BEAMFORMINGMVPCGNODE_H__
+#define __BEAMFORMINGMVPCGNODE_H__
 
-#ifdef HAVE_BEAMFORMER
+#ifdef HAVE_BEAMFORMER_MINIMUM_VARIANCE
 
 #include <memory>
-#include <vector>
-#include <deque>
-#include <mutex>
 #include <tbb/flow_graph.h>
 
 #include "AbstractNode.h"
 #include "RecordObject.h"
-#include "SyncRecordObject.h"
-#include "RxBeamformerParameters.h"
-#include "RawDelay.h"
 
 namespace supra
 {
 	//forward declarations
-	enum WindowType : uint32_t;
 	class USImageProperties;
+	class USImage;
+	class USRawData;
 
-	class RawDelayNode : public AbstractNode {
+	class BeamformingMVpcgNode : public AbstractNode {
 	public:
-		RawDelayNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
+		BeamformingMVpcgNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
+		~BeamformingMVpcgNode();
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
@@ -60,14 +56,10 @@ namespace supra
 		void configurationEntryChanged(const std::string& configKey);
 
 	private:
-		std::shared_ptr<RecordObject> checkTypeAndDelay(std::shared_ptr<RecordObject> mainObj);
-		template <typename RawElementType>
-		std::shared_ptr<USRawData> delay(std::shared_ptr<const USRawData> mainObj);
-		void readWindowType();
+		std::shared_ptr<RecordObject> checkTypeAndBeamform(std::shared_ptr<RecordObject> mainObj);
+		template <typename RawDataType>
+		std::shared_ptr<USImage> beamformTemplated(std::shared_ptr<const USRawData> rawData);
 		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
-
-		std::shared_ptr<RawDelay> m_rawDelayCuda;
-		std::shared_ptr<const RxBeamformerParameters> m_lastSeenBeamformerParameters;
 
 		std::shared_ptr<const USImageProperties> m_lastSeenImageProperties;
 		std::shared_ptr<USImageProperties> m_editedImageProperties;
@@ -75,13 +67,16 @@ namespace supra
 		std::mutex m_mutex;
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
-		double m_fNumber;
-		WindowType m_windowType;
+
+		uint32_t m_subArraySize;
+		uint32_t m_temporalSmoothing;
 		DataType m_outputType;
-		double m_windowParameter;
-		double m_speedOfSoundMMperS;
+		uint32_t m_maxIterationsOverride;
+		double m_convergenceThreshold;
+		double m_subArrayScalingPower;
 	};
 }
 
-#endif //HAVE_BEAMFORMER
-#endif //!__RAWDELAYNODE_H__
+#endif //HAVE_BEAMFORMER_MINIMUM_VARIANCE
+
+#endif //!__BEAMFORMINGMVPCGNODE_H__

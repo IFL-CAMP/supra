@@ -38,7 +38,7 @@ namespace supra
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<bool>("singleImage", { true, false }, false, "Single image");
 		m_valueRangeDictionary.set<bool>("streamSequenceOnce", { true, false }, false, "Emit sequences once");
-		m_valueRangeDictionary.set<int>("frequency", 1, 100, 5, "Frequency");
+		m_valueRangeDictionary.set<double>("frequency", 0.001, 100, 5, "Frequency");
 		m_valueRangeDictionary.set<string>("mockMetaDataFilename", "", "Mock meta data filename");
 		m_valueRangeDictionary.set<string>("mockDataFilename", "", "Mock data filename");
 
@@ -97,7 +97,7 @@ namespace supra
 		lock_guard<mutex> lock(m_objectMutex);
 		if (configKey == "frequency")
 		{
-			m_frequency = m_configurationDictionary.get<int>("frequency");
+			m_frequency = m_configurationDictionary.get<double>("frequency");
 			if (getTimerFrequency() != m_frequency)
 			{
 				setUpTimer(m_frequency);
@@ -160,7 +160,7 @@ namespace supra
 		//read conf values
 		m_singleImage = m_configurationDictionary.get<bool>("singleImage");
 		m_streamSequenceOnce = m_configurationDictionary.get<bool>("streamSequenceOnce");
-		m_frequency = m_configurationDictionary.get<int>("frequency");
+		m_frequency = m_configurationDictionary.get<double>("frequency");
 		m_mockMetadataFilename = m_configurationDictionary.get<string>("mockMetaDataFilename");
 		m_mockDataFilenames = split(m_configurationDictionary.get<string>("mockDataFilename"), ',');
 		for (auto& filename : m_mockDataFilenames)

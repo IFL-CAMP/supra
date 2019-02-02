@@ -32,6 +32,24 @@ namespace supra
 			double speedOfSoundMMperS,
 			const USTransducer* pTransducer);
 
+		RxBeamformerParameters(
+			size_t numRxScanlines,
+			vec2s rxScanlineLayout,
+			double speedOfSoundMMperS,
+			const std::vector<LocationType> & rxDepths,
+			const std::vector<ScanlineRxParameters3D> & rxScanlines,
+			const std::vector<LocationType> & rxElementXs,
+			const std::vector<LocationType> & rxElementYs,
+			size_t rxNumDepths)
+			: m_rxScanlineLayout(rxScanlineLayout)
+			, m_numRxScanlines(numRxScanlines)
+			, m_speedOfSoundMMperS(speedOfSoundMMperS)
+			, m_rxNumDepths(rxNumDepths)
+			, m_rxDepths(rxDepths)
+			, m_rxScanlines(rxScanlines)
+			, m_rxElementXs(rxElementXs)
+			, m_rxElementYs(rxElementYs) {};
+
 		size_t getNumRxScanlines() const { return m_numRxScanlines; }
 		vec2s getRxScanlineLayout() const { return m_rxScanlineLayout; }
 		double getSpeedOfSoundMMperS() const { return m_speedOfSoundMMperS; }
@@ -59,24 +77,6 @@ namespace supra
 		static std::shared_ptr<USRawData> readMetaDataForMock(const std::string & mockMetadataFilename);
 		
 	private:
-
-		RxBeamformerParameters(
-			size_t numRxScanlines,
-			vec2s rxScanlineLayout,
-			double speedOfSoundMMperS,
-			const std::vector<LocationType> & rxDepths,
-			const std::vector<ScanlineRxParameters3D> & rxScanlines,
-			const std::vector<LocationType> & rxElementXs,
-			const std::vector<LocationType> & rxElementYs,
-			size_t rxNumDepths)
-			: m_rxScanlineLayout(rxScanlineLayout)
-			, m_numRxScanlines(numRxScanlines)
-			, m_speedOfSoundMMperS(speedOfSoundMMperS)
-			, m_rxNumDepths(rxNumDepths)
-			, m_rxDepths(rxDepths)
-			, m_rxScanlines(rxScanlines)
-			, m_rxElementXs(rxElementXs)
-			, m_rxElementYs(rxElementYs) {};
 
 		size_t m_numRxScanlines;
 		vec2s m_rxScanlineLayout;
