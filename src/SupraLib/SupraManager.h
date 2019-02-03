@@ -39,6 +39,11 @@ namespace supra
 		void readOutputDevicesFromXml(tinyxml2::XMLElement* outputsElement, bool queueing);
 		void readNodesFromXml(tinyxml2::XMLElement* nodesElement, bool queueing);
 		void readConnectionsFromXml(tinyxml2::XMLElement* connectionsElement);
+		void writeToXml(std::string configXmlFilename);
+		void writeInputDevicesToXml(tinyxml2::XMLNode* devicesElement);
+		void writeOutputDevicesToXml(tinyxml2::XMLNode* devicesElement);
+		void writeNodesToXml(tinyxml2::XMLNode* devicesElement);
+		void writeConnectionsToXml(tinyxml2::XMLNode* rootElement);
 
 		//Node access
 		std::vector<std::string> getInputDeviceIDs();
