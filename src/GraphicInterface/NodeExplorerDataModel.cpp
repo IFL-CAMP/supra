@@ -36,7 +36,17 @@ namespace supra
 	std::unique_ptr<QtNodes::NodeDataModel> NodeExplorerDataModel::clone() const
 	{
 		std::string newID = SupraManager::Get()->addNode(m_nodeType);
-		return std::unique_ptr<NodeDataModel>(new NodeExplorerDataModel(newID, m_nodeType));
+		std::unique_ptr<NodeDataModel> ret = nullptr;
+		if (newID != "")
+		{
+			ret = std::unique_ptr<NodeDataModel>(new NodeExplorerDataModel(newID, m_nodeType));
+
+			if (m_nodeID != "" && SupraManager::Get()->nodeExists(m_nodeID))
+			{
+				SupraManager::Get()->getNode(newID)->changeConfig(*(SupraManager::Get()->getNode(m_nodeID)->getConfigurationDictionary()));
+			}
+		}
+		return ret;
 	}
 	unsigned int NodeExplorerDataModel::nPorts(QtNodes::PortType portType) const
 	{

@@ -96,7 +96,7 @@ namespace supra
 		shared_ptr<QtNodes::DataModelRegistry> flowRegistry = make_shared<QtNodes::DataModelRegistry>();
 		for (auto nodeType : InterfaceFactory::getNodeTypes())
 		{
-			flowRegistry->registerModel(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel(nodeType, nodeType)));
+			flowRegistry->registerModel(std::unique_ptr<NodeExplorerDataModel>(new NodeExplorerDataModel("", nodeType)));
 		}
 
 		m_pNodeScene = new QtNodes::FlowScene(flowRegistry);
