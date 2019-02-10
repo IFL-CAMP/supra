@@ -178,11 +178,15 @@ IF(SUPRA_CUDA)
 	SET(SUPRA_Lib_SOURCE
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
-		ExampleNodes/ImageProcessingCuda.cu)
+		ExampleNodes/ImageProcessingCuda.cu
+		Processing/TimeGainCompensationNode.cpp
+		Processing/TimeGainCompensation.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
-		ExampleNodes/ImageProcessingCuda.h)
+		ExampleNodes/ImageProcessingCuda.h
+		Processing/TimeGainCompensationNode.h
+		Processing/TimeGainCompensation.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
