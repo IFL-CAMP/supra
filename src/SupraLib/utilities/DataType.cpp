@@ -75,35 +75,35 @@ namespace supra
 		{
 			dataType = supra::TypeBool;
 		}
-		else if (s == "int8")
+		else if (s == "int8" || s == "int8_t")
 		{
 			dataType = supra::TypeInt8;
 		}
-		else if (s == "uint8")
+		else if (s == "uint8" || s == "uint8_t")
 		{
 			dataType = supra::TypeUint8;
 		}
-		else if (s == "int16")
+		else if (s == "int16" || s == "int16_t")
 		{
 			dataType = supra::TypeInt16;
 		}
-		else if (s == "uint16")
+		else if (s == "uint16" || s == "uint16_t")
 		{
 			dataType = supra::TypeUint16;
 		}
-		else if (s == "int32")
+		else if (s == "int32" || s == "int32_t")
 		{
 			dataType = supra::TypeInt32;
 		}
-		else if (s == "uint32")
+		else if (s == "uint32" || s == "uint32_t")
 		{
 			dataType = supra::TypeUint32;
 		}
-		else if (s == "int64")
+		else if (s == "int64" || s == "int64_t")
 		{
 			dataType = supra::TypeInt64;
 		}
-		else if (s == "uint64")
+		else if (s == "uint64" || s == "uint64_t")
 		{
 			dataType = supra::TypeUint64;
 		}
@@ -148,28 +148,28 @@ namespace supra
 			s = "bool";
 			break;
 		case supra::TypeInt8:
-			s = "int8";
+			s = "int8_t";
 			break;
 		case supra::TypeUint8:
-			s = "uint8";
+			s = "uint8_t";
 			break;
 		case supra::TypeInt16:
-			s = "int16";
+			s = "int16_t";
 			break;
 		case supra::TypeUint16:
-			s = "uint16";
+			s = "uint16_t";
 			break;
 		case supra::TypeInt32:
-			s = "int32";
+			s = "int32_t";
 			break;
 		case supra::TypeUint32:
-			s = "uint32";
+			s = "uint32_t";
 			break;
 		case supra::TypeInt64:
-			s = "int64";
+			s = "int64_t";
 			break;
 		case supra::TypeUint64:
-			s = "uint64";
+			s = "uint64_t";
 			break;
 		case supra::TypeFloat:
 			s = "float";
@@ -181,7 +181,7 @@ namespace supra
 			s = "string";
 			break;
 		case supra::TypeDataType:
-			s = "dataType";
+			s = "DataType";
 			break;
 		case supra::TypeUnknown:
 			s = "Unknown";

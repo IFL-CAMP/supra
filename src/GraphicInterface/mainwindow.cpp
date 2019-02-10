@@ -57,6 +57,7 @@ namespace supra
 		QTimer *timerFreeze = new QTimer(this);
 
 		connect(ui->actionLoadConfig, SIGNAL(triggered()), this, SLOT(loadConfigFileAction()));
+		connect(ui->actionWriteConfig, SIGNAL(triggered()), this, SLOT(writeConfigFileAction()));
 		connect(ui->pushButtonLoad, SIGNAL(clicked()), this, SLOT(loadConfigFileAction()));
 		connect(ui->pushButtonStart, SIGNAL(clicked()), this, SLOT(startNodes()));
 		connect(ui->pushButtonStop, SIGNAL(clicked()), this, SLOT(stopNodes()));
@@ -151,6 +152,14 @@ namespace supra
 		QString filename = QFileDialog::getOpenFileName(this,
 			tr("Open Config XML"), "", tr("XML files (*.xml)"));
 		loadConfigFile(filename);
+	}
+
+	void MainWindow::writeConfigFileAction()
+	{
+		QString filename = QFileDialog::getSaveFileName(this,
+			tr("Write Config XML"), "", tr("XML files (*.xml)"));
+		
+		p_manager->writeToXml(filename.toStdString());
 	}
 
 	void MainWindow::loadConfigFile(const QString & filename)
