@@ -113,10 +113,46 @@ namespace supra
 		}
 
 		template <typename ChannelDataType>
+		__global__ void computeMeansKernel(const ChannelDataType* rawData,
+			uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx, uint32_t sampleIdxStart,
+			uint32_t subArraySize, const uint8_t * subArrayMasks,
+			const uint32_t* subArraySizes, const uint32_t* subArrayOffsets, float* means)
+		{
+			int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
+			int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
+			int sampleIdx = sampleIdxLocal + sampleIdxStart;
+
+			int numSubArrays = numChannels - subArraySize + 1;
+
+			if (sampleIdx < numSamples)
+			{
+				int subArraySizeLocal = subArraySizes[sampleIdx];
+
+				for (int vectIdx = tIdx; vectIdx < subArraySizeLocal; vectIdx += blockDim.x*blockDim.y)
+				{
+					float mean = 0.0f;
+					int num = 0;
+					for (uint32_t subArrayIdx = 0; subArrayIdx < numSubArrays; subArrayIdx++)
+					{
+						if (subArrayMasks[subArrayIdx + sampleIdx * numSubArrays])
+						{
+							auto offset = subArrayOffsets[subArrayIdx + sampleIdx * numSubArrays];
+							float x = readRawData(rawData, sampleIdx, offset + vectIdx, scanlineIdx, numSamples, numChannels);
+							mean += x;
+							num++;
+						}
+					}
+
+					means[vectIdx + sampleIdxLocal * subArraySize] = mean / static_cast<float>(num);
+				}
+			}
+		}
+
+		template <bool subtractMeans, typename ChannelDataType>
 		__global__ void computeRmatrices(const ChannelDataType* rawData,
 			uint32_t numSamples, uint32_t numChannels, uint32_t scanlineIdx, uint32_t sampleIdxStart,
 			uint32_t subArraySize, const uint8_t * subArrayMasks,
-			const uint32_t* subArraySizes, const uint32_t* subArrayOffsets, float* Rmatrices)
+			const uint32_t* subArraySizes, const uint32_t* subArrayOffsets, const float* means, float* Rmatrices)
 		{
 			int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
 			int sampleIdxLocal = (blockIdx.y * gridDim.x) + blockIdx.x;
@@ -143,6 +179,11 @@ namespace supra
 
 							float xCol = readRawData(rawData, sampleIdx, offset + colIdx, scanlineIdx, numSamples, numChannels);
 							float xRow = readRawData(rawData, sampleIdx, offset + rowIdx, scanlineIdx, numSamples, numChannels);
+							if (subtractMeans)
+							{
+								xCol -= means[offset + colIdx + sampleIdx * subArraySize];
+								xRow -= means[offset + rowIdx + sampleIdx * subArraySize];
+							}
 
 							int matrixStorageIdx = colIdx + rowIdx * subArraySize;
 
@@ -495,7 +536,8 @@ namespace supra
 			uint32_t temporalSmoothing,
 			uint32_t maxIterationsOverride,
 			double convergenceThreshold,
-			double subArrayScalingPower)
+			double subArrayScalingPower,
+			bool computeMeans)
 		{
 			uint32_t sampleBlockSize = 2000;//128;
 
@@ -529,6 +571,8 @@ namespace supra
 				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 1.0f));
 			shared_ptr<Container<float> > Wvectors =
 				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 5.0f));
+			shared_ptr<Container<float> > meanVectors =
+				std::make_shared<Container<float> >(ContainerLocation::LocationGpu, stream, std::vector<float>(subArraySize*sampleBlockSize, 0.0f));
 			shared_ptr<Container<uint8_t> > subArrayMasks =
 				std::make_shared<Container<uint8_t> >(ContainerLocation::LocationGpu, stream, numSubArrays*sampleBlockSize);
 			shared_ptr<Container<uint32_t> > subArraySizes = 
@@ -544,6 +588,7 @@ namespace supra
 
 					cudaSafeCall(cudaMemsetAsync(Rmatrices->get(), 0, numelRmatrices * sizeof(float), stream));
 					cudaSafeCall(cudaMemsetAsync(Wvectors->get(), 0, subArraySize*sampleBlockSize * sizeof(float), stream));
+					cudaSafeCall(cudaMemsetAsync(meanVectors->get(), 0, subArraySize*sampleBlockSize * sizeof(float), stream));
 					cudaSafeCall(cudaMemsetAsync(subArrayMasks->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint8_t), stream));
 					cudaSafeCall(cudaMemsetAsync(subArraySizes->get(), 0, sampleBlockSize * sizeof(uint32_t), stream));
 					cudaSafeCall(cudaMemsetAsync(subArrayOffsets->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint32_t), stream));
@@ -564,24 +609,57 @@ namespace supra
 						subArraySizes->get(),
 						subArrayOffsets->get());
 					cudaSafeCall(cudaPeekAtLastError());
-					
+
+					if (computeMeans)
+					{
+						computeMeansKernel << <gridSize, blockSize, 0, stream >> > (
+							gRawData->get(),
+							numSamples,
+							numChannels,
+							scanlineIdx,
+							sampleIdx,
+							subArraySize,
+							subArrayMasks->get(),
+							subArraySizes->get(),
+							subArrayOffsets->get(),
+							meanVectors->get());
+						cudaSafeCall(cudaPeekAtLastError());
+					}
+				
 					// Compute the covariance matrices
-					computeRmatrices << <gridSize, blockSize, 0, stream >> > (
-						gRawData->get(),
-						numSamples,
-						numChannels,
-						scanlineIdx,
-						sampleIdx,
-						subArraySize,
-						subArrayMasks->get(),
-						subArraySizes->get(),
-						subArrayOffsets->get(),
-						Rmatrices->get()
-						);
+					if (computeMeans)
+					{
+						computeRmatrices<true> << <gridSize, blockSize, 0, stream >> > (
+							gRawData->get(),
+							numSamples,
+							numChannels,
+							scanlineIdx,
+							sampleIdx,
+							subArraySize,
+							subArrayMasks->get(),
+							subArraySizes->get(),
+							subArrayOffsets->get(),
+							meanVectors->get(),
+							Rmatrices->get());
+					}
+					else {
+						computeRmatrices<false> << <gridSize, blockSize, 0, stream >> > (
+							gRawData->get(),
+							numSamples,
+							numChannels,
+							scanlineIdx,
+							sampleIdx,
+							subArraySize,
+							subArrayMasks->get(),
+							subArraySizes->get(),
+							subArrayOffsets->get(),
+							meanVectors->get(),
+							Rmatrices->get());
+					}
 					cudaSafeCall(cudaPeekAtLastError());
 					
 					// Smooth the covariance matrices
-					computeTemporalSmoothRmatrices << <gridSize, blockSize, 0, stream >> > (
+					computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>> (
 						Rmatrices->get(),
 						numSamplesBatch,
 						subArraySize,
@@ -593,11 +671,10 @@ namespace supra
 					cudaSafeCall(cudaPeekAtLastError());
 					
 					// Improve condition of matrices
-					addDiagonalLoading << <gridSize, dim3(32, 1), 0, stream >> > (
+					addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>> (
 						RmatricesTempSmooth->get(),
 						numSamplesBatch, subArraySize,
-						subArraySizes->get()
-						);
+						subArraySizes->get());
 					cudaSafeCall(cudaPeekAtLastError());
 					
 					// solve for the beamforming weights with PCG
@@ -652,7 +729,8 @@ namespace supra
 				uint32_t temporalSmoothing,
 				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
-				double subArrayScalingPower);
+				double subArrayScalingPower,
+				bool computeMeans);
 		template
 			shared_ptr<USImage> performRxBeamforming<int16_t, float>(
 				shared_ptr<const USRawData> rawData,
@@ -660,7 +738,8 @@ namespace supra
 				uint32_t temporalSmoothing,
 				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
-				double subArrayScalingPower);
+				double subArrayScalingPower,
+				bool computeMeans);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, int16_t>(
 				shared_ptr<const USRawData> rawData,
@@ -668,7 +747,8 @@ namespace supra
 				uint32_t temporalSmoothing,
 				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
-				double subArrayScalingPower);
+				double subArrayScalingPower,
+				bool computeMeans);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, float>(
 				shared_ptr<const USRawData> rawData,
@@ -676,6 +756,7 @@ namespace supra
 				uint32_t temporalSmoothing,
 				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
-				double subArrayScalingPower);
+				double subArrayScalingPower,
+				bool computeMeans);
 	}
 }
