@@ -676,10 +676,10 @@ namespace supra
 						numSamplesBatch, subArraySize,
 						subArraySizes->get());
 					cudaSafeCall(cudaPeekAtLastError());
-					
+
 					// solve for the beamforming weights with PCG
 					size_t sharedMemorySize = (5 * subArraySize + 1) * sizeof(float);
-					solveBlockwisePCGJacobi << <gridSize, blockSize, sharedMemorySize, stream >> >(
+					solveBlockwisePCGJacobi<<<gridSize, blockSize, sharedMemorySize, stream>>>(
 						RmatricesTempSmooth->get(),
 						subArraySizes->get(),
 						Avectors->get(),
@@ -692,7 +692,7 @@ namespace supra
 					cudaSafeCall(cudaPeekAtLastError());
 					
 					// calculate beamforming weights from the solutions and perform beamforming
-					applyWeights << <gridSize, dim3(32, 1), 0, stream >> > (
+					applyWeights<<<gridSize, dim3(32, 1), 0, stream>>> (
 						Wvectors->get(),
 						Avectors->get(),
 						gRawData->get(),

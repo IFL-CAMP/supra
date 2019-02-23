@@ -457,9 +457,6 @@ namespace supra
 					cudaSafeCall(cudaMemsetAsync(subArraySizes->get(), 0, sampleBlockSize * sizeof(uint32_t), stream));
 					cudaSafeCall(cudaMemsetAsync(subArrayOffsets->get(), 0, numSubArrays*sampleBlockSize * sizeof(uint32_t), stream));
 
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
 					dim3 blockSize(32, 1);
 					dim3 gridSize(numSamplesBatch, 1);
 
@@ -475,8 +472,7 @@ namespace supra
 						subArrayMasks->get(),
 						subArraySizes->get(),
 						subArrayOffsets->get());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
+					cudaSafeCall(cudaPeekAtLastError());
 
 					if (computeMeans)
 					{
@@ -525,12 +521,7 @@ namespace supra
 							Rmatrices->get());
 					}
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					//TEST
-					//auto RmatHost1 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-
+					
 					// Smooth the covariance matrices
 					computeTemporalSmoothRmatrices<<<gridSize, blockSize, 0, stream>>> (
 						Rmatrices->get(),
@@ -542,21 +533,13 @@ namespace supra
 						RmatricesTempSmooth->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
-					//TEST
-					//auto RmatHost2 = make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-
+					
 					// Improve condition of matrices
 					addDiagonalLoading<<<gridSize, dim3(32, 1), 0, stream>>> (
 						RmatricesTempSmooth->get(),
 						numSamplesBatch, subArraySize,
 						subArraySizes->get());
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
-
 
 					//fill diagonal with ones where necessary
 					fillUnusedDiagonal<<<gridSize, dim3(32, 1), 0, stream >>> (
@@ -607,7 +590,7 @@ namespace supra
 						assert(cublasInfoArrayHost[k] == 0);
 					}
 				
-					// calculate beamforming weights from that and perform beamforming
+					// calculate beamforming weights from the solutions and perform beamforming
 					applyWeights<<<gridSize, dim3(32, 1), 0, stream>>> (
 						Avectors->get(),
 						AvectorsOrg->get(),
@@ -625,8 +608,6 @@ namespace supra
 						pData->get()
 						);
 					cudaSafeCall(cudaPeekAtLastError());
-					//TEST
-					cudaSafeCall(cudaDeviceSynchronize());
 				}
 			}
 
