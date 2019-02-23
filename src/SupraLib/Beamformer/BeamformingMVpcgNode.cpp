@@ -43,7 +43,7 @@ namespace supra
 		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
 		m_valueRangeDictionary.set<uint32_t>("maxIterationsOverride", 0, 10000, 0, "Max iterations override (if != 0)");
-		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100, 0, -100, "Convergence threshold exponent");
+		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100.0, 0.0, -4.0, "Convergence threshold exponent");
 		m_valueRangeDictionary.set<double>("subArrayScalingPower", 0.5, 3.0, 1.5, "Subarray count scaling power");
 		m_valueRangeDictionary.set<bool>("computeMeans", true, "compute signal means");
 		

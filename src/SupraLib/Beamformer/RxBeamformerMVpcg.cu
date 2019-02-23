@@ -364,14 +364,13 @@ namespace supra
 
 		__global__ void solveBlockwisePCGJacobi(
 			const float* Amatrices, const uint32_t* systemSizes, const float* rightHandSides, 
-			uint32_t stride, uint32_t numSystems, int maxIterationsOverride, float convergenceThreshold, float* solutions)
+			uint32_t stride, uint32_t numSystems, int maxIterations, float convergenceThreshold, int reinitializationFrequency, float* solutions)
 		{
 			int systemIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
 
 			if (systemIdx < numSystems)
 			{
 				uint32_t systemSize = systemSizes[systemIdx];
-				int maxIterations = (maxIterationsOverride != 0 ? maxIterationsOverride : systemSize);
 
 				// We use the following vectors: x, b, r, d, q, s
 				// From them, we hold in shared memory: x, r, d, q, s
@@ -389,8 +388,8 @@ namespace supra
 
 				float* solution = &solutions[systemIdx * stride];
 
+				float residualNorm = 2*convergenceThreshold;
 				float deltaNew;
-				float delta0;
 				float alpha;
 				float beta;
 				
@@ -411,8 +410,7 @@ namespace supra
 				applyJacobiPreconditionerBlockWise(shD, A, shR, stride, systemSize);
 				// deltaNew = r*d;
 				deltaNew = scalarProductBlockWise(shR, shD, shScratch, systemSize);
-				delta0 = deltaNew;
-				for (int i = 0; i < maxIterations && deltaNew > convergenceThreshold*delta0; i++)
+				for (int i = 0; i < maxIterations && deltaNew > 1e-30 && residualNorm > convergenceThreshold; i++)
 				{
 					//q = Ad;
 					applyMatrixBlockWise(shQ, A, shD, stride, systemSize);
@@ -421,7 +419,7 @@ namespace supra
 					//x = x + alpha d;
 					saxpyVectorBlockWise(shX, alpha, shD, shX, systemSize);
 
-					if (i % 10 == 9)
+					if (i % reinitializationFrequency == 0)
 					{
 						// because q will not be used anymore in this operation, we can use it as tmp
 						auto shTmp = shQ;
@@ -435,6 +433,7 @@ namespace supra
 						//r = r - alpha q;
 						saxpyVectorBlockWise(shR, -alpha, shQ, shR, systemSize);
 					}
+					residualNorm = sqrt(scalarProductBlockWise(shR, shR, shScratch, systemSize));
 
 					//s = M^-1 r;
 					applyJacobiPreconditionerBlockWise(shS, A, shR, stride, systemSize);
@@ -556,6 +555,7 @@ namespace supra
 			{
 				subArraySize = numChannels / 2;
 			}
+			uint32_t maxIterations = (maxIterationsOverride == 0 ? subArraySize : maxIterationsOverride);
 
 			uint32_t numSubArrays = numChannels - subArraySize + 1;
 
@@ -685,8 +685,9 @@ namespace supra
 						Avectors->get(),
 						subArraySize,
 						numSamplesBatch,
-						maxIterationsOverride,
+						maxIterations,
 						(float)convergenceThreshold,
+						1,
 						Wvectors->get()
 					);
 					cudaSafeCall(cudaPeekAtLastError());
