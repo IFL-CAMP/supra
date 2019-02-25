@@ -34,7 +34,10 @@ namespace torch
 		}
 	}
 }
-
+namespace supra
+{
+	class USImageProperties;
+}
 
 // To include the node fully, add it in src/SupraLib/CMakeLists.txt and "InterfaceFactory::createNode"!
 
@@ -69,8 +72,11 @@ namespace supra
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndProcess(std::shared_ptr<RecordObject> mainObj);
 		template <typename InputType>
-		std::shared_ptr<ContainerBase> processTemplateSelection(
-		        std::shared_ptr<const Container<InputType> > imageData, vec3s size, size_t workDimension);
+		std::shared_ptr<RecordObject> processTemplateSelection(
+		        std::shared_ptr<const Container<InputType> > imageData, 
+				vec3s size, 
+				size_t workDimension, 
+				std::shared_ptr<const USImageProperties> pImageProperties);
 		void loadModule();
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
