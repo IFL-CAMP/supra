@@ -87,15 +87,52 @@ namespace supra
 						requires_grad(false));
 
 				size_t sliceSizeMax = 100;
+				size_t sliceOverlap = 15; // On each side
+				assert(sliceSizeMax > sliceOverlap * 2);
 
 				vec2s outSize{ size.x, size.z };
 				size_t numSamples = size.x;
 				size_t numScanlines = size.z;
 				shared_ptr<Container<float> > pDataOut = make_shared<Container<float> >(LocationHost, imageData->getStream(), outSize.x*outSize.y);
 
-				for (size_t startSample = 0; startSample < numSamples; startSample += sliceSizeMax)
+				size_t lastValidSamples = 0;
+				for (size_t startSampleValid = 0; startSampleValid < numSamples; startSampleValid += lastValidSamples)
 				{
-					size_t sliceSize = min(sliceSizeMax, numSamples - startSample);
+					size_t sliceSizeValid = 0;
+					size_t sliceSize = 0;
+					size_t startSample = 0;
+					if (startSampleValid == 0 && numSamples - startSampleValid <= sliceSizeMax)
+					{
+						//Special case: The requested slice size is large enough. No patching necessary!
+						sliceSize = numSamples - startSampleValid;
+						sliceSizeValid = sliceSize;
+						startSample = 0;
+					}
+					else if (startSampleValid == 0)
+					{
+						// The first patch only needs to be padded on the bottom
+						sliceSize = sliceSizeMax;
+						sliceSizeValid = sliceSize - sliceOverlap;
+						startSample = 0;
+					}
+					else if (numSamples - (startSampleValid - sliceOverlap) <= sliceSizeMax)
+					{
+						// The last patch only needs to be padded on the top
+						startSample = (startSampleValid - sliceOverlap);
+						sliceSize = numSamples - startSample;
+						sliceSizeValid = sliceSize - sliceOverlap;
+					}
+					else
+					{
+						// Every patch in the middle
+						// padding on the top and bottom
+						startSample = (startSampleValid - sliceOverlap);
+						sliceSize = sliceSizeMax;
+						sliceSizeValid = sliceSize - 2*sliceOverlap;
+					} 
+					lastValidSamples = sliceSizeValid;
+					logging::log_always("sliceSizeValid: ", sliceSizeValid, " startSampleValid: ", startSampleValid);
+					
 					auto inputDataSlice = inputData.slice(3, startSample, startSample + sliceSize);
 					inputDataSlice = inputDataSlice.to(torch::kFloat);
 
@@ -129,11 +166,12 @@ namespace supra
 					
 
 					auto outAccessor = output.accessor<float, 4>();
-					for (size_t sampleIdx = 0; sampleIdx < sliceSize; sampleIdx++)
+					size_t sampleOffset = startSampleValid - startSample;
+					for (size_t sampleIdxLocal = 0; sampleIdxLocal < sliceSizeValid; sampleIdxLocal++)
 					{
 						for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
 						{
-							pDataOut->get()[(startSample + sampleIdx) * numScanlines + scanlineIdx] = outAccessor[0][0][scanlineIdx][sampleIdx];
+							pDataOut->get()[(startSampleValid + sampleIdxLocal) * numScanlines + scanlineIdx] = outAccessor[0][0][scanlineIdx][sampleIdxLocal + sampleOffset];
 						}
 					}
 
