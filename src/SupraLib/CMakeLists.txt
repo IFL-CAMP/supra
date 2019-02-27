@@ -300,8 +300,10 @@ ENDIF(SUPRA_BEAMFORMER)
 
 IF(SUPRA_TORCH)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		Processing/TorchInference.cpp
 		Processing/TorchNode.cpp)
 	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		Processing/TorchInference.h
 		Processing/TorchNode.h)
 
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}

@@ -23,20 +23,10 @@
 #include <Container.h>
 #include <vec.h>
 
-// forward declaration
-namespace torch 
-{
-	namespace jit 
-	{
-		namespace script 
-		{
-			struct Module;
-		}
-	}
-}
 namespace supra
 {
 	class USImageProperties;
+	class TorchInference;
 }
 
 // To include the node fully, add it in src/SupraLib/CMakeLists.txt and "InterfaceFactory::createNode"!
@@ -72,18 +62,28 @@ namespace supra
 	private:
 		std::shared_ptr<RecordObject> checkTypeAndProcess(std::shared_ptr<RecordObject> mainObj);
 		template <typename InputType>
-		std::shared_ptr<RecordObject> processTemplateSelection(
-		        std::shared_ptr<const Container<InputType> > imageData, 
-				vec3s size, 
-				size_t workDimension, 
-				std::shared_ptr<const USImageProperties> pImageProperties);
+		std::shared_ptr<ContainerBase> processTemplateSelection(
+			std::shared_ptr<const Container<InputType> > imageData,
+			vec3s inputSize,
+			vec3s outputSize,
+			const std::string& currentLayout,
+			const std::string& finalLayout);
 		void loadModule();
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
 		std::mutex m_mutex;
-		std::shared_ptr<torch::jit::script::Module> m_torchModule;
+		std::shared_ptr<TorchInference> m_torchModule;
 
 		std::string m_modelFilename;
+		DataType m_modelInputDataType;
+		DataType m_modelOutputDataType;
+		std::string m_modelInputClass;
+		std::string m_modelOutputClass;
+		std::string m_modelInputLayout;
+		std::string m_modelOutputLayout;
+		DataType m_nodeOutputDataType;
+		uint32_t m_inferencePatchSize;
+		uint32_t m_inferencePatchOverlap;
 	};
 }
 
