@@ -64,7 +64,7 @@ add_library(cpprestsdk::cpprest SHARED IMPORTED)
 
 set_target_properties(cpprestsdk::cpprest PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "CPPREST_FORCE_HTTP_CLIENT_ASIO;CPPREST_FORCE_HTTP_LISTENER_ASIO"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"
   INTERFACE_LINK_LIBRARIES "-lpthread;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal;cpprestsdk::cpprestsdk_boost_internal;cpprestsdk::cpprestsdk_openssl_internal"
 )
 

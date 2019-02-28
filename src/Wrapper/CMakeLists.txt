@@ -32,3 +32,8 @@ set_property(TARGET SUPRA_Wrapper PROPERTY CXX_STANDARD 11)
 set_property(TARGET SUPRA_Wrapper PROPERTY CXX_STANDARD_REQUIRED ON)
 
 add_dependencies(SUPRA_Wrapper SUPRA_Lib)
+
+INSTALL(TARGETS SUPRA_Wrapper
+  RUNTIME
+  DESTINATION bin
+  COMPONENT applications)

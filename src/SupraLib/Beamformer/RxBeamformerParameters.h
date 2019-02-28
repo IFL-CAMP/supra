@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2017, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2017, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #ifndef __RXBEAMFORMERPARAMETERS_H__
@@ -31,6 +46,24 @@ namespace supra
 			double depth,
 			double speedOfSoundMMperS,
 			const USTransducer* pTransducer);
+
+		RxBeamformerParameters(
+			size_t numRxScanlines,
+			vec2s rxScanlineLayout,
+			double speedOfSoundMMperS,
+			const std::vector<LocationType> & rxDepths,
+			const std::vector<ScanlineRxParameters3D> & rxScanlines,
+			const std::vector<LocationType> & rxElementXs,
+			const std::vector<LocationType> & rxElementYs,
+			size_t rxNumDepths)
+			: m_rxScanlineLayout(rxScanlineLayout)
+			, m_numRxScanlines(numRxScanlines)
+			, m_speedOfSoundMMperS(speedOfSoundMMperS)
+			, m_rxNumDepths(rxNumDepths)
+			, m_rxDepths(rxDepths)
+			, m_rxScanlines(rxScanlines)
+			, m_rxElementXs(rxElementXs)
+			, m_rxElementYs(rxElementYs) {};
 
 		size_t getNumRxScanlines() const { return m_numRxScanlines; }
 		vec2s getRxScanlineLayout() const { return m_rxScanlineLayout; }
@@ -61,24 +94,6 @@ namespace supra
 		static std::shared_ptr<USRawData> readMetaDataForMockJson(const std::string & mockJsonMetadataFilename);
 		
 	private:
-
-		RxBeamformerParameters(
-			size_t numRxScanlines,
-			vec2s rxScanlineLayout,
-			double speedOfSoundMMperS,
-			const std::vector<LocationType> & rxDepths,
-			const std::vector<ScanlineRxParameters3D> & rxScanlines,
-			const std::vector<LocationType> & rxElementXs,
-			const std::vector<LocationType> & rxElementYs,
-			size_t rxNumDepths)
-			: m_rxScanlineLayout(rxScanlineLayout)
-			, m_numRxScanlines(numRxScanlines)
-			, m_speedOfSoundMMperS(speedOfSoundMMperS)
-			, m_rxNumDepths(rxNumDepths)
-			, m_rxDepths(rxDepths)
-			, m_rxScanlines(rxScanlines)
-			, m_rxElementXs(rxElementXs)
-			, m_rxElementYs(rxElementYs) {};
 
 		size_t m_numRxScanlines;
 		vec2s m_rxScanlineLayout;

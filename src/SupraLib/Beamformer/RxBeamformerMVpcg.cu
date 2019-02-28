@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2017, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2017, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #include "RxBeamformerMVpcg.h"
@@ -204,13 +219,16 @@ namespace supra
 					float scaling = 1.0f;
 					for (int matrixIdx = tIdx; matrixIdx < numelR; matrixIdx += blockDim.x*blockDim.y)
 					{
-						float finalEntry = 0.0f;
+						int colIdx = matrixIdx % subArraySizeLocal;
+						int rowIdx = matrixIdx / subArraySizeLocal;
+						int matrixStorageIdx = colIdx + rowIdx * subArraySize;
 
+						float finalEntry = 0.0f;
 						for (int tempIdx = firstIdx; tempIdx <= lastIdx; tempIdx++)
 						{
-							finalEntry += Rmatrices[matrixIdx + tempIdx*numelRfull];
+							finalEntry += Rmatrices[matrixStorageIdx + tempIdx*numelRfull];
 						}
-						TempRmatrices[matrixIdx + (scanlineIdxLocal * numSamples + sampleIdx)*numelRfull] = finalEntry*scaling;
+						TempRmatrices[matrixStorageIdx + sampleIdx*numelRfull] = finalEntry*scaling;
 					}
 				}
 			}
@@ -227,6 +245,11 @@ namespace supra
 
 		template <typename T>
 		__device__ void blockReduceWarpAtomic(T in, T* out) {
+			// We only add to the output, so set it to zero first
+			if (threadIdx.x == 0)
+			{
+				*out = 0;
+			}
 			auto warpSum = warpAllReduceSum(in);
 			if ((threadIdx.x & (warpSize - 1)) == 0)
 			{
@@ -340,6 +363,9 @@ namespace supra
 			const uint32_t& stride, const uint32_t& numElements)
 		{
 			int tIdx = (threadIdx.y * blockDim.x) + threadIdx.x;
+			// Because we only add atomically to the output, we need to set the target vector to 0 first
+			setVectorBlockWise(vect, static_cast<T>(0), numElements);
+
 			uint32_t numElementsMatrix = numElements*numElements;
 
 			setVectorBlockWise(vect, static_cast<T>(0), numElements);
@@ -396,14 +422,15 @@ namespace supra
 
 		template <typename pcgWorkType, typename inputType, typename outputType>
 		__global__ void solveBlockwisePCGJacobi(
-			const inputType* Amatrices, const uint32_t* systemSizes, const inputType* rightHandSides, 
-			uint32_t stride, uint32_t numSystems, int maxIterations, pcgWorkType convergenceThreshold, outputType* solutions)
+			const float* Amatrices, const uint32_t* systemSizes, const float* rightHandSides, 
+			uint32_t stride, uint32_t numSystems, int maxIterationsOverride, float convergenceThreshold, float* solutions)
 		{
 			int systemIdx = (blockIdx.y * gridDim.x) + blockIdx.x;
 
 			if (systemIdx < numSystems)
 			{
 				uint32_t systemSize = systemSizes[systemIdx];
+				int maxIterations = (maxIterationsOverride != 0 ? maxIterationsOverride : systemSize);
 
 				// We use the following vectors: x, b, r, d, q, s
 				// From them, we hold in shared memory: x, r, d, q, s
@@ -459,8 +486,20 @@ namespace supra
 					//x = x + alpha d;
 					saxpyVectorBlockWise(shX, alpha, shD, shX, systemSize);
 
-					//r = r - alpha q;
-					saxpyVectorBlockWise(shR, -alpha, shQ, shR, systemSize);
+					if (i % 10 == 9)
+					{
+						// because q will not be used anymore in this operation, we can use it as tmp
+						auto shTmp = shQ;
+						// tmp = Ax
+						applySymmetricMatrixBlockWise(shTmp, shA, shX, stride, systemSize);
+
+						// r = b - tmp
+						saxpyVectorBlockWise(shR, static_cast<pcgWorkType>(-1.0), shTmp, b, systemSize);
+					}
+					else {
+						//r = r - alpha q;
+						saxpyVectorBlockWise(shR, -alpha, shQ, shR, systemSize);
+					}
 
 					//s = M^-1 r;
 					applySymmetricJacobiPreconditionerBlockWise(shS, shA, shR, stride, systemSize);
@@ -491,6 +530,7 @@ namespace supra
 			uint32_t numScanlines,
 			uint32_t scanlineIdxStart,
 			uint32_t subArraySize,
+			float subArrayScalingPower,
 			const uint8_t * subArrayMasks,
 			const uint32_t * subArraySizes,
 			const uint32_t * subArrayOffsets,
@@ -524,7 +564,7 @@ namespace supra
 				{
 					weightScaling += RinvAloc[vectorIdx] * Aloc[vectorIdx];
 				}
-				weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * powf(numSubArraysActive, 1.2f));
+				weightScaling = 1.0f / (warpAllReduceSum(weightScaling) * pow(static_cast<float>(numSubArraysActive), subArrayScalingPower));
 
 				// compute one sample at a time, according to spatial smoothing
 				float beamformedSample = 0.0f;
@@ -561,8 +601,9 @@ namespace supra
 			shared_ptr<const USRawData> rawData,
 			uint32_t subArraySize,
 			uint32_t temporalSmoothing,
-			uint32_t maxIterations,
+			uint32_t maxIterationsOverride,
 			double convergenceThreshold,
+			double subArrayScalingPower,
 			double outputClamp)
 		{
 			uint32_t scanlineBlockSize = 32;
@@ -655,8 +696,8 @@ namespace supra
 				/*cudaSafeCall(cudaDeviceSynchronize());
 				auto RmatricesHost =
 					std::make_shared<Container<float> >(ContainerLocation::LocationHost, *Rmatrices);
-				std::copy_n(RmatricesHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/
-				
+				std::copy_n(RmatricesHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/				
+									
 				// Smooth the covariance matrices
 				computeTemporalSmoothRmatrices <<<gridSize, blockSize, 0, stream >>> (
 					Rmatrices->get(),
@@ -673,7 +714,7 @@ namespace supra
 				auto RmatricesTempSmoothHost =
 					std::make_shared<Container<float> >(ContainerLocation::LocationHost, *RmatricesTempSmooth);
 				std::copy_n(RmatricesTempSmoothHost->get(), subArraySize*subArraySize*numSamplesBatch, allMatrices->get() + (scanlineIdx * numSamples + sampleIdx)*subArraySize*subArraySize);*/
-				
+									
 				// Improve condition of matrices
 				addDiagonalLoading <<<gridSize, dim3(32, 1), 0, stream >>> (
 					RmatricesTempSmooth->get(),
@@ -689,6 +730,7 @@ namespace supra
 				
 				// solve for the beamforming weights with PCG
 				typedef double pcgWorkType;
+				//typedef float pcgWorkType;
 				size_t sharedMemorySize = (4 * subArraySize + 1) * sizeof(pcgWorkType) + (subArraySize * (subArraySize + 1) /2) * sizeof(float);
 				solveBlockwisePCGJacobi<pcgWorkType, float, float> <<<gridSize, blockSize, sharedMemorySize, stream >>>(
 					RmatricesTempSmooth->get(),
@@ -696,8 +738,8 @@ namespace supra
 					Avectors->get(),
 					subArraySize,
 					numSamples * numScanlinesBatch,
-					maxIterations,
-					convergenceThreshold,
+					maxIterationsOverride,
+					(float)convergenceThreshold,
 					Wvectors->get()
 				);
 				cudaSafeCall(cudaPeekAtLastError());
@@ -712,6 +754,7 @@ namespace supra
 					numScanlines,
 					scanlineIdx,
 					subArraySize,
+					(float)subArrayScalingPower,
 					subArrayMasks->get(),
 					subArraySizes->get(),
 					subArrayOffsets->get(),
@@ -727,7 +770,13 @@ namespace supra
 				rawData->getImageProperties(),
 				rawData->getReceiveTimestamp(),
 				rawData->getSyncTimestamp());
-			
+			/*auto retImage = std::make_shared<USImage>(
+				vec3s{ subArraySize*subArraySize, numSamples, numScanlines },
+				allMatrices,
+				rawData->getImageProperties(),
+				rawData->getReceiveTimestamp(),
+				rawData->getSyncTimestamp());*/
+
 			return retImage;
 		}
 
@@ -736,32 +785,36 @@ namespace supra
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
+				double subArrayScalingPower,
 				double outputClamp);
 		template
 			shared_ptr<USImage> performRxBeamforming<int16_t, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
+				double subArrayScalingPower,
 				double outputClamp);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, int16_t>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
+				double subArrayScalingPower,
 				double outputClamp);
 		template
 			shared_ptr<USImage> performRxBeamforming<float, float>(
 				shared_ptr<const USRawData> rawData,
 				uint32_t subArraySize,
 				uint32_t temporalSmoothing,
-				uint32_t maxIterations,
+				uint32_t maxIterationsOverride,
 				double convergenceThreshold,
+				double subArrayScalingPower,
 				double outputClamp);
 	}
 }

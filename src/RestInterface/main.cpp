@@ -6,6 +6,7 @@
 // MIT License
 //
 // Copyright (c) 2016 ivmeroLabs.
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -74,6 +75,7 @@ int main(int argc, const char * argv[]) {
 				// wait for server initialization...
 				server.accept().wait();
 				std::cout << "Modern C++ Microservice now listening for requests at: " << server.endpoint() << '\n';
+				std::cout << "Usage: eg. " << server.endpoint() << "nodes/all" << '\n';
 				
 				InterruptHandler::waitForUserInterrupt();
 

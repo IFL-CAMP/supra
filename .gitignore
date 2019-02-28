@@ -1,8 +1,10 @@
 external/
-build/*
+build*/
 \.project
 \.cproject
 *~
 doc/doxy/
 tools/.idea/
 doc/supraParameters/
+*.orig
+data*/

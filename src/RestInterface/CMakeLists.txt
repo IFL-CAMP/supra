@@ -3,6 +3,17 @@ cmake_minimum_required( VERSION 3.0.0 FATAL_ERROR )
 MESSAGE(STATUS "Building SUPRA REST Interface")
 
 MESSAGE(STATUS "Uses the cpp REST api from https://github.com/Microsoft/cpprestsdk")
+
+# This assumes installation of cpprestsdk through apt-get
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  find_file (UBUNTU_ISSUE issue PATHS /etc)
+  if (UBUNTU_ISSUE)
+    file (STRINGS ${UBUNTU_ISSUE} UBUNTU_XENIAL REGEX "Ubuntu 16.04")
+    if (UBUNTU_XENIAL)
+      SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    endif()
+  endif()
+endif()
 find_package(cpprestsdk REQUIRED)
 
 # Configure required libraries ...
@@ -122,3 +133,8 @@ set_property(TARGET SUPRA_REST PROPERTY CXX_STANDARD 11)
 set_property(TARGET SUPRA_REST PROPERTY CXX_STANDARD_REQUIRED ON)
 
 add_dependencies(SUPRA_REST SUPRA_Lib)
+
+INSTALL(TARGETS SUPRA_REST
+  RUNTIME
+  DESTINATION bin
+  COMPONENT applications)

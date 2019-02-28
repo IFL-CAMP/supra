@@ -162,3 +162,9 @@ set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD_REQUIRED ON)
 add_dependencies(SUPRA_GUI SUPRA_Lib NodeEditor)
 
 qt5_use_modules(SUPRA_GUI Widgets)
+
+INSTALL(TARGETS SUPRA_GUI
+  RUNTIME
+  DESTINATION bin
+  COMPONENT applications)
+

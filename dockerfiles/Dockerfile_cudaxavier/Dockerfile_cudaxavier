@@ -1,6 +1,0 @@
-FROM ubuntu:18.04
-
-ENV LD_LIBRARY_PATH=/usr/local/cuda/targets/aarch64-linux/lib:$LD_LIBRARY_PATH
-ENV PATH=/usr/local/cuda/bin:$PATH
-
-RUN ldconfig

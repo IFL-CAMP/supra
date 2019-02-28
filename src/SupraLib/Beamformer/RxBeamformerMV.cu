@@ -218,7 +218,7 @@ namespace supra
 		uint32_t temporalSmoothing,
 		cublasHandle_t cublasH)
 	{
-		int sampleBlockSize = 2000;//128;
+		uint32_t sampleBlockSize = 2000;//128;
 
 		//Ensure the raw-data are on the gpu
 		auto gRawData = rawData->getData<ChannelDataType>();
