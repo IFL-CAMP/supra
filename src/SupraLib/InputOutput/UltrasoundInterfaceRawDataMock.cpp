@@ -63,7 +63,7 @@ namespace supra
 		for (size_t k = 0; k < m_mockDataFilenames.size(); k++)
 		{
 			// In order to maximize reading performance, the ifstream needs a large read buffer
-			m_mockDataStramReadBuffers[k].resize(128 * 1024 * 1024, '\0');
+			m_mockDataStramReadBuffers[k].resize(128 * 1024, '\0');
 			m_mockDataStreams[k] = std::shared_ptr<std::ifstream>(new std::ifstream);
 			m_mockDataStreams[k]->open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
 			m_mockDataStreams[k]->rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());	

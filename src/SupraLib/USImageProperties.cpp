@@ -1,15 +1,32 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #include "USImageProperties.h"
+
+#include <json/json.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -118,6 +135,89 @@ namespace supra
 		if (a.m_scanlines)
 		{
 			m_scanlines = a.m_scanlines;
+		}
+	}
+
+	USImageProperties::USImageProperties(const std::string & mockJsonMetadataFilename)
+	{
+		// open the 
+		std::ifstream f(mockJsonMetadataFilename);
+		if (!f.good())
+		{
+			logging::log_error("USImageProperties: Error opening json mock file ", mockJsonMetadataFilename);
+			throw std::runtime_error("USImageProperties: Error opening json mock file");
+		}
+
+		// read and parse the json file
+		Json::CharReaderBuilder builder;
+		builder["collectComments"] = false;
+		Json::Value jsonDoc;
+		JSONCPP_STRING jsonErrs;
+		bool jsonOk = parseFromStream(builder, f, &jsonDoc, &jsonErrs);
+		f.close();
+
+		if (!jsonOk)
+		{
+			logging::log_error("USImageProperties: Error parsing json mock file ", mockJsonMetadataFilename);
+			logging::log_error("USImageProperties: Reason: ", jsonErrs);
+			throw std::runtime_error("USImageProperties: Error parsing json mock file");
+		}
+
+		m_numSamples = jsonDoc["numSamples"].asLargestUInt();
+		setScanlineLayout({ jsonDoc["scanlineLayout"]["x"].asLargestUInt(), jsonDoc["scanlineLayout"]["y"].asLargestUInt() });
+		m_depth = jsonDoc["depth"].asDouble();
+
+		m_imageType = static_cast<USImageProperties::ImageType>(jsonDoc["imageType"].asInt());
+		m_imageState = static_cast<USImageProperties::ImageState>(jsonDoc["imageState"].asInt());
+		m_transducerType = static_cast<USImageProperties::TransducerType>(jsonDoc["transducerType"].asInt());
+		m_imageResolutionSet = jsonDoc["imageResolutionSet"].asBool();
+		m_imageResolution = jsonDoc["imageResolution"].asDouble();
+
+		m_scanlines =
+			std::make_shared<std::vector<std::vector<ScanlineRxParameters3D> > >
+			(m_scanlineLayout.x, std::vector<ScanlineRxParameters3D>(m_scanlineLayout.y));
+
+		int scanlineIdx = 0;
+		for (size_t idxY = 0; idxY < m_scanlineLayout.y; idxY++)
+		{
+			for (size_t idxX = 0; idxX < m_scanlineLayout.x; idxX++)
+			{
+				auto scanlineParams = jsonDoc["rxScanlines"][scanlineIdx];
+				ScanlineRxParameters3D params;
+
+				params.position = {
+					scanlineParams["position"]["x"].asDouble(),
+					scanlineParams["position"]["y"].asDouble(),
+					scanlineParams["position"]["z"].asDouble()
+				};
+				params.direction = {
+					scanlineParams["direction"]["x"].asDouble(),
+					scanlineParams["direction"]["y"].asDouble(),
+					scanlineParams["direction"]["z"].asDouble()
+				};
+				params.maxElementDistance = {
+					scanlineParams["maxElementDistance"]["x"].asDouble(),
+					scanlineParams["maxElementDistance"]["y"].asDouble()
+				};
+
+				for (int m = 0; m < 4; m++)
+				{
+					params.txParameters[m].firstActiveElementIndex = {
+						static_cast<uint16_t>(scanlineParams["txParameters"][m]["firstActiveElementIndex"]["x"].asUInt()),
+						static_cast<uint16_t>(scanlineParams["txParameters"][m]["firstActiveElementIndex"]["y"].asUInt())
+					};
+					params.txParameters[m].lastActiveElementIndex = {
+						static_cast<uint16_t>(scanlineParams["txParameters"][m]["lastActiveElementIndex"]["x"].asUInt()),
+						static_cast<uint16_t>(scanlineParams["txParameters"][m]["lastActiveElementIndex"]["y"].asUInt())
+					};
+					params.txParameters[m].txScanlineIdx = static_cast<uint16_t>(scanlineParams["txParameters"][m]["txScanlineIdx"].asUInt());
+					params.txParameters[m].initialDelay = scanlineParams["txParameters"][m]["initialDelay"].asDouble();
+					params.txWeights[m] = scanlineParams["txParameters"][m]["txWeights"].asDouble();
+				}
+
+				(*m_scanlines)[idxX][idxY] = params;
+				scanlineIdx++;
+			}
 		}
 	}
 
@@ -242,5 +342,68 @@ namespace supra
 	bool USImageProperties::is2D() const
 	{
 		return m_scanlineLayout.x == 1 || m_scanlineLayout.y == 1;
+	}
+
+	void USImageProperties::writeMetaDataForMock(std::string filename) const
+	{
+		Json::Value jsonDoc;
+
+		jsonDoc["numSamples"] = m_numSamples;
+		jsonDoc["scanlineLayout"]["x"] = m_scanlineLayout.x;
+		jsonDoc["scanlineLayout"]["y"] = m_scanlineLayout.y; 
+		jsonDoc["depth"] = m_depth;
+
+		jsonDoc["imageType"] = static_cast<int>(m_imageType);
+		jsonDoc["imageState"] = static_cast<int>(m_imageState);
+		jsonDoc["transducerType"]= static_cast<int>(m_transducerType);
+		
+		jsonDoc["imageResolutionSet"] = m_imageResolutionSet;
+		jsonDoc["imageResolution"] = m_imageResolution;
+		
+		int scanlineIdx = 0;
+		for (size_t idxY = 0; idxY < m_scanlineLayout.y; idxY++)
+		{
+			for (size_t idxX = 0; idxX < m_scanlineLayout.x; idxX++)
+			{
+				auto params = (*m_scanlines)[idxX][idxY];
+				Json::Value scanlineParams;
+
+				scanlineParams["position"]["x"] = params.position.x;
+				scanlineParams["position"]["y"] = params.position.y;
+				scanlineParams["position"]["z"] = params.position.z;
+
+				scanlineParams["direction"]["x"] = params.direction.x;
+				scanlineParams["direction"]["y"] = params.direction.y;
+				scanlineParams["direction"]["z"] = params.direction.z;
+
+				scanlineParams["maxElementDistance"]["x"] = params.maxElementDistance.x;
+				scanlineParams["maxElementDistance"]["y"] = params.maxElementDistance.y;
+
+				for (int m = 0; m < 4; m++)
+				{
+					scanlineParams["txParameters"][m]["firstActiveElementIndex"]["x"] = params.txParameters[m].firstActiveElementIndex.x;
+					scanlineParams["txParameters"][m]["firstActiveElementIndex"]["y"] = params.txParameters[m].firstActiveElementIndex.y;
+
+					scanlineParams["txParameters"][m]["lastActiveElementIndex"]["x"] = params.txParameters[m].lastActiveElementIndex.x;
+					scanlineParams["txParameters"][m]["lastActiveElementIndex"]["y"] = params.txParameters[m].lastActiveElementIndex.y;
+
+					scanlineParams["txParameters"][m]["txScanlineIdx"] = params.txParameters[m].txScanlineIdx;
+					scanlineParams["txParameters"][m]["initialDelay"] = params.txParameters[m].initialDelay;
+					scanlineParams["txParameters"][m]["txWeights"] = params.txWeights[m];
+				}
+
+				jsonDoc["rxScanlines"][scanlineIdx] = scanlineParams;
+				
+				scanlineIdx++;
+			}
+		}
+
+		Json::StreamWriterBuilder wbuilder;
+		wbuilder["indentation"] = "    ";
+
+		std::ofstream f(filename);
+		std::unique_ptr<Json::StreamWriter> writer(
+			wbuilder.newStreamWriter());
+		writer->write(jsonDoc, &f);
 	}
 }

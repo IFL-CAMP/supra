@@ -50,7 +50,7 @@ namespace supra
 	private:
 		static void initStreams();
 	
-		static constexpr size_t sm_numberStreams = 16;
+		static constexpr size_t sm_numberStreams = 8;
 
 		static std::vector<ContainerStreamType> sm_streams;
 		static size_t sm_streamIndex;

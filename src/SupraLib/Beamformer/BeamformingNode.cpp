@@ -38,7 +38,7 @@ namespace supra
 				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
 		}
 
-		m_callFrequency.setName("Beamforming");
+		m_callFrequency.setName("BeamformingDAS");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");

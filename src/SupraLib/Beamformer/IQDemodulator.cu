@@ -214,7 +214,7 @@ namespace supra
 	template<typename InputType, typename OutputType>
 	shared_ptr<Container<OutputType> > IQDemodulator::demodulateMagnitudeFrequencyCompounding(
 		const shared_ptr<const Container<InputType>>& inImageData,
-		int numScanlines, int numSamples, uint32_t decimation,
+		const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 		const std::vector<double>& referenceFrequencies,
 		const std::vector<double>& bandwidths,
 		const std::vector<double>& weights)
@@ -347,28 +347,28 @@ namespace supra
 	template 
 	shared_ptr<Container<int16_t> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<int16_t, int16_t>(
 		const shared_ptr<const Container<int16_t> >& inImageData,
-		int numScanlines, int numSamples, uint32_t decimation,
+		const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 		const std::vector<double>& referenceFrequencies,
 		const std::vector<double>& bandwidths,
 		const std::vector<double>& weights);
 	template
 		shared_ptr<Container<int16_t> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<float, int16_t>(
 			const shared_ptr<const Container<float> >& inImageData,
-			int numScanlines, int numSamples, uint32_t decimation,
+			const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 			const std::vector<double>& referenceFrequencies,
 			const std::vector<double>& bandwidths,
 			const std::vector<double>& weights);
 	template
 		shared_ptr<Container<float> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<int16_t, float>(
 			const shared_ptr<const Container<int16_t> >& inImageData,
-			int numScanlines, int numSamples, uint32_t decimation,
+			const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 			const std::vector<double>& referenceFrequencies,
 			const std::vector<double>& bandwidths,
 			const std::vector<double>& weights);
 	template
 		shared_ptr<Container<float> > IQDemodulator::demodulateMagnitudeFrequencyCompounding<float, float>(
 			const shared_ptr<const Container<float> >& inImageData,
-			int numScanlines, int numSamples, uint32_t decimation,
+			const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 			const std::vector<double>& referenceFrequencies,
 			const std::vector<double>& bandwidths,
 			const std::vector<double>& weights);

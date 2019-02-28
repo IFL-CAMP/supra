@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #include "ScanConverter.h"
@@ -33,31 +48,31 @@ namespace supra
 
 		template <typename Tf, typename Ti>
 		static __device__ __host__ void computeParametersVoxel3D(
-			Tf sampleDistance,
-			vec2T<Ti> scanlineLayout,
-			int scanlineIdxX,
-			int scanlineIdxY,
-			vec3T<Tf> s1,
-			vec3T<Tf> e1,
-			vec3T<Tf> s2,
-			vec3T<Tf> e2,
-			vec3T<Tf> s3,
-			vec3T<Tf> e3,
-			vec3T<Tf> s4,
-			vec3T<Tf> e4,
-			vec3T<Tf> scanline1Pos,
-			vec3T<Tf> scanline1Dir,
-			vec3T<Tf> scanline2Pos,
-			vec3T<Tf> scanline2Dir,
-			vec3T<Tf> scanline3Pos,
-			vec3T<Tf> scanline3Dir,
-			vec3T<Tf> scanline4Pos,
-			vec3T<Tf> scanline4Dir,
-			Tf startDepth,
-			Tf endDepth,
-			vec3T<Ti> imageSize,
-			vec3T<Ti> voxel,
-			vec3T<Tf> voxelPos,
+			const Tf &sampleDistance,
+			const vec2T<Ti> &scanlineLayout,
+			const int &scanlineIdxX,
+			const int &scanlineIdxY,
+			const vec3T<Tf> &s1,
+			const vec3T<Tf> &e1,
+			const vec3T<Tf> &s2,
+			const vec3T<Tf> &e2,
+			const vec3T<Tf> &s3,
+			const vec3T<Tf> &e3,
+			const vec3T<Tf> &s4,
+			const vec3T<Tf> &e4,
+			const vec3T<Tf> &scanline1Pos,
+			const vec3T<Tf> &scanline1Dir,
+			const vec3T<Tf> &scanline2Pos,
+			const vec3T<Tf> &scanline2Dir,
+			const vec3T<Tf> &scanline3Pos,
+			const vec3T<Tf> &scanline3Dir,
+			const vec3T<Tf> &scanline4Pos,
+			const vec3T<Tf> &scanline4Dir,
+			const Tf &startDepth,
+			const Tf &endDepth,
+			const vec3T<Ti> &imageSize,
+			const vec3T<Ti> &voxel,
+			const vec3T<Tf> &voxelPos,
 			uint8_t* __restrict__ maskBuf,
 			uint32_t* __restrict__ sampleIdxBuf,
 			float* __restrict__ weightXBuf,
@@ -71,7 +86,6 @@ namespace supra
 				pointInsideTetrahedron(s3, e3, e1, e4, voxelPos) ||
 				pointInsideTetrahedron(s2, s3, e1, e4, voxelPos))
 			{
-				size_t voxelIndex = voxel.x + voxel.y*imageSize.x + voxel.z*imageSize.x*imageSize.y;
 
 				thrust::pair<vec3T<Tf>, bool> params = mapToParameters3D<Tf, Ti>(
 					scanline1Pos,
@@ -86,6 +100,8 @@ namespace supra
 
 				if (params.second)
 				{
+					// moved inside to compute only when required
+					size_t voxelIndex = voxel.x + voxel.y*imageSize.x + voxel.z*imageSize.x*imageSize.y;
 					maskBuf[voxelIndex] = 1;
 
 					Tf t1 = params.first.x;
@@ -138,11 +154,26 @@ namespace supra
 			//[b_x, b_y, b_z, 1]
 			//[c_x, c_y, c_z, 1]
 			//[p_x, p_y, p_z, 1]
-			return
-				a.x*b.y*c.z - a.x*b.z*c.y - a.y*b.x*c.z + a.y*b.z*c.x + a.z*b.x*c.y - a.z*b.y*c.x -
-				a.x*b.y*p.z + a.x*b.z*p.y + a.y*b.x*p.z - a.y*b.z*p.x - a.z*b.x*p.y + a.z*b.y*p.x +
-				a.x*c.y*p.z - a.x*c.z*p.y - a.y*c.x*p.z + a.y*c.z*p.x + a.z*c.x*p.y - a.z*c.y*p.x -
-				b.x*c.y*p.z + b.x*c.z*p.y + b.y*c.x*p.z - b.y*c.z*p.x - b.z*c.x*p.y + b.z*c.y*p.x;
+
+			// reducing 12 multiplications per compute
+			const Tf axby = a.x*b.y;
+			const Tf cypz = c.y*p.z;
+			const Tf axbz = a.x*b.z;
+			const Tf czpy = c.z*p.y;
+			const Tf aybx = a.y*b.x;
+			const Tf cxpz = c.x*p.z;
+			const Tf aybz = a.y*b.z;
+			const Tf czpx = c.z*p.x;
+			const Tf azbx = a.z*b.x;
+			const Tf cxpy = c.x*p.y;
+			const Tf azby = a.z*b.y;
+			const Tf cypx = c.y*p.x;
+
+			return 
+				(axby-aybx)*(c.z-p.z) + (aybz-azby)*(c.x-p.x) +
+				(azbx-axbz)*(c.y-p.y) + (cypz-czpy)*(a.x-b.x) -
+				(cxpz-czpx)*(a.y-b.y) + (cxpy-cypx)*(a.z-b.z);
+			// reducing 18 multiplications with the updated return statement per compute 			
 		}
 
 		template <typename Tf>
@@ -248,33 +279,33 @@ namespace supra
 	__global__ void
 		__launch_bounds__(256, 2)
 		computeParameterBB3D(
-			Tf sampleDistance,
-			vec2T<Ti> scanlineLayout,
-			int scanlineIdxX,
-			int scanlineIdxY,
-			vec3T<Tf> s1,
-			vec3T<Tf> e1,
-			vec3T<Tf> s2,
-			vec3T<Tf> e2,
-			vec3T<Tf> s3,
-			vec3T<Tf> e3,
-			vec3T<Tf> s4,
-			vec3T<Tf> e4,
-			vec3T<Tf> scanline1Pos,
-			vec3T<Tf> scanline1Dir,
-			vec3T<Tf> scanline2Pos,
-			vec3T<Tf> scanline2Dir,
-			vec3T<Tf> scanline3Pos,
-			vec3T<Tf> scanline3Dir,
-			vec3T<Tf> scanline4Pos,
-			vec3T<Tf> scanline4Dir,
-			Tf startDepth,
-			Tf endDepth,
-			vec3T<Ti> imageSize,
-			vec3T<Tf> bbMin,
-			vec3T<Ti> tetMinVoxel,
-			vec3T<Ti> tetMaxVoxel,
-			Tf resolution,
+			const Tf sampleDistance,
+			const vec2T<Ti> scanlineLayout,
+			const int scanlineIdxX,
+			const int scanlineIdxY,
+			const vec3T<Tf> s1,
+			const vec3T<Tf> e1,
+			const vec3T<Tf> s2,
+			const vec3T<Tf> e2,
+			const vec3T<Tf> s3,
+			const vec3T<Tf> e3,
+			const vec3T<Tf> s4,
+			const vec3T<Tf> e4,
+			const vec3T<Tf> scanline1Pos,
+			const vec3T<Tf> scanline1Dir,
+			const vec3T<Tf> scanline2Pos,
+			const vec3T<Tf> scanline2Dir,
+			const vec3T<Tf> scanline3Pos,
+			const vec3T<Tf> scanline3Dir,
+			const vec3T<Tf> scanline4Pos,
+			const vec3T<Tf> scanline4Dir,
+			const Tf startDepth,
+			const Tf endDepth,
+			const vec3T<Ti> imageSize,
+			const vec3T<Tf> bbMin,
+			const vec3T<Ti> tetMinVoxel,
+			const vec3T<Ti> tetMaxVoxel,
+			const Tf resolution,
 			uint8_t* __restrict__ maskBuf,
 			uint32_t* __restrict__ sampleIdxBuf,
 			float* __restrict__ weightXBuf,
@@ -287,10 +318,10 @@ namespace supra
 			static_cast<Ti>(blockDim.y*blockIdx.y + threadIdx.y),
 			static_cast<Ti>(blockDim.z*blockIdx.z + threadIdx.z) };  //@suppress("Symbol is not resolved") @suppress("Field cannot be resolved")
 		voxel = voxel + tetMinVoxel;
-		vec3T<Tf> voxelPos = static_cast<vec3T<Tf>>(voxel) * resolution + bbMin;
 
 		if (voxel.x <= tetMaxVoxel.x && voxel.y <= tetMaxVoxel.y && voxel.z <= tetMaxVoxel.z)
 		{
+			vec3T<Tf> voxelPos = static_cast<vec3T<Tf>>(voxel) * resolution + bbMin;
 			ScanConverterInternals::computeParametersVoxel3D(
 				sampleDistance,
 				scanlineLayout,
@@ -734,15 +765,6 @@ namespace supra
 						vec3s tetMinVoxel = static_cast<vec3s>(floor((tetMinWorld - bbMin) / resolution));
 						vec3s tetMaxVoxel = static_cast<vec3s>(ceil((tetMaxWorld - bbMin) / resolution));
 
-						// check the pixels in the quad bounding box and mark the inside ones
-						/*vec3s voxel;
-						for (voxel.x = tetMinVoxel.x; voxel.x <= tetMaxVoxel.x; voxel.x++)
-						{
-							for (voxel.y = tetMinVoxel.y; voxel.y <= tetMaxVoxel.y; voxel.y++)
-							{
-								for (voxel.z = tetMinVoxel.z; voxel.z <= tetMaxVoxel.z; voxel.z++)
-								{
-									vec voxelPos = static_cast<vec3>(voxel) * resolution + bbMin;*/
 						vec3s numVoxels = tetMaxVoxel - tetMinVoxel + 1;
 						dim3 blockSize(16, 4, 4);
 						dim3 gridSize(
@@ -781,19 +803,10 @@ namespace supra
 							m_weightY->get(),
 							m_weightZ->get());
 						cudaSafeCall(cudaPeekAtLastError());
-						/*}
-					}
-				}*/
 					}
 				}
 			}
 			cudaSafeCall(cudaStreamSynchronize(cudaStreamPerThread));
-
-			//m_mask = m_mask->getCopy(LocationGpu);
-			//m_sampleIdx = m_sampleIdx->getCopy(LocationGpu);
-			//m_weightX = m_weightX->getCopy(LocationGpu);
-			//m_weightY = m_weightY->getCopy(LocationGpu);
-			//m_weightZ = m_weightZ->getCopy(LocationGpu);
 		}
 		else
 		{

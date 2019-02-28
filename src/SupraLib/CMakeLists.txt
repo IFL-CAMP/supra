@@ -68,6 +68,8 @@ IF(SUPRA_CUDA)
 	ENDIF()
 	IF(WIN32)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
+	ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 7.2)
 	ELSE()
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
@@ -82,13 +84,19 @@ IF(SUPRA_CUDA)
 		SET(SUPRA_CUFFT TRUE)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES} HAVE_CUFFT)
 	ENDIF()
+	LIST(APPEND CUDA_LIBRARIES ${CUDA_curand_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppial_LIBRARY})
 	
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
 		
-	IF(CUDA_cublas_LIBRARY)
+	IF(CUDA_CUBLAS_LIBRARIES AND CUDA_cublas_LIBRARY AND CUDA_cublas_device_LIBRARY)
+		SET(SUPRA_CUDA_CUBLAS ON)
+		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+			HAVE_CUDA_CUBLAS)
+		SET(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+	ELSEIF(CUDA_cublas_LIBRARY)
 		SET(SUPRA_CUDA_CUBLAS ON)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 			HAVE_CUDA_CUBLAS)
@@ -137,6 +145,7 @@ SET(SUPRA_Lib_SOURCE
 	utilities/DataType.cpp
 	utilities/SingleThreadTimer.cpp
 	utilities/tinyxml2/tinyxml2.cpp
+	utilities/jsoncpp/jsoncpp.cpp
 	FrequencyLimiterNode.cpp
 	StreamSyncNode.cpp
 	AutoQuitNode.cpp
@@ -169,6 +178,8 @@ SET(SUPRA_Lib_HEADERS
 	utilities/SingleThreadTimer.h
 	utilities/FirFilterFactory.h
 	utilities/tinyxml2/tinyxml2.h
+	utilities/jsoncpp/json/json.h
+	utilities/jsoncpp/json/json-forwards.h
 	FrequencyLimiterNode.h
 	StreamSyncNode.h
 	AutoQuitNode.h
@@ -178,17 +189,22 @@ IF(SUPRA_CUDA)
 	SET(SUPRA_Lib_SOURCE
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
-		ExampleNodes/ImageProcessingCuda.cu)
+		ExampleNodes/ImageProcessingCuda.cu
+		NoiseNode.cpp
+		NoiseCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
-		ExampleNodes/ImageProcessingCuda.h)
+		ExampleNodes/ImageProcessingCuda.h
+		NoiseNode.h
+		NoiseCuda.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
 	${SUPRA_Lib_INCLUDEDIRS}
 	${TBB_INCLUDE}
-	${CMAKE_CURRENT_SOURCE_DIR})
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/jsoncpp)
 SET(SUPRA_Lib_LIBDIRS 
 	${TBB_LIBS})
 SET(SUPRA_Lib_LIBRARIES
@@ -223,7 +239,8 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/TemporalFilterNode.cpp
 		Beamformer/RawDelayNode.cpp
 		Beamformer/RxEventLimiterNode.cpp
-		InputOutput/UltrasoundInterfaceRawDataMock.cpp)
+		InputOutput/UltrasoundInterfaceRawDataMock.cpp
+		InputOutput/UltrasoundInterfaceBeamformedMock.cpp)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
 		Beamformer/IQDemodulator.cu
@@ -255,7 +272,8 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/RawDelayNode.h
 		Beamformer/RawDelay.h
 		Beamformer/RxEventLimiterNode.h
-		InputOutput/UltrasoundInterfaceRawDataMock.h)
+		InputOutput/UltrasoundInterfaceRawDataMock.h
+		InputOutput/UltrasoundInterfaceBeamformedMock.h)
 	IF(SUPRA_CUFFT)
 		SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 			Beamformer/HilbertEnvelopeNode.cpp)

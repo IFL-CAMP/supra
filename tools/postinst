@@ -1,0 +1,6 @@
+#!/bin/sh
+cd /opt/supra
+mkdir -p build
+cd build
+cmake ..
+make -j5
