@@ -43,8 +43,9 @@ namespace supra
 		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
 		m_valueRangeDictionary.set<uint32_t>("maxIterationsOverride", 0, 10000, 0, "Max iterations override (if != 0)");
-		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100, 0, -100, "Convergence threshold exponent");
+		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100.0, 0.0, -4.0, "Convergence threshold exponent");
 		m_valueRangeDictionary.set<double>("subArrayScalingPower", 0.5, 3.0, 1.5, "Subarray count scaling power");
+		m_valueRangeDictionary.set<bool>("computeMeans", false, "compute signal means");
 		
 		configurationChanged();
 
@@ -62,6 +63,7 @@ namespace supra
 		m_maxIterationsOverride = m_configurationDictionary.get<uint32_t>("maxIterationsOverride");
 		m_convergenceThreshold = std::pow(10, m_configurationDictionary.get<double>("convergenceThresholdExponent"));
 		m_subArrayScalingPower = m_configurationDictionary.get<double>("subArrayScalingPower");
+		m_computeMeans = m_configurationDictionary.get<bool>("computeMeans");
 	}
 
 	void BeamformingMVpcgNode::configurationEntryChanged(const std::string& configKey)
@@ -91,6 +93,10 @@ namespace supra
 		{
 			m_subArrayScalingPower = m_configurationDictionary.get<double>("subArrayScalingPower");
 		}
+		else if (configKey == "computeMeans")
+		{
+			m_computeMeans = m_configurationDictionary.get<bool>("computeMeans");
+		}
 		if (m_lastSeenImageProperties)
 		{
 			updateImageProperties(m_lastSeenImageProperties);
@@ -105,11 +111,11 @@ namespace supra
 		{
 		case supra::TypeInt16:
 			pImageRF = performRxBeamforming<RawDataType, int16_t>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower, m_computeMeans);
 			break;
 		case supra::TypeFloat:
 			pImageRF = performRxBeamforming<RawDataType, float>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower, m_computeMeans);
 			break;
 		default:
 			logging::log_error("BeamformingMVNode: Output image type not supported:");

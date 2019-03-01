@@ -74,6 +74,8 @@ namespace supra
 		uint32_t m_subArraySize;
 		uint32_t m_temporalSmoothing;
 		DataType m_outputType;
+		double m_subArrayScalingPower;
+		bool m_computeMeans;
 	};
 }
 
