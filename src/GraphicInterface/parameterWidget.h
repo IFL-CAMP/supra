@@ -75,8 +75,8 @@ namespace supra
 					auto pBox = new QSpinBox(p_widget);
 					p_spinBox = pBox;
 					using T = typename std::common_type<ValueType, int>::type;
-					pBox->setMinimum(max((T)(std::numeric_limits<ValueType>::min()), (T)(std::numeric_limits<int>::min())));
-					pBox->setMaximum(min((T)(std::numeric_limits<ValueType>::max()), (T)(std::numeric_limits<int>::max())));
+					pBox->setMinimum(std::max((T)(std::numeric_limits<ValueType>::min()), (T)(std::numeric_limits<int>::min())));
+					pBox->setMaximum(std::min((T)(std::numeric_limits<ValueType>::max()), (T)(std::numeric_limits<int>::max())));
 					pBox->setSingleStep(1.0);
 				}
 				else {
