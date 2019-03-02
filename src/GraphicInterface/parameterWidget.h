@@ -18,6 +18,7 @@
 #include <utilities/utility.h>
 
 #include <cmath>
+#include <type_traits>
 
 namespace supra
 {
@@ -71,10 +72,19 @@ namespace supra
 				//Add Spinbox
 				if (std::is_integral<ValueType>::value)
 				{
-					p_spinBox = new QSpinBox(p_widget);
+					auto pBox = new QSpinBox(p_widget);
+					p_spinBox = pBox;
+					using T = std::common_type<ValueType, int>::type;
+					pBox->setMinimum(max((T)(std::numeric_limits<ValueType>::min()), (T)(std::numeric_limits<int>::min())));
+					pBox->setMaximum(min((T)(std::numeric_limits<ValueType>::max()), (T)(std::numeric_limits<int>::max())));
+					pBox->setSingleStep(1.0);
 				}
 				else {
-					p_spinBox = new QDoubleSpinBox(p_widget);
+					auto pBox = new QDoubleSpinBox(p_widget);
+					p_spinBox = pBox;
+					pBox->setMinimum(std::numeric_limits<ValueType>::min());
+					pBox->setMaximum(std::numeric_limits<ValueType>::max());
+					pBox->setSingleStep(1.0);
 				}
 				p_spinBox->setObjectName(QString::fromStdString("spinBox_" + m_paramName));
 				//p_spinBox->setText(QString::fromStdString(p_range->getDisplayName()));

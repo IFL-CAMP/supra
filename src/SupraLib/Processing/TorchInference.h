@@ -65,8 +65,13 @@ namespace supra
 					device(imageData->isGPU() ? torch::kCUDA : torch::kCPU).
 					requires_grad(false));
 
+				if (inferencePatchSize == 0)
+				{
+					inferencePatchSize = inputSize.x;
+				}
 				assert(inferencePatchSize > inferencePatchOverlap * 2);
 
+				// TODO rename
 				size_t numSamples = inputSize.x;
 				size_t numScanlines = inputSize.z;
 				pDataOut = make_shared<Container<OutputType> >(LocationHost, imageData->getStream(), outputSize.x*outputSize.y*outputSize.z);
@@ -121,6 +126,7 @@ namespace supra
 
 					// Run model
 					// TODO normalize
+					//torch::jit::compile
 					inputDataSlice = inputDataSlice.add(2047.0f).mul(1.0f / (2 * 2047));
 
 					// build module input data structure
@@ -146,6 +152,9 @@ namespace supra
 					auto outAccessor = output.accessor<float, 4>();
 					size_t sampleOffset = startSampleValid - startSample;
 
+					//for z in outSize.z
+					//	for y in outSize.y
+					//		for x in patchX...
 					for (size_t sampleIdxLocal = 0; sampleIdxLocal < sliceSizeValid; sampleIdxLocal++)
 					{
 						for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)

@@ -22,69 +22,6 @@ namespace supra
 		loadModule();
 	}
 
-	//shared_ptr<RecordObject> TorchInference::checkTypeAndProcess(shared_ptr<RecordObject> inObj)
-	//{
-	//	shared_ptr<RecordObject> pOut = nullptr;
-	//	if (inObj && inObj->getType() == TypeUSImage)
-	//	{
-	//		shared_ptr<USImage> pInImage = dynamic_pointer_cast<USImage>(inObj);
-	//		if (pInImage)
-	//		{
-	//			// The input and output types have to be determined dynamically. We do this in to stages of templated functions.
-	//			// This first switch handles the different input data types. There is no need to support all types, 
-	//			// only those meaningful for the operation of the node.
-	//			switch (pInImage->getDataType())
-	//			{
-	//			case TypeUint8:
-	//				pOut = processTemplateSelection<uint8_t>(pInImage->getData<uint8_t>(), pInImage->getSize(), 1, pInImage->getImageProperties());
-	//				break;
-	//			case TypeInt16:
-	//				pOut = processTemplateSelection<int16_t>(pInImage->getData<int16_t>(), pInImage->getSize(), 1, pInImage->getImageProperties());
-	//				break;
-	//			case TypeFloat:
-	//				pOut = processTemplateSelection<float>(pInImage->getData<float>(), pInImage->getSize(), 1, pInImage->getImageProperties());
-	//				break;
-	//			default:
-	//				logging::log_error("TorchInference: Input image type not supported");
-	//				break;
-	//			}
-	//		}
-	//		else {
-	//			logging::log_error("TorchInference: could not cast object to USImage type, although its type is TypeUSImage.");
-	//		}
-	//	}
-	//	else if (inObj && inObj->getType() == TypeUSRawData)
-	//	{
-	//		shared_ptr<USRawData> pInRawData = dynamic_pointer_cast<USRawData>(inObj);
-	//		if (pInRawData)
-	//		{
-	//			// The input and output types have to be determined dynamically. We do this in to stages of templated functions.
-	//			// This first switch handles the different input data types. There is no need to support all types,
-	//			// only those meaningful for the operation of the node.
-	//			vec3s size{pInRawData->getNumSamples(), pInRawData->getNumReceivedChannels(), pInRawData->getNumScanlines()};
-	//			switch (pInRawData->getDataType())
-	//			{
-	//				case TypeUint8:
-	//					pOut = processTemplateSelection<uint8_t>(pInRawData->getData<uint8_t>(), size, 0, pInRawData->getImageProperties());
-	//					break;
-	//				case TypeInt16:
-	//					pOut = processTemplateSelection<int16_t>(pInRawData->getData<int16_t>(), size, 0, pInRawData->getImageProperties());
-	//					break;
-	//				case TypeFloat:
-	//					pOut = processTemplateSelection<float>(pInRawData->getData<float>(), size, 0, pInRawData->getImageProperties());
-	//					break;
-	//				default:
-	//					logging::log_error("TorchInference: Input image type not supported");
-	//					break;
-	//			}
-	//		}
-	//		else {
-	//			logging::log_error("TorchInference: could not cast object to USRawData type, although its type is TypeUSRawData.");
-	//		}
-	//	}
-	//	return pOut;
-	//}
-
 	void TorchInference::loadModule() {
 		m_torchModule = nullptr;
 		if (m_modelFilename != "")
@@ -129,15 +66,9 @@ namespace supra
 		case TypeInt32:
 			tensor = tensor.to(caffe2::TypeMeta::Make<int32_t>());
 			break;
-		/*case TypeUint32:
-			tensor = tensor.to(caffe2::TypeMeta::Make<uint32_t>());
-			break;*/
 		case TypeInt64:
 			tensor = tensor.to(caffe2::TypeMeta::Make<int64_t>());
 			break;
-		/*case TypeUint64:
-			tensor = tensor.to(caffe2::TypeMeta::Make<uint64_t>());
-			break;*/
 		case TypeFloat:
 			tensor = tensor.to(caffe2::TypeMeta::Make<float>());
 			break;
