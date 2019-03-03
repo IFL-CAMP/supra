@@ -24,6 +24,17 @@ build_ubuntu_1604_cuda10_nohw:
     - cd build_gcc
     - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_WARNINGS_AS_ERRORS=ON
     - make
+build_ubuntu_1604_cuda10_portable:
+  stage: build
+  tags:
+    - linux
+    - g++
+  image: supra-builder:cuda-10.0-ubuntu-16.04
+  script:
+    - mkdir -p build_gcc
+    - cd build_gcc
+    - cmake .. -DCMAKE_CXX_COMPILER=g++ -DSUPRA_DEVICE_CEPHASONICS=OFF -DSUPRA_DEVICE_ULTRASONIX=OFF -DSUPRA_DOWNLOAD_SAMPLEDATA=OFF -DSUPRA_USE_CAMPVIS=OFF -DSUPRA_PROFILING=OFF -DSUPRA_INTERFACE_ROS=OFF -DSUPRA_WARNINGS_AS_ERRORS=ON -DSUPRA_CUDA_PORTABLE=ON
+    - make
     
 build_ubuntu_1804_cuda_ros:
   stage: build
