@@ -81,6 +81,8 @@ namespace supra
 		std::string m_modelOutputClass;
 		std::string m_modelInputLayout;
 		std::string m_modelOutputLayout;
+		std::string m_inputNormalization;
+		std::string m_outputDenormalization;
 		DataType m_nodeOutputDataType;
 		uint32_t m_inferencePatchSize;
 		uint32_t m_inferencePatchOverlap;

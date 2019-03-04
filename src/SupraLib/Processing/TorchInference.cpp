@@ -11,25 +11,50 @@
 
 #include "TorchInference.h"
 
+#include <torch/jit.h>
+
 using namespace std;
 
 namespace supra
 {
-	TorchInference::TorchInference(const std::string& modelFilename)
+	TorchInference::TorchInference(
+		const std::string& modelFilename,
+		const std::string& inputNormalization,
+		const std::string& outputDenormalization)
 		: m_modelFilename{ modelFilename }
+		, m_inputNormalization{inputNormalization}
+		, m_outputDenormalization{outputDenormalization}
 		, m_torchModule{ nullptr }
+		, m_inputNormalizationModule{ nullptr }
+		, m_outputDenormalizationModule{ nullptr }
 	{
+		if (m_inputNormalization == "")
+		{
+			m_inputNormalization = "a";
+		}
+		if (m_outputDenormalization == "")
+		{
+			m_outputDenormalization = "a";
+		}
+
 		loadModule();
 	}
 
 	void TorchInference::loadModule() {
 		m_torchModule = nullptr;
-		if (m_modelFilename != "")
+		if (m_modelFilename != "" && m_inputNormalization != "" && m_outputDenormalization != "" )
 		{
 			try {
 				std::shared_ptr<torch::jit::script::Module> module = torch::jit::load(m_modelFilename);
 				module->to(torch::kCUDA);
 				m_torchModule = module;
+
+				m_inputNormalizationModule = torch::jit::compile(
+					"  def normalize(a):\n    return " + m_inputNormalization + "\n");
+				m_inputNormalizationModule->to(torch::kCUDA);
+				m_outputDenormalizationModule = torch::jit::compile(
+					"  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
+				m_outputDenormalizationModule->to(torch::kCUDA);
 			}
 			catch (c10::Error e)
 			{

@@ -42,11 +42,13 @@ namespace supra
 		m_valueRangeDictionary.set<DataType>("nodeOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeFloat, TypeDouble }, TypeFloat, "Node output type");
 		m_valueRangeDictionary.set<string>("modelFilename", "model.pt", "Model filename");
 		m_valueRangeDictionary.set<DataType>("modelInputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeFloat, TypeDouble }, TypeFloat, "Model input datatype");
-		m_valueRangeDictionary.set<DataType>("modelOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeFloat, TypeDouble }, TypeFloat, "Model input datatype");
+		m_valueRangeDictionary.set<DataType>("modelOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeFloat, TypeDouble }, TypeFloat, "Model output datatype");
 		m_valueRangeDictionary.set<string>("modelInputClass", { "USRawData", "USImage" }, "USImage", "Model input class");
 		m_valueRangeDictionary.set<string>("modelOutputClass", { "USRawData", "USImage" }, "USImage", "Model output class");
 		m_valueRangeDictionary.set<string>("modelInputLayout", { "CxWxH", "WxHxC", "CxHxW", "HxWxC", "WxCxH", "HxCxW" }, "CxWxH", "Model input layout");
-		m_valueRangeDictionary.set<string>("modelOutputLayout", { "CxWxH", "WxHxC", "CxHxW", "HxWxC", "WxCxH", "HxCxW" }, "CxWxH", "Model input layout");
+		m_valueRangeDictionary.set<string>("modelOutputLayout", { "CxWxH", "WxHxC", "CxHxW", "HxWxC", "WxCxH", "HxCxW" }, "CxWxH", "Model output layout");
+		m_valueRangeDictionary.set<string>("inputNormalization", "a", "Input normalization");
+		m_valueRangeDictionary.set<string>("outputDenormalization", "a", "Output denomalization");
 		m_valueRangeDictionary.set<uint32_t>("inferencePatchSize", 0, "Inference patch size");
 		m_valueRangeDictionary.set<uint32_t>("inferencePatchOverlap", 0, "Inference patch overlap");
 		
@@ -64,6 +66,8 @@ namespace supra
 		m_modelOutputClass =    m_configurationDictionary.get<string>("modelOutputClass");
 		m_modelInputLayout =    m_configurationDictionary.get<string>("modelInputLayout");
 		m_modelOutputLayout =   m_configurationDictionary.get<string>("modelOutputLayout");
+		m_inputNormalization = m_configurationDictionary.get<string>("inputNormalization");
+		m_outputDenormalization = m_configurationDictionary.get<string>("outputDenormalization");
 		m_inferencePatchSize =  m_configurationDictionary.get<uint32_t>("inferencePatchSize");
 		m_inferencePatchOverlap = m_configurationDictionary.get<uint32_t>("inferencePatchOverlap");
 
@@ -106,6 +110,16 @@ namespace supra
 		else if (configKey == "modelOutputLayout")
 		{
 			m_modelOutputLayout = m_configurationDictionary.get<string>("modelOutputLayout");
+		}
+		else if (configKey == "inputNormalization")
+		{
+			m_inputNormalization = m_configurationDictionary.get<string>("inputNormalization");
+			loadModule();
+		}
+		else if (configKey == "outputDenormalization")
+		{
+			m_outputDenormalization = m_configurationDictionary.get<string>("outputDenormalization");
+			loadModule();
 		}
 		else if (configKey == "inferencePatchSize")
 		{
@@ -337,10 +351,10 @@ namespace supra
 
 	void TorchNode::loadModule() {
 		m_torchModule = nullptr;
-		if (m_modelFilename != "")
+		if (m_modelFilename != "" && m_inputNormalization != "" && m_outputDenormalization != "")
 		{
 			try {
-				std::shared_ptr<TorchInference> module = std::make_shared<TorchInference>(m_modelFilename);
+				std::shared_ptr<TorchInference> module = std::make_shared<TorchInference>(m_modelFilename, m_inputNormalization, m_outputDenormalization);
 				m_torchModule = module;
 			}
 			catch (std::runtime_error e)

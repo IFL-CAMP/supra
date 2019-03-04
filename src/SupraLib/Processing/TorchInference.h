@@ -42,7 +42,10 @@ namespace supra
 {
 	class TorchInference {
 	public:
-		TorchInference(const std::string& modelFilename);
+		TorchInference(
+			const std::string& modelFilename, 
+			const std::string& inputNormalization, 
+			const std::string& outputDenormalization);
 
 		template <typename InputType, typename OutputType>
 		std::shared_ptr<ContainerBase> process(
@@ -123,23 +126,23 @@ namespace supra
 
 					// Adjust layout if necessary
 					inputDataSlice = changeLayout(inputDataSlice, currentLayout, modelInputLayout);
+					assert(!(inputDataSlice.requires_grad()));
 
 					// Run model
-					// TODO normalize
-					//torch::jit::compile
-					inputDataSlice = inputDataSlice.add(2047.0f).mul(1.0f / (2 * 2047));
-
+					// Normalize the input
+					auto inputDataSliceIvalue = m_inputNormalizationModule->run_method("normalize", inputDataSlice);
+					
 					// build module input data structure
-					assert(!(inputDataSlice.requires_grad()));
 					std::vector<torch::jit::IValue> inputs;
-					inputs.push_back(inputDataSlice);
+					inputs.push_back(inputDataSliceIvalue);
 
 					// Execute the model and turn its output into a tensor.
 					auto result = m_torchModule->forward(inputs);
-					at::Tensor output = result.toTensor();
 					cudaSafeCall(cudaDeviceSynchronize());
-					// TODO denormalize
-					output = output.mul(255.0f);
+										
+					// Denormalize the output
+					result = m_outputDenormalizationModule->run_method("denormalize", result);
+					at::Tensor output = result.toTensor();
 					// This should never happen right now.
 					assert(!output.is_hip());
 
@@ -152,6 +155,7 @@ namespace supra
 					auto outAccessor = output.accessor<float, 4>();
 					size_t sampleOffset = startSampleValid - startSample;
 
+					//TODO
 					//for z in outSize.z
 					//	for y in outSize.y
 					//		for x in patchX...
@@ -163,25 +167,8 @@ namespace supra
 								clampCast<OutputType>(outAccessor[0][0][sampleIdxLocal + sampleOffset][scanlineIdx]);
 						}
 					}
-
-					// BATCH X C X W X H
-
-					//inputDataOnes = inputDataOnes.to(torch::kCUDA);
-					//inputDataOnes.set_requires_grad(false);
-
-					//assert(!(inputDataSlice.requires_grad()));
-
-					//std::vector<torch::jit::IValue> inputs;
-					//inputs.push_back(inputDataSlice);
-
-					//// Execute the model and turn its output into a tensor.
-					//auto result = m_torchModule->forward(inputs);
-					//at::Tensor output = result.toTensor().to(torch::kCPU);
-
-
 				}
 				cudaSafeCall(cudaDeviceSynchronize());
-
 			}
 			catch (c10::Error e)
 			{
@@ -204,8 +191,12 @@ namespace supra
 		at::Tensor changeLayout(at::Tensor tensor, const std::string& currentLayout, const std::string& outLayout);
 
 		std::shared_ptr<torch::jit::script::Module> m_torchModule;
+		std::shared_ptr<torch::jit::script::Module> m_inputNormalizationModule;
+		std::shared_ptr<torch::jit::script::Module> m_outputDenormalizationModule;
 
 		std::string m_modelFilename;
+		std::string m_inputNormalization;
+		std::string m_outputDenormalization;
 	};
 }
 
