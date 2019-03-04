@@ -111,20 +111,27 @@ namespace supra
 	{
 		if (currentLayout != outLayout)
 		{
-			int inDimensionC = (currentLayout[0] == 'C' ? 1 : (currentLayout[2] == 'C' ? 2 : 3));
-			int inDimensionW = (currentLayout[0] == 'W' ? 1 : (currentLayout[2] == 'W' ? 2 : 3));
-			int inDimensionH = (currentLayout[0] == 'H' ? 1 : (currentLayout[2] == 'H' ? 2 : 3));
-			int outDimensionC = (outLayout[0] == 'C' ? 1 : (outLayout[2] == 'C' ? 2 : 3));
-			int outDimensionW = (outLayout[0] == 'W' ? 1 : (outLayout[2] == 'W' ? 2 : 3));
-			int outDimensionH = (outLayout[0] == 'H' ? 1 : (outLayout[2] == 'H' ? 2 : 3));
-			
-			std::vector<int64_t> permutation(4, 0);
-			permutation[0] = 0;
-			permutation[outDimensionC] = inDimensionC;
-			permutation[outDimensionW] = inDimensionW;
-			permutation[outDimensionH] = inDimensionH;
+			auto permutation = layoutPermutation(currentLayout, outLayout);
 			tensor = tensor.permute(permutation);
 		}
 		return tensor;
+	}
+
+	std::vector<int64_t> TorchInference::layoutPermutation(const std::string& currentLayout, const std::string& outLayout)
+	{
+		int inDimensionC = (currentLayout[0] == 'C' ? 1 : (currentLayout[2] == 'C' ? 2 : 3));
+		int inDimensionW = (currentLayout[0] == 'W' ? 1 : (currentLayout[2] == 'W' ? 2 : 3));
+		int inDimensionH = (currentLayout[0] == 'H' ? 1 : (currentLayout[2] == 'H' ? 2 : 3));
+		int outDimensionC = (outLayout[0] == 'C' ? 1 : (outLayout[2] == 'C' ? 2 : 3));
+		int outDimensionW = (outLayout[0] == 'W' ? 1 : (outLayout[2] == 'W' ? 2 : 3));
+		int outDimensionH = (outLayout[0] == 'H' ? 1 : (outLayout[2] == 'H' ? 2 : 3));
+
+		std::vector<int64_t> permutation(4, 0);
+		permutation[0] = 0;
+		permutation[outDimensionC] = inDimensionC;
+		permutation[outDimensionW] = inDimensionW;
+		permutation[outDimensionH] = inDimensionH;
+
+		return permutation;
 	}
 }

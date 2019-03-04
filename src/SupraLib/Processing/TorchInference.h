@@ -22,22 +22,6 @@
 #include <vec.h>
 #include <utilities/Logging.h>
 
-// forward declaration
-//namespace torch 
-//{
-//	namespace jit 
-//	{
-//		namespace script 
-//		{
-//			struct Module;
-//		}
-//	}
-//}
-//namespace at
-//{
-//	class Tensor;
-//}
-
 namespace supra
 {
 	class TorchInference {
@@ -74,67 +58,64 @@ namespace supra
 				}
 				assert(inferencePatchSize > inferencePatchOverlap * 2);
 
-				// TODO rename
-				size_t numSamples = inputSize.x;
-				size_t numScanlines = inputSize.z;
+				size_t numPixels = inputSize.x;
 				pDataOut = make_shared<Container<OutputType> >(LocationHost, imageData->getStream(), outputSize.x*outputSize.y*outputSize.z);
 
-				size_t lastValidSamples = 0;
-				for (size_t startSampleValid = 0; startSampleValid < numSamples; startSampleValid += lastValidSamples)
+				size_t lastValidPixels = 0;
+				for (size_t startPixelValid = 0; startPixelValid < numPixels; startPixelValid += lastValidPixels)
 				{
 					// Compute the size and position of the patch we want to run the model for
-					size_t sliceSizeValid = 0;
-					size_t sliceSize = 0;
-					size_t startSample = 0;
-					if (startSampleValid == 0 && numSamples - startSampleValid <= inferencePatchSize)
+					size_t patchSizeValid = 0;
+					size_t patchSize = 0;
+					size_t startPixel = 0;
+					if (startPixelValid == 0 && numPixels - startPixelValid <= inferencePatchSize)
 					{
-						//Special case: The requested slice size is large enough. No patching necessary!
-						sliceSize = numSamples - startSampleValid;
-						sliceSizeValid = sliceSize;
-						startSample = 0;
+						//Special case: The requested patch size is large enough. No patching necessary!
+						patchSize = numPixels - startPixelValid;
+						patchSizeValid = patchSize;
+						startPixel = 0;
 					}
-					else if (startSampleValid == 0)
+					else if (startPixelValid == 0)
 					{
 						// The first patch only needs to be padded on the bottom
-						sliceSize = inferencePatchSize;
-						sliceSizeValid = sliceSize - inferencePatchOverlap;
-						startSample = 0;
+						patchSize = inferencePatchSize;
+						patchSizeValid = patchSize - inferencePatchOverlap;
+						startPixel = 0;
 					}
-					else if (numSamples - (startSampleValid - inferencePatchOverlap) <= inferencePatchSize)
+					else if (numPixels - (startPixelValid - inferencePatchOverlap) <= inferencePatchSize)
 					{
 						// The last patch only needs to be padded on the top
-						startSample = (startSampleValid - inferencePatchOverlap);
-						sliceSize = numSamples - startSample;
-						sliceSizeValid = sliceSize - inferencePatchOverlap;
+						startPixel = (startPixelValid - inferencePatchOverlap);
+						patchSize = numPixels - startPixel;
+						patchSizeValid = patchSize - inferencePatchOverlap;
 					}
 					else
 					{
 						// Every patch in the middle
 						// padding on the top and bottom
-						startSample = (startSampleValid - inferencePatchOverlap);
-						sliceSize = inferencePatchSize;
-						sliceSizeValid = sliceSize - 2 * inferencePatchOverlap;
+						startPixel = (startPixelValid - inferencePatchOverlap);
+						patchSize = inferencePatchSize;
+						patchSizeValid = patchSize - 2 * inferencePatchOverlap;
 					}
-					lastValidSamples = sliceSizeValid;
-					logging::log_always("sliceSizeValid: ", sliceSizeValid, " startSampleValid: ", startSampleValid);
+					lastValidPixels = patchSizeValid;
 
 					// Slice the input data
-					auto inputDataSlice = inputData.slice(3, startSample, startSample + sliceSize);
+					auto inputDataPatch = inputData.slice(3, startPixel, startPixel + patchSize);
 
 					// Convert it to the desired input type
-					inputDataSlice = convertDataType(inputDataSlice, modelInputDataType);
+					inputDataPatch = convertDataType(inputDataPatch, modelInputDataType);
 
 					// Adjust layout if necessary
-					inputDataSlice = changeLayout(inputDataSlice, currentLayout, modelInputLayout);
-					assert(!(inputDataSlice.requires_grad()));
+					inputDataPatch = changeLayout(inputDataPatch, currentLayout, modelInputLayout);
+					assert(!(inputDataPatch.requires_grad()));
 
 					// Run model
 					// Normalize the input
-					auto inputDataSliceIvalue = m_inputNormalizationModule->run_method("normalize", inputDataSlice);
+					auto inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
 					
 					// build module input data structure
 					std::vector<torch::jit::IValue> inputs;
-					inputs.push_back(inputDataSliceIvalue);
+					inputs.push_back(inputDataPatchIvalue);
 
 					// Execute the model and turn its output into a tensor.
 					auto result = m_torchModule->forward(inputs);
@@ -151,20 +132,57 @@ namespace supra
 
 					// Copy to the result buffer (while converting to OutputType)
 					output = output.to(torch::kCPU);
-					logging::log_always("TORCH: out ndim: ", output.ndimension(), ", ", output.sizes());
 					auto outAccessor = output.accessor<float, 4>();
-					size_t sampleOffset = startSampleValid - startSample;
 
-					//TODO
-					//for z in outSize.z
-					//	for y in outSize.y
-					//		for x in patchX...
-					for (size_t sampleIdxLocal = 0; sampleIdxLocal < sliceSizeValid; sampleIdxLocal++)
+					// Determine which output dimension is affected by the patching
+					auto permutation = layoutPermutation(modelOutputLayout, finalLayout);
+
+					size_t outSliceStart = 0;
+					size_t outSliceEnd = outputSize.z;
+					size_t outSliceOffset = 0;
+					size_t outLineStart = 0;
+					size_t outLineEnd = outputSize.y;
+					size_t outLineOffset = 0;
+					size_t outPixelStart = 0;
+					size_t outPixelEnd = outputSize.x;
+					size_t outPixelOffset = 0;
+
+					// Since the data is already permuted to the right layout for output, but we are working patchwise,
+					// we need to restrict the affected dimension's indices
+					if (permutation[1] == 3)
 					{
-						for (size_t scanlineIdx = 0; scanlineIdx < numScanlines; scanlineIdx++)
+						outSliceStart = startPixelValid;
+						outSliceEnd = startPixelValid + patchSizeValid;
+						outSliceOffset = startPixel;
+					}
+					else if (permutation[2] == 3)
+					{
+						outLineStart = startPixelValid;
+						outLineEnd = startPixelValid + patchSizeValid;
+						outLineOffset = startPixel;
+					}
+					else if (permutation[3] == 3)
+					{
+						outPixelStart = startPixelValid;
+						outPixelEnd = startPixelValid + patchSizeValid;
+						outPixelOffset = startPixel;
+					}
+					
+					for (size_t outSliceIdx = outSliceStart; outSliceIdx < outSliceEnd; outSliceIdx++)
+					{
+						for (size_t outLineIdx = outLineStart; outLineIdx < outLineEnd; outLineIdx++)
 						{
-							pDataOut->get()[(startSampleValid + sampleIdxLocal) * numScanlines + scanlineIdx] = 
-								clampCast<OutputType>(outAccessor[0][0][sampleIdxLocal + sampleOffset][scanlineIdx]);
+							for (size_t outPixelIdx = outPixelStart; outPixelIdx < outPixelEnd; outPixelIdx++)
+							{
+								pDataOut->get()[
+										outSliceIdx * outputSize.y * outputSize.x +
+										outLineIdx * outputSize.x + 
+										outPixelIdx] =
+									clampCast<OutputType>(outAccessor[0]
+										[outSliceIdx - outSliceOffset]
+										[outLineIdx - outLineOffset]
+										[outPixelIdx - outPixelOffset]);
+							}
 						}
 					}
 				}
@@ -189,6 +207,7 @@ namespace supra
 		void loadModule();
 		at::Tensor convertDataType(at::Tensor tensor, DataType datatype);
 		at::Tensor changeLayout(at::Tensor tensor, const std::string& currentLayout, const std::string& outLayout);
+		std::vector<int64_t> layoutPermutation(const std::string& currentLayout, const std::string& outLayout);
 
 		std::shared_ptr<torch::jit::script::Module> m_torchModule;
 		std::shared_ptr<torch::jit::script::Module> m_inputNormalizationModule;
