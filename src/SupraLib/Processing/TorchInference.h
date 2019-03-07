@@ -40,7 +40,11 @@ namespace supra
 			const std::string& modelInputLayout, const std::string& modelOutputLayout,
 			uint32_t inferencePatchSize, uint32_t inferencePatchOverlap)
 		{
-			shared_ptr <Container<OutputType> > pDataOut = nullptr;
+			assert(m_torchModule != nullptr);
+			assert(m_inputNormalizationModule != nullptr);
+			assert(m_outputDenormalizationModule != nullptr);
+
+			std::shared_ptr <Container<OutputType> > pDataOut = nullptr;
 			try {
 				cudaSafeCall(cudaDeviceSynchronize());
 
@@ -59,7 +63,7 @@ namespace supra
 				assert(inferencePatchSize > inferencePatchOverlap * 2);
 
 				size_t numPixels = inputSize.x;
-				pDataOut = make_shared<Container<OutputType> >(LocationHost, imageData->getStream(), outputSize.x*outputSize.y*outputSize.z);
+				pDataOut = std::make_shared<Container<OutputType> >(LocationHost, imageData->getStream(), outputSize.x*outputSize.y*outputSize.z);
 
 				size_t lastValidPixels = 0;
 				for (size_t startPixelValid = 0; startPixelValid < numPixels; startPixelValid += lastValidPixels)
@@ -100,10 +104,14 @@ namespace supra
 					lastValidPixels = patchSizeValid;
 
 					// Slice the input data
+                    cudaSafeCall(cudaDeviceSynchronize());
 					auto inputDataPatch = inputData.slice(3, startPixel, startPixel + patchSize);
+                    cudaSafeCall(cudaDeviceSynchronize());
 
 					// Convert it to the desired input type
+                    cudaSafeCall(cudaDeviceSynchronize());
 					inputDataPatch = convertDataType(inputDataPatch, modelInputDataType);
+                    cudaSafeCall(cudaDeviceSynchronize());
 
 					// Adjust layout if necessary
 					inputDataPatch = changeLayout(inputDataPatch, currentLayout, modelInputLayout);
@@ -111,13 +119,16 @@ namespace supra
 
 					// Run model
 					// Normalize the input
+                    cudaSafeCall(cudaDeviceSynchronize());
 					auto inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
+                    cudaSafeCall(cudaDeviceSynchronize());
 					
 					// build module input data structure
 					std::vector<torch::jit::IValue> inputs;
 					inputs.push_back(inputDataPatchIvalue);
 
 					// Execute the model and turn its output into a tensor.
+                    cudaSafeCall(cudaDeviceSynchronize());
 					auto result = m_torchModule->forward(inputs);
 					cudaSafeCall(cudaDeviceSynchronize());
 										
