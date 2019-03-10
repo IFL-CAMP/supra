@@ -135,6 +135,7 @@ namespace supra
 					// Denormalize the output
 					result = m_outputDenormalizationModule->run_method("denormalize", result);
 					at::Tensor output = result.toTensor();
+                    output = output.to(torch::kFloat).to(torch::kCPU);
 					// This should never happen right now.
 					assert(!output.is_hip());
 
@@ -142,7 +143,6 @@ namespace supra
 					output = changeLayout(output, modelOutputLayout, finalLayout);
 
 					// Copy to the result buffer (while converting to OutputType)
-					output = output.to(torch::kCPU);
 					auto outAccessor = output.accessor<float, 4>();
 
 					// Determine which output dimension is affected by the patching

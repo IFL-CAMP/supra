@@ -6,3 +6,7 @@ build*/
 doc/doxy/
 tools/.idea/
 doc/supraParameters/
+\.idea
+cmake-build-debug
+cmake-build-release
+cmake-build-relwithdebinfo

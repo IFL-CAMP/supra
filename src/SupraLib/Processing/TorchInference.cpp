@@ -95,7 +95,7 @@ namespace supra
 			tensor = tensor.to(caffe2::TypeMeta::Make<int64_t>());
 			break;
 		case TypeHalf:
-			tensor = tensor.to(torch::kFloat16);
+			tensor = tensor.to(at::kHalf);
 			break;
 		case TypeFloat:
 			tensor = tensor.to(caffe2::TypeMeta::Make<float>());
