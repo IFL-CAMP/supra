@@ -16,6 +16,8 @@
 #include <string>
 #include "utilities/utility.h"
 
+#include <cuda_fp16.h>
+
 namespace supra
 {
 	/// Enum for the types used in containers and by the parameter system
@@ -30,6 +32,7 @@ namespace supra
 		TypeUint32,
 		TypeInt64,
 		TypeUint64,
+		TypeHalf,
 		TypeFloat,
 		TypeDouble,
 		TypeString,
@@ -61,6 +64,8 @@ namespace supra
 	DataType DataTypeGet<int64_t>();
 	template <>
 	DataType DataTypeGet<uint64_t>();
+	template<>
+	DataType DataTypeGet<__half>();
 	template <>
 	DataType DataTypeGet<float>();
 	template <>
