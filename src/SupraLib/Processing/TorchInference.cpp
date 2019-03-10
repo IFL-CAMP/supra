@@ -135,9 +135,6 @@ namespace supra
 		case TypeInt16:
 			tensor = tensor.to(caffe2::TypeMeta::Make<int16_t>());
 			break;
-		case TypeUint16:
-			tensor = tensor.to(caffe2::TypeMeta::Make<uint16_t>());
-			break;
 		case TypeInt32:
 			tensor = tensor.to(caffe2::TypeMeta::Make<int32_t>());
 			break;

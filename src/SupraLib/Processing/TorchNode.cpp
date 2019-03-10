@@ -41,8 +41,8 @@ namespace supra
 		// Define the parameters that this node reveals to the user
 		m_valueRangeDictionary.set<DataType>("nodeOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeFloat, TypeDouble }, TypeFloat, "Node output type");
 		m_valueRangeDictionary.set<string>("modelFilename", "", "Model filename");
-		m_valueRangeDictionary.set<DataType>("modelInputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeHalf, TypeFloat, TypeDouble }, TypeFloat, "Model input datatype");
-		m_valueRangeDictionary.set<DataType>("modelOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeUint16, TypeInt32, TypeInt64, TypeHalf, TypeFloat, TypeDouble }, TypeFloat, "Model output datatype");
+		m_valueRangeDictionary.set<DataType>("modelInputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeInt32, TypeInt64, TypeHalf, TypeFloat, TypeDouble }, TypeFloat, "Model input datatype");
+		m_valueRangeDictionary.set<DataType>("modelOutputDataType", { TypeInt8, TypeUint8, TypeInt16, TypeInt32, TypeInt64, TypeHalf, TypeFloat, TypeDouble }, TypeFloat, "Model output datatype");
 		m_valueRangeDictionary.set<string>("modelInputClass", { "USRawData", "USImage" }, "USImage", "Model input class");
 		m_valueRangeDictionary.set<string>("modelOutputClass", { "USRawData", "USImage" }, "USImage", "Model output class");
 		m_valueRangeDictionary.set<string>("modelInputLayout", { "CxWxH", "WxHxC", "CxHxW", "HxWxC", "WxCxH", "HxCxW" }, "CxWxH", "Model input layout");
