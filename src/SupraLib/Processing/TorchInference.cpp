@@ -44,31 +44,38 @@ namespace supra
 		m_torchModule = nullptr;
 		if (m_modelFilename != "" && m_inputNormalization != "" && m_outputDenormalization != "" )
 		{
-			try {
-				std::shared_ptr<torch::jit::script::Module> module = torch::jit::load(m_modelFilename);
-				module->to(torch::kCUDA);
-				m_torchModule = module;
+		    if (fileExists(m_modelFilename))
+            {
+                try {
+                    std::shared_ptr<torch::jit::script::Module> module = torch::jit::load(m_modelFilename);
+                    module->to(torch::kCUDA);
+                    m_torchModule = module;
 
-				m_inputNormalizationModule = torch::jit::compile(
-					"  def normalize(a):\n    return " + m_inputNormalization + "\n");
-				m_inputNormalizationModule->to(torch::kCUDA);
-				m_outputDenormalizationModule = torch::jit::compile(
-					"  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
-				m_outputDenormalizationModule->to(torch::kCUDA);
+                    m_inputNormalizationModule = torch::jit::compile(
+                        "  def normalize(a):\n    return " + m_inputNormalization + "\n");
+                    m_inputNormalizationModule->to(torch::kCUDA);
+                    m_outputDenormalizationModule = torch::jit::compile(
+                        "  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
+                    m_outputDenormalizationModule->to(torch::kCUDA);
+                }
+                catch (c10::Error e)
+                {
+                    logging::log_error("TorchInference: Exception (c10::Error) while loading model '", m_modelFilename, "'");
+                    logging::log_error("TorchInference: ", e.what());
+                    logging::log_error("TorchInference: ", e.msg_stack());
+                    m_torchModule = nullptr;
+                }
+                catch (std::runtime_error e)
+                {
+                    logging::log_error("TorchInference: Exception (std::runtime_error) while loading model '", m_modelFilename, "'");
+                    logging::log_error("TorchInference: ", e.what());
+                    m_torchModule = nullptr;
+                }
 			}
-			catch (c10::Error e)
-			{
-				logging::log_error("TorchInference: Exception (c10::Error) while loading model '", m_modelFilename, "'");
-				logging::log_error("TorchInference: ", e.what());
-				logging::log_error("TorchInference: ", e.msg_stack());
-				m_torchModule = nullptr;
-			}
-			catch (std::runtime_error e)
-			{
-				logging::log_error("TorchInference: Exception (std::runtime_error) while loading model '", m_modelFilename, "'");
-				logging::log_error("TorchInference: ", e.what());
-				m_torchModule = nullptr;
-			}
+		    else
+            {
+                logging::log_error("TorchInference: Error while loading model '", m_modelFilename, "'. The file does not exist.");
+            }
 		}
 	}
 

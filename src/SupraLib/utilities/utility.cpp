@@ -12,6 +12,7 @@
 #include "utility.h"
 
 #include<chrono>
+#include<fstream>
 
 using namespace std;
 
@@ -58,4 +59,9 @@ namespace supra
 			return "[]";
 		}
 	}
+
+	bool fileExists(const std::string& path)
+    {
+        return std::ifstream(path).good();
+    }
 }
