@@ -140,66 +140,53 @@ namespace supra
                         // Denormalize the output
                         result = m_outputDenormalizationModule->run_method("denormalize", result);
                         at::Tensor output = result.toTensor();
-                        output = output.to(torch::kFloat).to(torch::kCPU);
                         // This should never happen right now.
                         assert(!output.is_hip());
 
                         // Adjust layout
                         output = changeLayout(output, modelOutputLayout, finalLayout);
-
-                        // Copy to the result buffer (while converting to OutputType)
-                        auto outAccessor = output.accessor<float, 4>();
-
-                        // Determine which output dimension is affected by the patching
-                        auto permutation = layoutPermutation(modelOutputLayout, finalLayout);
-
-                        size_t outSliceStart = 0;
-                        size_t outSliceEnd = outputSize.z;
-                        size_t outSliceOffset = 0;
-                        size_t outLineStart = 0;
-                        size_t outLineEnd = outputSize.y;
-                        size_t outLineOffset = 0;
-                        size_t outPixelStart = 0;
-                        size_t outPixelEnd = outputSize.x;
-                        size_t outPixelOffset = 0;
-
-                        // Since the data is already permuted to the right layout for output, but we are working patchwise,
-                        // we need to restrict the affected dimension's indices
-                        if (permutation[1] == 3)
+                        if (modelOutputDataType == TypeHalf)
                         {
-                            outSliceStart = startPixelValid;
-                            outSliceEnd = startPixelValid + patchSizeValid;
-                            outSliceOffset = startPixel;
+                            // As half is not natively supported on the CPU, promote it to float
+                            output = output.to(torch::kFloat);
                         }
-                        else if (permutation[2] == 3)
-                        {
-                            outLineStart = startPixelValid;
-                            outLineEnd = startPixelValid + patchSizeValid;
-                            outLineOffset = startPixel;
-                        }
-                        else if (permutation[3] == 3)
-                        {
-                            outPixelStart = startPixelValid;
-                            outPixelEnd = startPixelValid + patchSizeValid;
-                            outPixelOffset = startPixel;
-                        }
+                        output = output.to(torch::kCPU);
 
-                        for (size_t outSliceIdx = outSliceStart; outSliceIdx < outSliceEnd; outSliceIdx++)
+                        // Copy the patch!
+                        if (output.dtype() == torch::kInt8)
                         {
-                            for (size_t outLineIdx = outLineStart; outLineIdx < outLineEnd; outLineIdx++)
-                            {
-                                for (size_t outPixelIdx = outPixelStart; outPixelIdx < outPixelEnd; outPixelIdx++)
-                                {
-                                    pDataOut->get()[
-                                            outSliceIdx * outputSize.y * outputSize.x +
-                                            outLineIdx * outputSize.x +
-                                            outPixelIdx] =
-                                        clampCast<OutputType>(outAccessor[0]
-                                            [outSliceIdx - outSliceOffset]
-                                            [outLineIdx - outLineOffset]
-                                            [outPixelIdx - outPixelOffset]);
-                                }
-                            }
+                            copyPatchToOutput<int8_t, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if (output.dtype() == torch::kUInt8)
+                        {
+                            copyPatchToOutput<uint8_t, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if (output.dtype() == torch::kInt16)
+                        {
+                            copyPatchToOutput<int16_t, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if (output.dtype() == torch::kInt32)
+                        {
+                            copyPatchToOutput<int32_t, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if (output.dtype() == torch::kInt64)
+                        {
+                            copyPatchToOutput<int64_t, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if (output.dtype() == torch::kFloat)
+                        {
+                            copyPatchToOutput<float, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
+                        }
+                        else if(output.dtype() == torch::kDouble)
+                        {
+                            copyPatchToOutput<double, OutputType>(output, pDataOut, modelOutputLayout, finalLayout,
+                                    outputSize, startPixelValid, startPixel, patchSizeValid);
                         }
                     }
                     cudaSafeCall(cudaDeviceSynchronize());
@@ -228,6 +215,70 @@ namespace supra
 
 			return pDataOut;
 		}
+
+		template <typename ModelOutputType, typename OutputType>
+		void copyPatchToOutput(
+		        const torch::Tensor& output,
+		        std::shared_ptr<Container<OutputType> > pDataOut,
+		        const std::string& modelOutputLayout,
+		        const std::string& finalLayout,
+		        vec3s outputSize, size_t startPixelValid, size_t startPixel, size_t patchSizeValid)
+        {
+            // Copy to the result buffer (while converting to OutputType)
+            auto outAccessor = output.accessor<ModelOutputType, 4>();
+
+            // Determine which output dimension is affected by the patching
+            auto permutation = layoutPermutation(modelOutputLayout, finalLayout);
+
+            size_t outSliceStart = 0;
+            size_t outSliceEnd = outputSize.z;
+            size_t outSliceOffset = 0;
+            size_t outLineStart = 0;
+            size_t outLineEnd = outputSize.y;
+            size_t outLineOffset = 0;
+            size_t outPixelStart = 0;
+            size_t outPixelEnd = outputSize.x;
+            size_t outPixelOffset = 0;
+
+            // Since the data is already permuted to the right layout for output, but we are working patchwise,
+            // we need to restrict the affected dimension's indices
+            if (permutation[1] == 3)
+            {
+                outSliceStart = startPixelValid;
+                outSliceEnd = startPixelValid + patchSizeValid;
+                outSliceOffset = startPixel;
+            }
+            else if (permutation[2] == 3)
+            {
+                outLineStart = startPixelValid;
+                outLineEnd = startPixelValid + patchSizeValid;
+                outLineOffset = startPixel;
+            }
+            else if (permutation[3] == 3)
+            {
+                outPixelStart = startPixelValid;
+                outPixelEnd = startPixelValid + patchSizeValid;
+                outPixelOffset = startPixel;
+            }
+
+            for (size_t outSliceIdx = outSliceStart; outSliceIdx < outSliceEnd; outSliceIdx++)
+            {
+                for (size_t outLineIdx = outLineStart; outLineIdx < outLineEnd; outLineIdx++)
+                {
+                    for (size_t outPixelIdx = outPixelStart; outPixelIdx < outPixelEnd; outPixelIdx++)
+                    {
+                        pDataOut->get()[
+                                outSliceIdx * outputSize.y * outputSize.x +
+                                outLineIdx * outputSize.x +
+                                outPixelIdx] =
+                                clampCast<OutputType>(outAccessor[0]
+                                                      [outSliceIdx - outSliceOffset]
+                                                      [outLineIdx - outLineOffset]
+                                                      [outPixelIdx - outPixelOffset]);
+                    }
+                }
+            }
+        }
 
 	private:
 		void loadModule();
