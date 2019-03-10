@@ -351,7 +351,7 @@ namespace supra
 
 	void TorchNode::loadModule() {
 		m_torchModule = nullptr;
-		if (m_modelFilename != "" && m_inputNormalization != "" && m_outputDenormalization != "")
+		if (m_modelFilename != "")
 		{
 			try {
 				std::shared_ptr<TorchInference> module = std::make_shared<TorchInference>(m_modelFilename, m_inputNormalization, m_outputDenormalization);

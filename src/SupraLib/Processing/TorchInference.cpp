@@ -42,7 +42,15 @@ namespace supra
 
 	void TorchInference::loadModule() {
 		m_torchModule = nullptr;
-		if (m_modelFilename != "" && m_inputNormalization != "" && m_outputDenormalization != "" )
+		m_inputNormalizationModule = nullptr;
+		m_outputDenormalizationModule = nullptr;
+		logging::log_error_if(m_modelFilename == "",
+				"TorchInference: Error while loading model: Model path is empty.");
+		logging::log_error_if(m_inputNormalization == "",
+				"TorchInference: Error while building module: Normalization string is empty.");
+		logging::log_error_if(m_outputDenormalization == "",
+				"TorchInference: Error while building module: Denormalization string is empty.");
+		if (m_modelFilename != "")
 		{
 		    if (fileExists(m_modelFilename))
             {
@@ -50,13 +58,6 @@ namespace supra
                     std::shared_ptr<torch::jit::script::Module> module = torch::jit::load(m_modelFilename);
                     module->to(torch::kCUDA);
                     m_torchModule = module;
-
-                    m_inputNormalizationModule = torch::jit::compile(
-                        "  def normalize(a):\n    return " + m_inputNormalization + "\n");
-                    m_inputNormalizationModule->to(torch::kCUDA);
-                    m_outputDenormalizationModule = torch::jit::compile(
-                        "  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
-                    m_outputDenormalizationModule->to(torch::kCUDA);
                 }
                 catch (c10::Error e)
                 {
@@ -76,6 +77,48 @@ namespace supra
             {
                 logging::log_error("TorchInference: Error while loading model '", m_modelFilename, "'. The file does not exist.");
             }
+		}
+		if (m_inputNormalization != "")
+		{
+			try {
+				m_inputNormalizationModule = torch::jit::compile(
+						"  def normalize(a):\n    return " + m_inputNormalization + "\n");
+				m_inputNormalizationModule->to(torch::kCUDA);
+			}
+			catch (c10::Error e)
+			{
+				logging::log_error("TorchInference: Exception (c10::Error) while building normalization module '", m_inputNormalization, "'");
+				logging::log_error("TorchInference: ", e.what());
+				logging::log_error("TorchInference: ", e.msg_stack());
+				m_inputNormalizationModule = nullptr;
+			}
+			catch (std::runtime_error e)
+			{
+				logging::log_error("TorchInference: Exception (std::runtime_error) while building normalization module '", m_inputNormalization, "'");
+				logging::log_error("TorchInference: ", e.what());
+				m_inputNormalizationModule = nullptr;
+			}
+		}
+		if (m_outputDenormalization != "")
+		{
+			try {
+				m_outputDenormalizationModule = torch::jit::compile(
+						"  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
+				m_outputDenormalizationModule->to(torch::kCUDA);
+			}
+			catch (c10::Error e)
+			{
+				logging::log_error("TorchInference: Exception (c10::Error) while building denormalization module '", m_outputDenormalization, "'");
+				logging::log_error("TorchInference: ", e.what());
+				logging::log_error("TorchInference: ", e.msg_stack());
+				m_outputDenormalizationModule = nullptr;
+			}
+			catch (std::runtime_error e)
+			{
+				logging::log_error("TorchInference: Exception (std::runtime_error) while building denormalization module '", m_outputDenormalization, "'");
+				logging::log_error("TorchInference: ", e.what());
+				m_outputDenormalizationModule = nullptr;
+			}
 		}
 	}
 
