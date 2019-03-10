@@ -51,7 +51,8 @@ namespace supra
 			    m_outputDenormalizationModule != nullptr)
             {
                 try {
-                    cudaSafeCall(cudaDeviceSynchronize());
+                    // Synchronize to the stream the input data is produced on, to make sure the data is ready
+                    cudaSafeCall(cudaStreamSynchronize(imageData->getStream()));
 
                     // Wrap our input data into a torch tensor (with first dimension 1, for batchsize 1)
                     auto inputData = torch::from_blob((void*)(imageData->get()),
@@ -109,14 +110,10 @@ namespace supra
                         lastValidPixels = patchSizeValid;
 
                         // Slice the input data
-                        cudaSafeCall(cudaDeviceSynchronize());
                         auto inputDataPatch = inputData.slice(3, startPixel, startPixel + patchSize);
-                        cudaSafeCall(cudaDeviceSynchronize());
 
                         // Convert it to the desired input type
-                        cudaSafeCall(cudaDeviceSynchronize());
                         inputDataPatch = convertDataType(inputDataPatch, modelInputDataType);
-                        cudaSafeCall(cudaDeviceSynchronize());
 
                         // Adjust layout if necessary
                         inputDataPatch = changeLayout(inputDataPatch, currentLayout, modelInputLayout);
@@ -124,21 +121,20 @@ namespace supra
 
                         // Run model
                         // Normalize the input
-                        cudaSafeCall(cudaDeviceSynchronize());
                         auto inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
-                        cudaSafeCall(cudaDeviceSynchronize());
+                        cudaSafeCall(cudaPeekAtLastError());
 
                         // build module input data structure
                         std::vector<torch::jit::IValue> inputs;
                         inputs.push_back(inputDataPatchIvalue);
 
                         // Execute the model and turn its output into a tensor.
-                        cudaSafeCall(cudaDeviceSynchronize());
                         auto result = m_torchModule->forward(inputs);
-                        cudaSafeCall(cudaDeviceSynchronize());
+                        cudaSafeCall(cudaPeekAtLastError());
 
                         // Denormalize the output
                         result = m_outputDenormalizationModule->run_method("denormalize", result);
+                        cudaSafeCall(cudaPeekAtLastError());
                         at::Tensor output = result.toTensor();
                         // This should never happen right now.
                         assert(!output.is_hip());
@@ -189,7 +185,7 @@ namespace supra
                                     outputSize, startPixelValid, startPixel, patchSizeValid);
                         }
                     }
-                    cudaSafeCall(cudaDeviceSynchronize());
+                    cudaSafeCall(cudaPeekAtLastError());
                 }
                 catch (c10::Error e)
                 {
