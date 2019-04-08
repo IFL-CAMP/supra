@@ -82,6 +82,7 @@ namespace supra
 		DataType m_outputType;
 		RxBeamformerCuda::RxSampleBeamformer m_beamformerType;
 		bool m_interpolateTransmits;
+		int32_t m_additionalOffset;
 	};
 }
 

@@ -46,7 +46,8 @@ namespace supra
 			double fNumber,
 			WindowType windowType,
 			WindowFunction::ElementType windowParameters,
-			bool interpolateBetweenTransmits) const;
+			bool interpolateBetweenTransmits,
+			int32_t additionalOffset) const;
 
 	private:
 		typedef RxBeamformerParameters::LocationType LocationType;

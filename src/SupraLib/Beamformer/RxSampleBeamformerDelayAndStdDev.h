@@ -52,6 +52,7 @@ namespace supra
 			vec2f invMaxElementDistance,
 			LocationType speedOfSound,
 			LocationType dt,
+			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction,
 			const WindowFunction::ElementType* functionShared
 		)
@@ -81,6 +82,7 @@ namespace supra
 				invMaxElementDistance,
 				speedOfSound,
 				dt,
+				additionalOffset,
 				windowFunction,
 				functionShared);
 
@@ -102,7 +104,7 @@ namespace supra
 						if (interpolateRFlines)
 						{
 							LocationType delayf = initialDelay +
-								computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, depth);
+								computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, depth) + additionalOffset;
 							uint32_t delay = static_cast<uint32_t>(::floor(delayf));
 							delayf -= delay;
 							if (delay < (numTimesteps - 1))
@@ -119,7 +121,7 @@ namespace supra
 						else
 						{
 							uint32_t delay = static_cast<uint32_t>(::round(
-								initialDelay + computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, depth)));
+								initialDelay + computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, depth)) + additionalOffset);
 							if (delay < numTimesteps)
 							{
 								value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
@@ -157,6 +159,7 @@ namespace supra
 			LocationType invMaxElementDistance,
 			LocationType speedOfSound,
 			LocationType dt,
+			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction
 		)
 		{
@@ -183,6 +186,7 @@ namespace supra
 				invMaxElementDistance,
 				speedOfSound,
 				dt,
+				additionalOffset,
 				windowFunction);
 
 			for (int32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
@@ -197,7 +201,7 @@ namespace supra
 					if (interpolateRFlines)
 					{
 						LocationType delayf = initialDelay +
-							computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, depth);
+							computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, depth) + additionalOffset;
 						int32_t delay = static_cast<int32_t>(floor(delayf));
 						delayf -= delay;
 						if (delay < (numTimesteps - 1))
@@ -214,7 +218,7 @@ namespace supra
 					else
 					{
 						int32_t delay = static_cast<int32_t>(round(
-							initialDelay + computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, depth)));
+							initialDelay + computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, depth)) + additionalOffset);
 						if (delay < numTimesteps)
 						{
 							value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];

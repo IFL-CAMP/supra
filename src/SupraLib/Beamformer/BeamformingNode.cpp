@@ -44,6 +44,7 @@ namespace supra
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
 		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "TestSignal"}, "DelayAndSum", "RxBeamformer");
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
+		m_valueRangeDictionary.set<int32_t>("additionalOffset", -1000, 1000, 0, "Additional Offset [Samples]");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		configurationChanged();
 	}
@@ -55,6 +56,7 @@ namespace supra
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
 		readBeamformerType();
 		m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
+		m_additionalOffset = m_configurationDictionary.get<int32_t>("additionalOffset");
 		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
@@ -81,6 +83,10 @@ namespace supra
 		{
 			m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
 		}
+		else if (configKey == "additionalOffset")
+		{
+			m_additionalOffset = m_configurationDictionary.get<int32_t>("additionalOffset");
+		}
 		else if (configKey == "outputType")
 		{
 			m_outputType = m_configurationDictionary.get<DataType>("outputType");
@@ -99,12 +105,12 @@ namespace supra
 		case supra::TypeInt16:
 			return m_beamformer->performRxBeamforming<InputType, int16_t>(
 				m_beamformerType, pRawData, m_fNumber,
-				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_additionalOffset);
 			break;
 		case supra::TypeFloat:
 			return m_beamformer->performRxBeamforming<InputType, float>(
 				m_beamformerType, pRawData, m_fNumber,
-				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits);
+				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_additionalOffset);
 			break;
 		default:
 			logging::log_error("BeamformingNode: Output image type not supported");
