@@ -410,9 +410,11 @@ IF(SUPRA_DEVICE_ITK_FILE_OUT)
 ENDIF()
 IF(SUPRA_DEVICE_ROS_IMAGE_OUT)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
-		InputOutput/RosImageOutputDevice.cpp)
+		InputOutput/RosImageOutputDevice.cpp
+		InputOutput/EdenImageOutputDevice.cpp)
 	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
-		InputOutput/RosImageOutputDevice.h)
+		InputOutput/RosImageOutputDevice.h
+		InputOutput/EdenImageOutputDevice.h)
 	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 		HAVE_DEVICE_ROSIMAGE_OUTPUT)
 ENDIF()

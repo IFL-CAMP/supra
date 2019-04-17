@@ -23,6 +23,7 @@
 #include "InputOutput/UsIntCephasonicsCc.h"
 #include "InputOutput/MetaImageOutputDevice.h"
 #include "InputOutput/RosImageOutputDevice.h"
+#include "InputOutput/EdenImageOutputDevice.h"
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "Beamformer/BeamformingNode.h"
 #include "Beamformer/BeamformingMVNode.h"
@@ -142,6 +143,10 @@ namespace supra
 		if (deviceType == "RosImageOutputDevice")
 		{
 			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID, queueing);
+		}
+		if (deviceType == "EdenImageOutputDevice")
+		{
+			retVal = make_shared<EdenImageOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
 		logging::log_error_if(!((bool)retVal),
