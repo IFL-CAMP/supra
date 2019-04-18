@@ -52,6 +52,9 @@ namespace supra
 
 		std::string m_topic;
 		std::string m_masterHost;
+		double m_originOffsetX;
+		double m_originOffsetY;
+		double m_originOffsetZ;
 
 		std::unique_ptr<RosWrapper> m_rosWrapper;
 		size_t m_publisherNoImage;
