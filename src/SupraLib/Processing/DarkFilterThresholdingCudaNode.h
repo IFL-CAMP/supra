@@ -9,8 +9,8 @@
 // 
 // ================================================================================================
 
-#ifndef __DARKFILTERCUDANODE_H__
-#define __DARKFILTERCUDANODE_H__
+#ifndef __DARKFILTERTHRESHOLDINGCUDANODE_H__
+#define __DARKFILTERTHRESHOLDINGCUDANODE_H__
 
 #ifdef HAVE_CUDA
 
@@ -27,9 +27,9 @@
 
 namespace supra
 {
-	class DarkFilterCudaNode : public AbstractNode {
+	class DarkFilterThresholdingCudaNode : public AbstractNode {
 	public:
-		DarkFilterCudaNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
+		DarkFilterThresholdingCudaNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
@@ -69,4 +69,4 @@ namespace supra
 
 #endif //HAVE_CUDA
 
-#endif //!__DARKFILTERCUDANODE_H__
+#endif //!__DARKFILTERTHRESHOLDINGCUDANODE_H__

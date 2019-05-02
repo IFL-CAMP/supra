@@ -9,8 +9,8 @@
 // 
 // ================================================================================================
 
-#ifndef __DARKFILTERCUDA_H__
-#define __DARKFILTERCUDA_H__
+#ifndef __DARKFILTERTHRESHOLDINGCUDA_H__
+#define __DARKFILTERTHRESHOLDINGCUDA_H__
 
 #include "USImage.h"
 
@@ -18,7 +18,7 @@
 
 namespace supra
 {
-	class DarkFilterCuda
+	class DarkFilterThresholdingCuda
 	{
 	public:
 		typedef float WorkType;
@@ -31,4 +31,4 @@ namespace supra
 	};
 }
 
-#endif //!__DARKFILTERCUDA_H__
+#endif //!__DARKFILTERTHRESHOLDINGCUDA_H__

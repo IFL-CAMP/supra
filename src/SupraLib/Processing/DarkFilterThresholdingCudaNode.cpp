@@ -9,8 +9,8 @@
 // 
 // ================================================================================================
 
-#include "DarkFilterCudaNode.h"
-#include "DarkFilterCuda.h"
+#include "DarkFilterThresholdingCudaNode.h"
+#include "DarkFilterThresholdingCuda.h"
 
 #include "USImage.h"
 #include <utilities/Logging.h>
@@ -19,7 +19,7 @@ using namespace std;
 
 namespace supra
 {
-	DarkFilterCudaNode::DarkFilterCudaNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
+	DarkFilterThresholdingCudaNode::DarkFilterThresholdingCudaNode(tbb::flow::graph & graph, const std::string & nodeID, bool queueing)
 		: AbstractNode(nodeID, queueing)
 	{
 		// Create the underlying tbb node for handling the message passing. This usually does not need to be modified.
@@ -34,7 +34,7 @@ namespace supra
 				new NodeTypeDiscarding(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndProcess(inObj); }));
 		}
 
-		m_callFrequency.setName("DarkFilterCudaNode");
+		m_callFrequency.setName("DarkFilterThresholdingCudaNode");
 
 		// Define the parameters that this node reveals to the user
 		m_valueRangeDictionary.set<double>("threshold", 0.0, 1024.0, 10.0, "Threshold");
@@ -44,13 +44,13 @@ namespace supra
 		configurationChanged();
 	}
 
-	void DarkFilterCudaNode::configurationChanged()
+	void DarkFilterThresholdingCudaNode::configurationChanged()
 	{
 		m_threshold = m_configurationDictionary.get<double>("threshold");
 		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 	}
 
-	void DarkFilterCudaNode::configurationEntryChanged(const std::string& configKey)
+	void DarkFilterThresholdingCudaNode::configurationEntryChanged(const std::string& configKey)
 	{
 		// lock the object mutex to make sure no processing happens during parameter changes
 		unique_lock<mutex> l(m_mutex);
@@ -65,28 +65,28 @@ namespace supra
 	}
 
 	template <typename InputType>
-	std::shared_ptr<ContainerBase> DarkFilterCudaNode::processTemplateSelection(std::shared_ptr<const Container<InputType> > imageData, vec3s size)
+	std::shared_ptr<ContainerBase> DarkFilterThresholdingCudaNode::processTemplateSelection(std::shared_ptr<const Container<InputType> > imageData, vec3s size)
 	{
 		// With the function already templated on the input type, handle the desired output type.
 		switch (m_outputType)
 		{
 		case supra::TypeUint8:
-			return DarkFilterCuda::process<InputType, uint8_t>(imageData, size, static_cast<DarkFilterCuda::WorkType>(m_threshold));
+			return DarkFilterThresholdingCuda::process<InputType, uint8_t>(imageData, size, static_cast<DarkFilterThresholdingCuda::WorkType>(m_threshold));
 			break;
 		case supra::TypeInt16:
-			return DarkFilterCuda::process<InputType, int16_t>(imageData, size, static_cast<DarkFilterCuda::WorkType>(m_threshold));
+			return DarkFilterThresholdingCuda::process<InputType, int16_t>(imageData, size, static_cast<DarkFilterThresholdingCuda::WorkType>(m_threshold));
 			break;
 		case supra::TypeFloat:
-			return DarkFilterCuda::process<InputType, float>(imageData, size, static_cast<DarkFilterCuda::WorkType>(m_threshold));
+			return DarkFilterThresholdingCuda::process<InputType, float>(imageData, size, static_cast<DarkFilterThresholdingCuda::WorkType>(m_threshold));
 			break;
 		default:
-			logging::log_error("DarkFilterCudaNode: Output image type not supported");
+			logging::log_error("DarkFilterThresholdingCudaNode: Output image type not supported");
 			break;
 		}
 		return nullptr;
 	}
 
-	shared_ptr<RecordObject> DarkFilterCudaNode::checkTypeAndProcess(shared_ptr<RecordObject> inObj)
+	shared_ptr<RecordObject> DarkFilterThresholdingCudaNode::checkTypeAndProcess(shared_ptr<RecordObject> inObj)
 	{
 		shared_ptr<USImage> pImage = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)
@@ -129,7 +129,7 @@ namespace supra
 					pInImage->getSyncTimestamp());
 			}
 			else {
-				logging::log_error("DarkFilterCudaNode: could not cast object to USImage type, is it in suppored ElementType?");
+				logging::log_error("DarkFilterThresholdingCudaNode: could not cast object to USImage type, is it in suppored ElementType?");
 			}
 		}
 		return pImage;

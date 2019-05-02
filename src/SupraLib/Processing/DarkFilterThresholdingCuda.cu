@@ -9,7 +9,7 @@
 // 
 // ================================================================================================
 
-#include "DarkFilterCuda.h"
+#include "DarkFilterThresholdingCuda.h"
 #include "utilities/Buffer.h"
 
 #include <thrust/transform.h>
@@ -19,9 +19,9 @@ using namespace std;
 
 namespace supra
 {
-	namespace DarkFilterCudaInternal
+	namespace DarkFilterThresholdingCudaInternal
 	{
-		typedef DarkFilterCuda::WorkType WorkType;
+		typedef DarkFilterThresholdingCuda::WorkType WorkType;
 
 		// here the actual processing happens!
 
@@ -69,7 +69,7 @@ namespace supra
 	}
 
 	template <typename InputType, typename OutputType>
-	shared_ptr<Container<OutputType> > DarkFilterCuda::process(
+	shared_ptr<Container<OutputType> > DarkFilterThresholdingCuda::process(
 		const shared_ptr<const Container<InputType>>& imageData, 
 		vec3s size, double threshold)
 	{
@@ -96,7 +96,7 @@ namespace supra
 			static_cast<unsigned int>((size.y + blockSize.y - 1) / blockSize.y),
 			static_cast<unsigned int>((size.z + blockSize.z - 1) / blockSize.z));
 		size_t sharedMemorySize = blockSize.x * blockSize.y * blockSize.z * sizeof(InputType);
-		DarkFilterCudaInternal::processKernel <<<gridSize, blockSize, sharedMemorySize, inImageData->getStream() >>> (
+		DarkFilterThresholdingCudaInternal::processKernel <<<gridSize, blockSize, sharedMemorySize, inImageData->getStream() >>> (
 			inImageData->get(),
 			size,
 			static_cast<WorkType>(threshold),
@@ -112,21 +112,21 @@ namespace supra
 	// We don't wish to have the template implementation in the header, to make compilation easier.
 	// Because of this, we need to explicity instantiate the methods we will need.
 	template
-	shared_ptr<Container<uint8_t> > DarkFilterCuda::process<int16_t, uint8_t>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<uint8_t> > DarkFilterThresholdingCuda::process<int16_t, uint8_t>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<uint8_t> > DarkFilterCuda::process<float, uint8_t>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<uint8_t> > DarkFilterThresholdingCuda::process<float, uint8_t>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<uint8_t> > DarkFilterCuda::process<uint8_t, uint8_t>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<uint8_t> > DarkFilterThresholdingCuda::process<uint8_t, uint8_t>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<float> > DarkFilterCuda::process<int16_t, float>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<float> > DarkFilterThresholdingCuda::process<int16_t, float>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<float> > DarkFilterCuda::process<float, float>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<float> > DarkFilterThresholdingCuda::process<float, float>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<float> > DarkFilterCuda::process<uint8_t, float>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<float> > DarkFilterThresholdingCuda::process<uint8_t, float>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<int16_t> > DarkFilterCuda::process<int16_t, int16_t>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<int16_t> > DarkFilterThresholdingCuda::process<int16_t, int16_t>(const shared_ptr<const Container<int16_t> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<int16_t> > DarkFilterCuda::process<float, int16_t>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<int16_t> > DarkFilterThresholdingCuda::process<float, int16_t>(const shared_ptr<const Container<float> >& inImageData, vec3s size, double threshold);
 	template
-	shared_ptr<Container<int16_t> > DarkFilterCuda::process<uint8_t, int16_t>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
+	shared_ptr<Container<int16_t> > DarkFilterThresholdingCuda::process<uint8_t, int16_t>(const shared_ptr<const Container<uint8_t> >& inImageData, vec3s size, double threshold);
 }
