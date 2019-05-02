@@ -10,6 +10,7 @@
 // ================================================================================================
 
 #include "DarkFilterCuda.h"
+#include "utilities/Buffer.h"
 
 #include <thrust/transform.h>
 #include <thrust/execution_policy.h>
@@ -30,6 +31,12 @@ namespace supra
 			size_t x = blockDim.x*blockIdx.x + threadIdx.x;
 			size_t y = blockDim.y*blockIdx.y + threadIdx.y;
 			size_t z = blockDim.z*blockIdx.z + threadIdx.z;
+
+			extern __shared__ uint8_t smem[];
+			CachedBuffer3<const InputType*, size_t> inputBuffer{
+				inputImage, size, reinterpret_cast<InputType*>(smem), vec3s{blockDim.x, blockDim.y, blockDim.z},
+				vec3s{blockDim.x*blockIdx.x, blockDim.y*blockIdx.y, blockDim.z*blockIdx.z } };
+			Buffer3<OutputType*, size_t> outputBuffer{ outputImage, size };
 			
 			size_t width = size.x;
 			size_t height = size.y;
@@ -41,7 +48,7 @@ namespace supra
 
 				// Get the input pixel value and cast it to out working type.
 				// As this should in general be a type with wider range / precision, this cast does not loose anything.
-				WorkType inPixel = inputImage[x + y*width + z *width*height];
+				WorkType inPixel = inputBuffer[{x, y, z}];
 
 				// Perform the thresholding
 				WorkType value;
@@ -56,7 +63,7 @@ namespace supra
 				// Store the output pixel value.
 				// Because this is templated, we need to cast from "WorkType" to "OutputType".
 				// This should happen in a sane way, that is with clamping. There is a helper for that!
-				outputImage[x + y*width + z *width*height] = clampCast<OutputType>(value);
+				outputBuffer[{x, y, z}] = clampCast<OutputType>(value);
 			}
 		}
 	}
@@ -88,7 +95,8 @@ namespace supra
 			static_cast<unsigned int>((size.x + blockSize.x - 1) / blockSize.x),
 			static_cast<unsigned int>((size.y + blockSize.y - 1) / blockSize.y),
 			static_cast<unsigned int>((size.z + blockSize.z - 1) / blockSize.z));
-		DarkFilterCudaInternal::processKernel << <gridSize, blockSize, 0, inImageData->getStream() >> > (
+		size_t sharedMemorySize = blockSize.x * blockSize.y * blockSize.z * sizeof(InputType);
+		DarkFilterCudaInternal::processKernel <<<gridSize, blockSize, sharedMemorySize, inImageData->getStream() >>> (
 			inImageData->get(),
 			size,
 			static_cast<WorkType>(threshold),

@@ -163,6 +163,7 @@ SET(SUPRA_Lib_HEADERS
 	InterfaceFactory.h
 	utilities/utility.h
 	utilities/cudaUtility.h
+	utilities/Buffer.h
 	utilities/Logging.h
 	utilities/CallFrequency.h
 	utilities/TemplateTypeDefault.h
