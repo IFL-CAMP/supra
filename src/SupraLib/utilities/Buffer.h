@@ -79,7 +79,7 @@ namespace supra
 	class CachedBuffer2 : Buffer2<ElementPtrType, IndexType>
 	{
 	public:
-		using ElementType = Buffer2<ElementPtrType, IndexType>::ElementType;
+		using ElementType = typename Buffer2<ElementPtrType, IndexType>::ElementType;
 		typedef typename std::remove_const<typename std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
 		typedef typename std::add_pointer<ModifiableElementType>::type ModifiableElementPtrType;
 
@@ -161,7 +161,7 @@ namespace supra
 	class CachedBuffer3 : Buffer3<ElementPtrType, IndexType>
 	{
 	public:
-		using ElementType = Buffer3<ElementPtrType, IndexType>::ElementType;
+		using ElementType = typename Buffer3<ElementPtrType, IndexType>::ElementType;
 		typedef typename std::remove_const<typename std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
 		typedef typename std::add_pointer<ModifiableElementType>::type ModifiableElementPtrType;
 
