@@ -163,6 +163,7 @@ SET(SUPRA_Lib_HEADERS
 	InterfaceFactory.h
 	utilities/utility.h
 	utilities/cudaUtility.h
+	utilities/Buffer.h
 	utilities/Logging.h
 	utilities/CallFrequency.h
 	utilities/TemplateTypeDefault.h
@@ -181,13 +182,17 @@ IF(SUPRA_CUDA)
 		ExampleNodes/ImageProcessingCudaNode.cpp
 		ExampleNodes/ImageProcessingCuda.cu
 		Processing/TimeGainCompensationNode.cpp
-		Processing/TimeGainCompensation.cu)
+		Processing/TimeGainCompensation.cu
+		Processing/DarkFilterThresholdingCudaNode.cpp
+		Processing/DarkFilterThresholdingCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
 		ExampleNodes/ImageProcessingCuda.h
 		Processing/TimeGainCompensationNode.h
-		Processing/TimeGainCompensation.h)
+		Processing/TimeGainCompensation.h
+		Processing/DarkFilterThresholdingCudaNode.h
+		Processing/DarkFilterThresholdingCuda.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
