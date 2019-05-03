@@ -79,7 +79,8 @@ namespace supra
 	class CachedBuffer2 : Buffer2<ElementPtrType, IndexType>
 	{
 	public:
-		typedef typename std::remove_const<std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
+		using ElementType = Buffer2<ElementPtrType, IndexType>::ElementType;
+		typedef typename std::remove_const<typename std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
 		typedef typename std::add_pointer<ModifiableElementType>::type ModifiableElementPtrType;
 
 	public:
@@ -87,7 +88,7 @@ namespace supra
 			ElementPtrType buffer, vec2T<IndexType> size,
 			ModifiableElementPtrType cacheBuffer, vec2T<IndexType> cacheSize,
 			vec2T<IndexType> cacheOffset)
-			: Buffer2(buffer, size)
+			: Buffer2<ElementPtrType, IndexType>(buffer, size)
 			, m_cachedBuffer{ cacheBuffer }
 			, m_cacheSize{ cacheSize }
 			, m_cacheOffset{ cacheOffset }
@@ -160,7 +161,8 @@ namespace supra
 	class CachedBuffer3 : Buffer3<ElementPtrType, IndexType>
 	{
 	public:
-		typedef typename std::remove_const<std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
+		using ElementType = Buffer3<ElementPtrType, IndexType>::ElementType;
+		typedef typename std::remove_const<typename std::remove_pointer<ElementPtrType>::type>::type ModifiableElementType;
 		typedef typename std::add_pointer<ModifiableElementType>::type ModifiableElementPtrType;
 
 	public:
@@ -168,7 +170,7 @@ namespace supra
 			ElementPtrType buffer, vec3T<IndexType> size, 
 			ModifiableElementPtrType cacheBuffer, vec3T<IndexType> cacheSize,
 			vec3T<IndexType> cacheOffset)
-			: Buffer3(buffer, size)
+			: Buffer3<ElementPtrType, IndexType>(buffer, size)
 			, m_cachedBuffer { cacheBuffer }
 			, m_cacheSize{ cacheSize }
 			, m_cacheOffset{ cacheOffset }
