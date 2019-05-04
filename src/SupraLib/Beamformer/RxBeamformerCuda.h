@@ -44,6 +44,7 @@ namespace supra
 			RxSampleBeamformer sampleBeamformer,
 			shared_ptr<const USRawData> rawData,
 			double fNumber,
+			double speedOfSoundMMperS,
 			WindowType windowType,
 			WindowFunction::ElementType windowParameters,
 			bool interpolateBetweenTransmits,
@@ -52,12 +53,11 @@ namespace supra
 	private:
 		typedef RxBeamformerParameters::LocationType LocationType;
 
-		void convertToDtSpace(double dt, size_t numTransducerElements) const;
+		void convertToDtSpace(double dt, double speedOfSoundMMperS, size_t numTransducerElements) const;
 
 		// Imaging parameters
 		size_t m_numRxScanlines;
 		vec2s m_rxScanlineLayout;
-		double m_speedOfSoundMMperS;
 
 		// prepared Rx parameters
 		mutable std::unique_ptr<Container<LocationType> > m_pRxDepths;
@@ -66,6 +66,7 @@ namespace supra
 		mutable std::unique_ptr<Container<LocationType> > m_pRxElementYs;
 		size_t m_rxNumDepths;
 
+		mutable double m_speedOfSoundMMperS;
 		mutable double m_lastSeenDt;
 		mutable shared_ptr<const USImageProperties> m_lastSeenImageProperties;
 		mutable shared_ptr<const USImageProperties> m_editedImageProperties;

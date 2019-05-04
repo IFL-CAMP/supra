@@ -48,21 +48,21 @@ namespace supra
 	{
 	}
 
-	void RxBeamformerCuda::convertToDtSpace(double dt, size_t numTransducerElements) const
+	void RxBeamformerCuda::convertToDtSpace(double dt, double speedOfSoundMMperS, size_t numTransducerElements) const
 	{
-		if (m_lastSeenDt != dt)
+		if (m_lastSeenDt != dt || m_speedOfSoundMMperS != speedOfSoundMMperS)
 		{
-			double factor = 1;
-			double factorTime = 1;
-			if (m_lastSeenDt == 0)
+			double oldFactor = 1;
+			double oldFactorTime = 1;
+			if (m_lastSeenDt != 0 && m_speedOfSoundMMperS != 0)
 			{
-				factor = 1 / (m_speedOfSoundMMperS * dt);
-				factorTime = 1 / dt;
+				oldFactor = 1 / (m_speedOfSoundMMperS * m_lastSeenDt);
+				oldFactorTime = 1 / m_lastSeenDt;
 			}
-			else {
-				factor = (m_lastSeenDt / dt);
-				factorTime = factor;
-			}
+
+			double factor = 1 / oldFactor / (speedOfSoundMMperS * dt);
+			double factorTime = 1 / oldFactorTime / dt;
+
 			m_pRxScanlines = std::unique_ptr<Container<ScanlineRxParameters3D> >(new Container<ScanlineRxParameters3D>(LocationHost, *m_pRxScanlines));
 			for (size_t i = 0; i < m_numRxScanlines; i++)
 			{
@@ -93,8 +93,9 @@ namespace supra
 			}
 			m_pRxElementXs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementXs));
 			m_pRxElementYs = std::unique_ptr<Container<LocationType> >(new Container<LocationType>(LocationGpu, *m_pRxElementYs));
-			
+
 			m_lastSeenDt = dt;
+			m_speedOfSoundMMperS = speedOfSoundMMperS;
 		}
 	}
 
@@ -430,6 +431,7 @@ namespace supra
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits,
@@ -475,7 +477,7 @@ namespace supra
 		}
 
 
-		convertToDtSpace(dt, rawData->getNumElements());
+		convertToDtSpace(dt, speedOfSoundMMperS, rawData->getNumElements());
 		if (m_is3D)
 		{
 			beamformingFunction3D(
@@ -549,6 +551,7 @@ namespace supra
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits,
@@ -558,6 +561,7 @@ namespace supra
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits,
@@ -567,6 +571,7 @@ namespace supra
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits,
@@ -576,6 +581,7 @@ namespace supra
 		RxBeamformerCuda::RxSampleBeamformer sampleBeamformer,
 		shared_ptr<const USRawData> rawData,
 		double fNumber,
+		double speedOfSoundMMperS,
 		WindowType windowType,
 		WindowFunction::ElementType windowParameter,
 		bool interpolateBetweenTransmits,
