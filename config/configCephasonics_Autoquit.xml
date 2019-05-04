@@ -3,7 +3,7 @@
 	<devices>
 		<inputs>
 			<input type="UltrasoundInterfaceCephasonicsCC" id="US-Cep">
-				<param name="voltage" type="double">
+				<param name="txVoltage" type="double">
 					60
 				</param>
 				<param name="endDepth" type="double">
