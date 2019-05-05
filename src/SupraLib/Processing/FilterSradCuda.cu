@@ -12,11 +12,11 @@
 
 #include "FilterSradCuda.h"
 
+#include "utilities/Buffer.h"
+
 #include <thrust/transform.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
-
-#include <cooperative_groups.h>
 
 using namespace std;
 
@@ -35,19 +35,19 @@ namespace supra
 				return a + summand;
 			}
 		};
-
-		__device__ WorkType computeC(const WorkType* image, const size_t& x, const size_t& y, const size_t& z, const vec3s& size, const WorkType& speckleScaleCurrentSq, const WorkType& eps)
+	
+		__device__ WorkType computeC(const Buffer3<const WorkType*, size_t>& imageBuffer, const vec3s& position, const vec3s& size, const WorkType& speckleScaleCurrentSq, const WorkType& eps)
 		{
 			size_t width = size.x;
 			size_t height = size.y;
 			//size_t depth = size.z;
 
 			// Get the input pixel value and cast it to out working type.
-			WorkType inPixel_c = image[x + y * width + z * width*height];
-			WorkType inPixel_t = ((y + 1) == height) ? inPixel_c : image[x + (y + 1) * width + z * width*height];
-			WorkType inPixel_b = (y == 0) ? inPixel_c : image[x + (y - 1) * width + z * width*height];
-			WorkType inPixel_l = (x == 0) ? inPixel_c : image[(x - 1) + y * width + z * width*height];
-			WorkType inPixel_r = ((x + 1) == width) ? inPixel_c : image[(x + 1) + y * width + z * width*height];
+			WorkType inPixel_c = imageBuffer[position];
+			WorkType inPixel_t = ((position.y + 1) == height) ? inPixel_c : imageBuffer[position + vec3s{ 0, 1, 0 }];
+			WorkType inPixel_b = (position.y == 0) ? inPixel_c : imageBuffer[position - vec3s{ 0, 1, 0 }];
+			WorkType inPixel_l = (position.x == 0) ? inPixel_c : imageBuffer[position - vec3s{ 1, 0, 0 }];
+			WorkType inPixel_r = ((position.x + 1) == width) ? inPixel_c : imageBuffer[position + vec3s{ 1, 0, 0 }];
 			// TODO: 3D-ness
 
 			// Calculate derivatives and Laplacian
@@ -83,6 +83,9 @@ namespace supra
 			size_t x = blockDim.x*blockIdx.x + threadIdx.x;
 			size_t y = blockDim.y*blockIdx.y + threadIdx.y;
 			size_t z = blockDim.z*blockIdx.z + threadIdx.z;
+
+			Buffer3<const WorkType*, size_t> imageBuffer{image, size};
+			Buffer3<WorkType*, size_t> scratchBuffer{ scratch, size };
 			
 			size_t width = size.x;
 			size_t height = size.y;
@@ -93,16 +96,18 @@ namespace supra
 				// Calculate Speckle Scale of Current Step Squared. Eq. (37).
 				WorkType speckleScaleCurrentSq = squ(speckleScale);
 
-				auto c_c = computeC(image, x, y, z, size, speckleScaleCurrentSq, eps);
-				auto c_b = ((y + 1) == height) ? c_c : computeC(image, x, y+1, z, size, speckleScaleCurrentSq, eps);
-				auto c_r = ((x + 1) == width) ? c_c : computeC(image, x + 1, y, z, size, speckleScaleCurrentSq, eps);
+				vec3s position{ x, y, z };
+
+				auto c_c = computeC(imageBuffer, position, size, speckleScaleCurrentSq, eps);
+				auto c_b = ((y + 1) == height) ? c_c : computeC(imageBuffer, position + vec3s{ 0, 1, 0 }, size, speckleScaleCurrentSq, eps);
+				auto c_r = ((x + 1) == width) ? c_c : computeC(imageBuffer, position + vec3s{ 1, 0, 0 }, size, speckleScaleCurrentSq, eps);
 
 				// Get the input pixel value and cast it to out working type.
-				WorkType inPixel_c = image[x + y * width + z * width*height];
-				WorkType inPixel_t = ((y + 1) == height) ? inPixel_c : image[x + (y + 1) * width + z * width*height];
-				WorkType inPixel_b = (y == 0) ? inPixel_c : image[x + (y - 1) * width + z * width*height];
-				WorkType inPixel_l = (x == 0) ? inPixel_c : image[(x - 1) + y * width + z * width*height];
-				WorkType inPixel_r = ((x + 1) == width) ? inPixel_c : image[(x + 1) + y * width + z * width*height];
+				WorkType inPixel_c = imageBuffer[position];
+				WorkType inPixel_t = ((position.y + 1) == height) ? inPixel_c : imageBuffer[position + vec3s{ 0, 1, 0 }];
+				WorkType inPixel_b = (position.y == 0) ? inPixel_c : imageBuffer[position - vec3s{ 0, 1, 0 }];
+				WorkType inPixel_l = (position.x == 0) ? inPixel_c : imageBuffer[position - vec3s{ 1, 0, 0 }];
+				WorkType inPixel_r = ((position.x + 1) == width) ? inPixel_c : imageBuffer[position + vec3s{ 1, 0, 0 }];
 				// TODO: 3D-ness
 
 				// Calculate derivatives and Laplacian
@@ -113,7 +118,7 @@ namespace supra
 				// compute the divergence of the c*grad(I) (58)
 				WorkType d = c_r * gradient_f.x - c_c * gradient_b.x + c_b * gradient_f.y - c_c * gradient_b.y;
 
-				scratch[x + y * width + z * width*height] = inPixel_c + lambda * 0.25f * d;
+				scratchBuffer[position] = inPixel_c + lambda * 0.25f * d;
 			}
 		}
 	}
