@@ -456,7 +456,7 @@ namespace supra
 					rect2s activeAperture = computeAperture(elementLayout, m_maxApertureSize, { scanlinePositionRelative, 0 });
 					rect2s txAperture = computeAperture(elementLayout, m_txMaxApertureSize, { scanlinePositionRelative, 0 });
 
-					double scanlineAngle = steerAngle - (sectorAngle / 2) + (scanlineIdx / (numScanlines - 1) * sectorAngle);
+					double scanlineAngle = steerAngle - (sectorAngle / 2) + ((double)scanlineIdx / (numScanlines - 1) * sectorAngle);
 					m_txParameters[scanlineIdx] = getTxScanline3D(activeAperture, txAperture, vec2d{ scanlinePosition, 0 }, vec2d{ scanlineAngle, 0 });
 				}
 		
