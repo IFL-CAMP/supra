@@ -28,17 +28,26 @@ namespace supra
 		static_assert(std::is_pointer<ElementPtrType>::value, "Buffer2 requires a pointer type");
 
 	public:
-		__device__ __host__ Buffer2(ElementPtrType buffer, vec2T<IndexType> size)
+		__device__ __host__ Buffer2(ElementPtrType buffer, const vec2T<IndexType>& size)
 			: m_buffer{ buffer }
 			, m_size{ size } { };
 
-		__device__ __host__ ElementType& operator[](vec2T<IndexType> index)
+		__device__ __host__ ElementType& operator[](const vec2T<IndexType>& index)
+		{
+			return accessBuffer(index);
+		}
+		__device__ __host__ ElementType operator[](const vec2T<IndexType>& index) const
 		{
 			return accessBuffer(index);
 		}
 
 	protected:
-		__device__ __host__ ElementType& accessBuffer(vec2T<IndexType> index)
+		__device__ __host__ ElementType& accessBuffer(const vec2T<IndexType>& index)
+		{
+			return m_buffer[index.x + index.y * m_size.x];
+		}
+
+		__device__ __host__ ElementType accessBuffer(const vec2T<IndexType>& index) const
 		{
 			return m_buffer[index.x + index.y * m_size.x];
 		}
@@ -56,17 +65,27 @@ namespace supra
 		static_assert(std::is_pointer<ElementPtrType>::value, "Buffer3 requires a pointer type");
 
 	public:
-		__device__ __host__ Buffer3(ElementPtrType buffer, vec3T<IndexType> size)
+		__device__ __host__ Buffer3(ElementPtrType buffer, const vec3T<IndexType>& size)
 			: m_buffer{ buffer }
 			, m_size{ size } { };
 
-		__device__ __host__ ElementType& operator[](vec3T<IndexType> index)
+		__device__ __host__ ElementType& operator[](const vec3T<IndexType>& index)
+		{
+			return accessBuffer(index);
+		}
+
+		__device__ __host__ ElementType operator[](const vec3T<IndexType>& index) const
 		{
 			return accessBuffer(index);
 		}
 
 	protected:
-		__device__ __host__ ElementType& accessBuffer(vec3T<IndexType> index)
+		__device__ __host__ ElementType& accessBuffer(const vec3T<IndexType>& index)
+		{
+			return m_buffer[index.x + index.y * m_size.x + index.z * m_size.x*m_size.y];
+		}
+
+		__device__ __host__ ElementType accessBuffer(const vec3T<IndexType>& index) const
 		{
 			return m_buffer[index.x + index.y * m_size.x + index.z * m_size.x*m_size.y];
 		}
@@ -85,9 +104,9 @@ namespace supra
 
 	public:
 		__device__ CachedBuffer2(
-			ElementPtrType buffer, vec2T<IndexType> size,
-			ModifiableElementPtrType cacheBuffer, vec2T<IndexType> cacheSize,
-			vec2T<IndexType> cacheOffset)
+			ElementPtrType buffer, const vec2T<IndexType>& size,
+			ModifiableElementPtrType cacheBuffer, const vec2T<IndexType>& cacheSize,
+			const vec2T<IndexType>& cacheOffset)
 			: Buffer2<ElementPtrType, IndexType>(buffer, size)
 			, m_cachedBuffer{ cacheBuffer }
 			, m_cacheSize{ cacheSize }
@@ -97,7 +116,21 @@ namespace supra
 			loadIntoCache();
 		};
 
-		__device__ ElementType& operator[](vec2T<IndexType> index)
+		__device__ ElementType& operator[](const vec2T<IndexType>& index)
+		{
+			// If the element is cached give the caller access to the cache
+			if (index.x >= m_cacheOffset.x && index.x < m_cacheEnd.x &&
+				index.y >= m_cacheOffset.y && index.y < m_cacheEnd.y)
+			{
+				return accessCache(index);
+			}
+			else // If the element is not cached, refer to the uncached buffer
+			{
+				return accessBuffer(index);
+			}
+		}
+
+		__device__ ElementType operator[](const vec2T<IndexType>& index) const
 		{
 			// If the element is cached give the caller access to the cache
 			if (index.x >= m_cacheOffset.x && index.x < m_cacheEnd.x &&
@@ -128,7 +161,14 @@ namespace supra
 
 	protected:
 
-		__device__ ModifiableElementType& accessCache(vec2T<IndexType> index)
+		__device__ ModifiableElementType& accessCache(const vec2T<IndexType>& index)
+		{
+			return m_cachedBuffer[
+				(index.x - m_cacheOffset.x) +
+					(index.y - m_cacheOffset.y) * m_cacheSize.x];
+		}
+
+		__device__ ModifiableElementType accessCache(const vec2T<IndexType>& index) const
 		{
 			return m_cachedBuffer[
 				(index.x - m_cacheOffset.x) +
@@ -167,9 +207,9 @@ namespace supra
 
 	public:
 		__device__ CachedBuffer3(
-			ElementPtrType buffer, vec3T<IndexType> size, 
-			ModifiableElementPtrType cacheBuffer, vec3T<IndexType> cacheSize,
-			vec3T<IndexType> cacheOffset)
+			ElementPtrType buffer, const vec3T<IndexType>& size, 
+			ModifiableElementPtrType cacheBuffer, const vec3T<IndexType>& cacheSize,
+			const vec3T<IndexType>& cacheOffset)
 			: Buffer3<ElementPtrType, IndexType>(buffer, size)
 			, m_cachedBuffer { cacheBuffer }
 			, m_cacheSize{ cacheSize }
@@ -179,7 +219,22 @@ namespace supra
 			loadIntoCache();
 		};
 
-		__device__ ElementType& operator[](vec3T<IndexType> index)
+		__device__ ElementType& operator[](const vec3T<IndexType>& index)
+		{
+			// If the element is cached give the caller access to the cache
+			if (index.x >= m_cacheOffset.x && index.x < m_cacheEnd.x &&
+				index.y >= m_cacheOffset.y && index.y < m_cacheEnd.y &&
+				index.z >= m_cacheOffset.z && index.z < m_cacheEnd.z)
+			{
+				return accessCache(index);
+			}
+			else // If the element is not cached, refer to the uncached buffer
+			{
+				return accessBuffer(index);
+			}
+		}
+
+		__device__ ElementType operator[](const vec3T<IndexType>& index) const
 		{
 			// If the element is cached give the caller access to the cache
 			if (index.x >= m_cacheOffset.x && index.x < m_cacheEnd.x &&
@@ -214,12 +269,20 @@ namespace supra
 
 	protected:
 
-		__device__ ModifiableElementType& accessCache(vec3T<IndexType> index)
+		__device__ ModifiableElementType& accessCache(const vec3T<IndexType>& index)
 		{
 			return m_cachedBuffer[
-				(index.x - m_cacheOffset.x) + 
-				(index.y - m_cacheOffset.y) * m_cacheSize.x + 
-				(index.z - m_cacheOffset.z) * m_cacheSize.x * m_cacheSize.y];
+				(index.x - m_cacheOffset.x) +
+					(index.y - m_cacheOffset.y) * m_cacheSize.x +
+					(index.z - m_cacheOffset.z) * m_cacheSize.x * m_cacheSize.y];
+		}
+		
+		__device__ ModifiableElementType accessCache(const vec3T<IndexType>& index) const
+		{
+			return m_cachedBuffer[
+				(index.x - m_cacheOffset.x) +
+					(index.y - m_cacheOffset.y) * m_cacheSize.x +
+					(index.z - m_cacheOffset.z) * m_cacheSize.x * m_cacheSize.y];
 		}
 
 		__device__ void loadIntoCache()
