@@ -38,6 +38,7 @@
 #include "Processing/TimeGainCompensationNode.h"
 #include "Processing/FilterSradCudaNode.h"
 #include "Processing/DarkFilterThresholdingCudaNode.h"
+#include "Processing/BilateralFilterCudaNode.h"
 #include "StreamSyncNode.h"
 #include "TemporalOffsetNode.h"
 #include "StreamSynchronizer.h"
@@ -193,6 +194,7 @@ namespace supra
 		{ "FilterSradCudaNode",             [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FilterSradCudaNode>(g, nodeID, queueing); } },
 		{ "TimeGainCompensationNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TimeGainCompensationNode>(g, nodeID, queueing); } },
 		{ "DarkFilterThresholdingCudaNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<DarkFilterThresholdingCudaNode>(g, nodeID, queueing); } },
+		{ "BilateralFilterCudaNode",        [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BilateralFilterCudaNode>(g, nodeID, queueing); } },
 #endif
 #ifdef HAVE_CUFFT
 		{ "HilbertEnvelopeNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<HilbertEnvelopeNode>(g, nodeID, queueing); } },

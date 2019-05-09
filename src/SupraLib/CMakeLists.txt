@@ -188,7 +188,9 @@ IF(SUPRA_CUDA)
 		Processing/FilterSradCuda.cu
 		Processing/FilterSradCudaNode.cpp
 		Processing/DarkFilterThresholdingCudaNode.cpp
-		Processing/DarkFilterThresholdingCuda.cu)
+		Processing/DarkFilterThresholdingCuda.cu
+		Processing/BilateralFilterCudaNode.cpp
+		Processing/BilateralFilterCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
@@ -200,7 +202,9 @@ IF(SUPRA_CUDA)
 		Processing/FilterSradCudaNode.h
 		Processing/FilterSradCuda.h
 		Processing/DarkFilterThresholdingCudaNode.h
-		Processing/DarkFilterThresholdingCuda.h)
+		Processing/DarkFilterThresholdingCuda.h
+		Processing/BilateralFilterCudaNode.h
+		Processing/BilateralFilterCuda.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS
