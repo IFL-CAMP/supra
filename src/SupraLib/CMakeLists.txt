@@ -183,6 +183,8 @@ IF(SUPRA_CUDA)
 		ExampleNodes/ImageProcessingCuda.cu
 		Processing/TimeGainCompensationNode.cpp
 		Processing/TimeGainCompensation.cu
+		Processing/FilterSradCuda.cu
+		Processing/FilterSradCudaNode.cpp
 		Processing/DarkFilterThresholdingCudaNode.cpp
 		Processing/DarkFilterThresholdingCuda.cu)
 	SET(SUPRA_Lib_HEADERS
@@ -191,6 +193,8 @@ IF(SUPRA_CUDA)
 		ExampleNodes/ImageProcessingCuda.h
 		Processing/TimeGainCompensationNode.h
 		Processing/TimeGainCompensation.h
+		Processing/FilterSradCudaNode.h
+		Processing/FilterSradCuda.h
 		Processing/DarkFilterThresholdingCudaNode.h
 		Processing/DarkFilterThresholdingCuda.h)
 ENDIF(SUPRA_CUDA)

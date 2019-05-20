@@ -36,6 +36,7 @@
 #include "Beamformer/RawDelayNode.h"
 #include "Beamformer/RxEventLimiterNode.h"
 #include "Processing/TimeGainCompensationNode.h"
+#include "Processing/FilterSradCudaNode.h"
 #include "Processing/DarkFilterThresholdingCudaNode.h"
 #include "StreamSyncNode.h"
 #include "TemporalOffsetNode.h"
@@ -187,6 +188,7 @@ namespace supra
 		{ "ImageProcessingCpuNode",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCpuNode>(g, nodeID, queueing); } },
 #ifdef HAVE_CUDA
 		{ "ImageProcessingCudaNode",        [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCudaNode>(g, nodeID, queueing); } },
+		{ "FilterSradCudaNode",             [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FilterSradCudaNode>(g, nodeID, queueing); } },
 		{ "TimeGainCompensationNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TimeGainCompensationNode>(g, nodeID, queueing); } },
 		{ "DarkFilterThresholdingCudaNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<DarkFilterThresholdingCudaNode>(g, nodeID, queueing); } },
 #endif

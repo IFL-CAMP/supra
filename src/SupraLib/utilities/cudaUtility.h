@@ -145,6 +145,14 @@ namespace supra
 	{
 		return static_cast<ResultType>(min(max(x, static_cast<InputType>(LimitProxy<ResultType>::min())), static_cast<InputType>(LimitProxy<ResultType>::max())));
 	}
+
+	template <typename ResultType, typename InputType>
+	struct clampCaster {
+		__host__ __device__ ResultType operator()(const InputType& a) const
+		{
+			return clampCast<ResultType>(a);
+		}
+	};
 }
 
 #endif // !__CUDAUTILITY_H__
