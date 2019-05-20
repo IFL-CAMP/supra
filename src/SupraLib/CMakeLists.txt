@@ -181,6 +181,8 @@ IF(SUPRA_CUDA)
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
 		ExampleNodes/ImageProcessingCuda.cu
+		ExampleNodes/ImageProcessingBufferCudaNode.cpp
+		ExampleNodes/ImageProcessingBufferCuda.cu
 		Processing/TimeGainCompensationNode.cpp
 		Processing/TimeGainCompensation.cu
 		Processing/FilterSradCuda.cu
@@ -191,6 +193,8 @@ IF(SUPRA_CUDA)
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
 		ExampleNodes/ImageProcessingCuda.h
+		ExampleNodes/ImageProcessingBufferCudaNode.h
+		ExampleNodes/ImageProcessingBufferCuda.h
 		Processing/TimeGainCompensationNode.h
 		Processing/TimeGainCompensation.h
 		Processing/FilterSradCudaNode.h

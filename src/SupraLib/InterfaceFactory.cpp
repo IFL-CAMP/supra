@@ -45,6 +45,7 @@
 #include "AutoQuitNode.h"
 #include "ExampleNodes/ImageProcessingCpuNode.h"
 #include "ExampleNodes/ImageProcessingCudaNode.h"
+#include "ExampleNodes/ImageProcessingBufferCudaNode.h"
 
 using namespace std;
 
@@ -188,6 +189,7 @@ namespace supra
 		{ "ImageProcessingCpuNode",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCpuNode>(g, nodeID, queueing); } },
 #ifdef HAVE_CUDA
 		{ "ImageProcessingCudaNode",        [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCudaNode>(g, nodeID, queueing); } },
+		{ "ImageProcessingBufferCudaNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingBufferCudaNode>(g, nodeID, queueing); } },
 		{ "FilterSradCudaNode",             [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FilterSradCudaNode>(g, nodeID, queueing); } },
 		{ "TimeGainCompensationNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TimeGainCompensationNode>(g, nodeID, queueing); } },
 		{ "DarkFilterThresholdingCudaNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<DarkFilterThresholdingCudaNode>(g, nodeID, queueing); } },
