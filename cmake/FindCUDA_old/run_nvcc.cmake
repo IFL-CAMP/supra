@@ -50,6 +50,8 @@
 # generated_cubin_file:STRING=<> File to generate.  This argument must be passed
 #                                                   in if build_cubin is true.
 
+cmake_policy(PUSH)
+cmake_policy(SET CMP0007 NEW)
 if(NOT generated_file)
   message(FATAL_ERROR "You must specify generated_file on the command line")
 endif()
@@ -74,7 +76,7 @@ set(CUDA_NVCC_FLAGS @CUDA_NVCC_FLAGS@ ;; @CUDA_WRAP_OPTION_NVCC_FLAGS@) # list
 @CUDA_NVCC_FLAGS_CONFIG@
 set(nvcc_flags @nvcc_flags@) # list
 set(CUDA_NVCC_INCLUDE_DIRS "@CUDA_NVCC_INCLUDE_DIRS@") # list (needs to be in quotes to handle spaces properly).
-set(CUDA_NVCC_COMPILE_DEFINITIONS @CUDA_NVCC_COMPILE_DEFINITIONS@) # list (needs to be in quotes to handle spaces properly).
+set(CUDA_NVCC_COMPILE_DEFINITIONS [==[@CUDA_NVCC_COMPILE_DEFINITIONS@]==]) # list (needs to be in lua quotes see #16510 ).
 set(format_flag "@format_flag@") # string
 set(cuda_language_flag @cuda_language_flag@) # list
 
@@ -179,13 +181,8 @@ cuda_execute_process(
 set(depends_CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}")
 set(CUDA_VERSION @CUDA_VERSION@)
 if(CUDA_VERSION VERSION_LESS "3.0")
-  cmake_policy(PUSH)
-  # CMake policy 0007 NEW states that empty list elements are not
-  # ignored.  I'm just setting it to avoid the warning that's printed.
-  cmake_policy(SET CMP0007 NEW)
   # Note that this will remove all occurances of -G.
   list(REMOVE_ITEM depends_CUDA_NVCC_FLAGS "-G")
-  cmake_policy(POP)
 endif()
 
 # nvcc doesn't define __CUDACC__ for some reason when generating dependency files.  This
@@ -304,3 +301,5 @@ if( build_cubin )
     )
 
 endif()
+
+cmake_policy(POP)
