@@ -70,7 +70,7 @@ namespace supra
 		}
 	}
 
-	void ScanConverterNode::sendMask(shared_ptr<RecordObject> pImage)
+	void ScanConverterNode::sendMask(const shared_ptr<RecordObject> pImage)
 	{
 		auto mask = m_converter->getMask();
 		auto maskImage =
@@ -86,7 +86,7 @@ namespace supra
 	}
 
 	template <typename T>
-	shared_ptr<RecordObject> ScanConverterNode::convertTemplated(shared_ptr<USImage> pInImage)
+	shared_ptr<RecordObject> ScanConverterNode::convertTemplated(const shared_ptr<USImage> pInImage)
 	{
 		m_callFrequency.measure();
 		std::shared_ptr<ContainerBase> pImageData;
@@ -115,7 +115,7 @@ namespace supra
 			pInImage->getSyncTimestamp());
 	}
 
-	shared_ptr<RecordObject> ScanConverterNode::checkTypeAndConvert(shared_ptr<RecordObject> inObj)
+	shared_ptr<RecordObject> ScanConverterNode::checkTypeAndConvert(const shared_ptr<RecordObject> inObj)
 	{
 		shared_ptr<RecordObject> pImage = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)

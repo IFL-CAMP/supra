@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2017, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2017, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #include "BeamformingMVpcgNode.h"
@@ -39,15 +54,16 @@ namespace supra
 		}
 
 		m_callFrequency.setName("BeamformingMV");
-		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 0, "Sub-array size");
-		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 10, 3, "temporal smoothing");
-		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeUint16 }, TypeFloat, "Output type");
+		m_valueRangeDictionary.set<uint32_t>("subArraySize", 0, 64, 56, "Sub-array size");
+		m_valueRangeDictionary.set<uint32_t>("temporalSmoothing", 0, 500, 10, "temporal smoothing");
 		m_valueRangeDictionary.set<uint32_t>("maxIterationsOverride", 0, 10000, 0, "Max iterations override (if != 0)");
 		m_valueRangeDictionary.set<double>("convergenceThresholdExponent", -100, 0, -100, "Convergence threshold exponent");
+		m_valueRangeDictionary.set<double>("convergenceThreshold", 0.0, 1, 1e-15, "solver convergence Threshold");
+		m_valueRangeDictionary.set<double>("outputClamp", 0.0, 1e30, 100, "output clamp");
+		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
 		m_valueRangeDictionary.set<double>("subArrayScalingPower", 0.5, 3.0, 1.5, "Subarray count scaling power");
 		
 		configurationChanged();
-
 	}
 
 	BeamformingMVpcgNode::~BeamformingMVpcgNode()
@@ -58,6 +74,9 @@ namespace supra
 	{
 		m_subArraySize = m_configurationDictionary.get<uint32_t>("subArraySize");
 		m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
+		m_maxIterations = m_configurationDictionary.get<uint32_t>("maxIterations");
+		m_convergenceThreshold = m_configurationDictionary.get<double>("convergenceThreshold");
+		m_outputClamp = m_configurationDictionary.get<double>("outputClamp");
 		m_outputType = m_configurationDictionary.get<DataType>("outputType");
 		m_maxIterationsOverride = m_configurationDictionary.get<uint32_t>("maxIterationsOverride");
 		m_convergenceThreshold = std::pow(10, m_configurationDictionary.get<double>("convergenceThresholdExponent"));
@@ -74,6 +93,18 @@ namespace supra
 		else if (configKey == "temporalSmoothing")
 		{
 			m_temporalSmoothing = m_configurationDictionary.get<uint32_t>("temporalSmoothing");
+		}
+		else if (configKey == "maxIterations")
+		{
+			m_maxIterations = m_configurationDictionary.get<uint32_t>("maxIterations");
+		}
+		else if (configKey == "convergenceThreshold")
+		{
+			m_convergenceThreshold = m_configurationDictionary.get<double>("convergenceThreshold");
+		}
+		else if (configKey == "outputClamp")
+		{
+			m_outputClamp = m_configurationDictionary.get<double>("outputClamp");
 		}
 		else if (configKey == "outputType")
 		{
@@ -105,11 +136,11 @@ namespace supra
 		{
 		case supra::TypeInt16:
 			pImageRF = performRxBeamforming<RawDataType, int16_t>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower, m_outputClamp);
 			break;
 		case supra::TypeFloat:
 			pImageRF = performRxBeamforming<RawDataType, float>(
-				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower);
+				rawData, m_subArraySize, m_temporalSmoothing, m_maxIterationsOverride, m_convergenceThreshold, m_subArrayScalingPower, m_outputClamp);
 			break;
 		default:
 			logging::log_error("BeamformingMVNode: Output image type not supported:");
