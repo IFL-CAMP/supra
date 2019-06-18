@@ -64,10 +64,6 @@ IF(NOT SUPRA_CUDA)
 	ENDIF()
 ENDIF()
 
-IF(SUPRA_DEVICE_TRACKING_IGTL)
-	FIND_PACKAGE(OpenIGTLink REQUIRED)
-ENDIF()
-
 # external folder
 SET( SUPRA_EXTERNALS "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE PATH "Path to external libs e.g. ultrasonix.")
 SET( SUPRA_EXTERNALS_TBB      ""  CACHE PATH "Path to the TBB base dir")
