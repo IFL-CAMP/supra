@@ -26,7 +26,7 @@ namespace supra
 	SupraManager::SupraManager()
 	{
 		m_graph = InterfaceFactory::createGraph();
-		m_freezeTimeoutInit = 5 * 60 * 3600; // seconds
+		m_freezeTimeoutInit = 5 * 60; // seconds
 		m_inputsFrozen = false;
 		resetFreezeTimeout();
 	}
