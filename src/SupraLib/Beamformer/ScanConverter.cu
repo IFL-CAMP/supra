@@ -100,7 +100,6 @@ namespace supra
 
 				if (params.second)
 				{
-					// moved inside to compute only when required
 					size_t voxelIndex = voxel.x + voxel.y*imageSize.x + voxel.z*imageSize.x*imageSize.y;
 					maskBuf[voxelIndex] = 1;
 

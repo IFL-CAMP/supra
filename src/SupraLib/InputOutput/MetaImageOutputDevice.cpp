@@ -66,7 +66,6 @@ namespace supra
 		m_valueRangeDictionary.set<bool>("createSequences", { false, true }, true, "Sequences");
 		m_valueRangeDictionary.set<bool>("active", { false, true }, true, "Active");
 		m_valueRangeDictionary.set<uint32_t>("maxElements", 1, std::numeric_limits<uint32_t>::max(), 10000, "Maximum elements");
-
 		m_valueRangeDictionary.set<bool>("writeMockData", { false, true }, false, "(Write mock)");
 		m_valueRangeDictionary.set<string>("mockDataFilename", "", "(Mock meta filename)");
 
@@ -138,7 +137,6 @@ namespace supra
 		m_createSequences = m_configurationDictionary.get<bool>("createSequences");
 		m_active = m_configurationDictionary.get<bool>("active");
 		m_maxElementNumber = m_configurationDictionary.get<uint32_t>("maxElements")-1;
-
 		m_writeMockData = m_configurationDictionary.get<bool>("writeMockData");
 		m_mockDataFilename = m_configurationDictionary.get<string>("mockDataFilename");
 	}
