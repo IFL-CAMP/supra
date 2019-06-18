@@ -59,8 +59,8 @@ namespace supra
 		{
 			// Check whether there is enough free space for the requested buffer. 
 			size_t memoryFree;
-			size_t memoryTotal;
 #ifdef HAVE_CUDA
+			size_t memoryTotal;
 			if (location == LocationGpu || location == LocationBoth)
 			{
 				cudaSafeCall(cudaMemGetInfo(&memoryFree, &memoryTotal));

@@ -163,8 +163,8 @@ namespace supra
 			throw std::runtime_error("USImageProperties: Error parsing json mock file");
 		}
 
-		m_numSamples = jsonDoc["numSamples"].asLargestUInt();
-		setScanlineLayout({ jsonDoc["scanlineLayout"]["x"].asLargestUInt(), jsonDoc["scanlineLayout"]["y"].asLargestUInt() });
+		m_numSamples = static_cast<size_t>(jsonDoc["numSamples"].asLargestUInt());
+		setScanlineLayout({ static_cast<size_t>(jsonDoc["scanlineLayout"]["x"].asLargestUInt()), static_cast<size_t>(jsonDoc["scanlineLayout"]["y"].asLargestUInt()) });
 		m_depth = jsonDoc["depth"].asDouble();
 
 		m_imageType = static_cast<USImageProperties::ImageType>(jsonDoc["imageType"].asInt());
