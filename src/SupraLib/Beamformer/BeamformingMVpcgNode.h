@@ -85,11 +85,9 @@ namespace supra
 
 		uint32_t m_subArraySize;
 		uint32_t m_temporalSmoothing;
-		uint32_t m_maxIterations;
-		double m_convergenceThreshold;
-		double m_outputClamp;
 		DataType m_outputType;
 		uint32_t m_maxIterationsOverride;
+		double m_convergenceThreshold;
 		double m_subArrayScalingPower;
 		bool m_computeMeans;
 	};
