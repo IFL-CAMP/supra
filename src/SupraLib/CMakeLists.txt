@@ -66,13 +66,12 @@ IF(SUPRA_CUDA)
 	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
 		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
 	ENDIF()
-	IF(WIN32)
-		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
-	ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
-		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 7.2)
+	IF(SUPRA_CUDA_PORTABLE)
+		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common" )
 	ELSE()
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
+	MESSAGE(STATUS "Using nvcc arch flags: ${ARCH_FLAGS}")
     LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 	IF(NOT WIN32)
 		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
@@ -91,12 +90,7 @@ IF(SUPRA_CUDA)
 	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
 		${CUDA_INCLUDE_DIRS})
 		
-	IF(CUDA_CUBLAS_LIBRARIES AND CUDA_cublas_LIBRARY AND CUDA_cublas_device_LIBRARY)
-		SET(SUPRA_CUDA_CUBLAS ON)
-		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
-			HAVE_CUDA_CUBLAS)
-		SET(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-	ELSEIF(CUDA_cublas_LIBRARY)
+	IF(CUDA_cublas_LIBRARY)
 		SET(SUPRA_CUDA_CUBLAS ON)
 		SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
 			HAVE_CUDA_CUBLAS)
@@ -171,6 +165,7 @@ SET(SUPRA_Lib_HEADERS
 	InterfaceFactory.h
 	utilities/utility.h
 	utilities/cudaUtility.h
+	utilities/Buffer.h
 	utilities/Logging.h
 	utilities/CallFrequency.h
 	utilities/TemplateTypeDefault.h
@@ -190,12 +185,36 @@ IF(SUPRA_CUDA)
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
 		ExampleNodes/ImageProcessingCuda.cu
+		ExampleNodes/ImageProcessingBufferCudaNode.cpp
+		ExampleNodes/ImageProcessingBufferCuda.cu
+		Processing/TimeGainCompensationNode.cpp
+		Processing/TimeGainCompensation.cu
+		Processing/FilterSradCuda.cu
+		Processing/FilterSradCudaNode.cpp
+		Processing/DarkFilterThresholdingCudaNode.cpp
+		Processing/DarkFilterThresholdingCuda.cu
+		Processing/BilateralFilterCudaNode.cpp
+		Processing/BilateralFilterCuda.cu
+		Processing/MedianFilterCudaNode.cpp
+		Processing/MedianFilterCuda.cu
 		NoiseNode.cpp
 		NoiseCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
 		ExampleNodes/ImageProcessingCuda.h
+		ExampleNodes/ImageProcessingBufferCudaNode.h
+		ExampleNodes/ImageProcessingBufferCuda.h
+		Processing/TimeGainCompensationNode.h
+		Processing/TimeGainCompensation.h
+		Processing/FilterSradCudaNode.h
+		Processing/FilterSradCuda.h
+		Processing/DarkFilterThresholdingCudaNode.h
+		Processing/DarkFilterThresholdingCuda.h
+		Processing/BilateralFilterCudaNode.h
+		Processing/BilateralFilterCuda.h
+		Processing/MedianFilterCudaNode.h
+		Processing/MedianFilterCuda.h
 		NoiseNode.h
 		NoiseCuda.h)
 ENDIF(SUPRA_CUDA)
@@ -234,6 +253,7 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/USTransducer.cpp
 		Beamformer/BeamformingNode.cpp
 		Beamformer/IQDemodulatorNode.cpp
+		Beamformer/HilbertFirEnvelopeNode.cpp
 		Beamformer/LogCompressorNode.cpp
 		Beamformer/ScanConverterNode.cpp
 		Beamformer/TemporalFilterNode.cpp
@@ -244,6 +264,7 @@ IF(SUPRA_BEAMFORMER)
 	SET(SUPRA_Lib_CUDASOURCE ${SUPRA_Lib_CUDASOURCE}
 		Beamformer/RxBeamformerCuda.cu
 		Beamformer/IQDemodulator.cu
+		Beamformer/HilbertFirEnvelope.cu
 		Beamformer/LogCompressor.cu
 		Beamformer/ScanConverter.cu
 		Beamformer/TemporalFilter.cu
@@ -262,6 +283,8 @@ IF(SUPRA_BEAMFORMER)
 		Beamformer/BeamformingNode.h
 		Beamformer/IQDemodulator.h
 		Beamformer/IQDemodulatorNode.h
+		Beamformer/HilbertFirEnvelope.h
+		Beamformer/HilbertFirEnvelopeNode.h
 		Beamformer/LogCompressor.h
 		Beamformer/LogCompressorNode.h
 		Beamformer/ScanConverter.h

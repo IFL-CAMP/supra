@@ -61,6 +61,8 @@ namespace supra
 			p_valueRangeDictionary = valueRangeDictionary;
 		}
 
+		void toXml(tinyxml2::XMLElement* parentXmlElement) const;
+
 		template <typename ValueType>
 		void set(const std::string& key, const ValueType& value) {
 			auto valueEntry = std::make_shared<ConfigurationEntry<ValueType> >(value);

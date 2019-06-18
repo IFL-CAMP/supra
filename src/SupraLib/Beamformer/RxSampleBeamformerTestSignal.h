@@ -41,6 +41,7 @@ namespace supra
 			vec2f invMaxElementDistance,
 			LocationType speedOfSound,
 			LocationType dt,
+			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction,
 			const WindowFunction::ElementType* functionShared
 		)
@@ -100,6 +101,7 @@ namespace supra
 			LocationType invMaxElementDistance,
 			LocationType speedOfSound,
 			LocationType dt,
+			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction
 		)
 		{

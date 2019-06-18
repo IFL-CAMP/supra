@@ -212,6 +212,104 @@ namespace supra
 		}
 	}
 
+	void SupraManager::writeToXml(std::string configXmlFilename) 
+	{
+		tinyxml2::XMLDocument doc;
+		
+		doc.InsertFirstChild(doc.NewDeclaration());
+		auto rootElement = doc.InsertEndChild(doc.NewElement("supra_config"));
+		auto devicesElement = rootElement->InsertEndChild(doc.NewElement("devices"));
+
+		writeInputDevicesToXml(devicesElement);
+		writeOutputDevicesToXml(devicesElement);
+		writeNodesToXml(devicesElement);
+		writeConnectionsToXml(rootElement);
+
+		doc.SaveFile(configXmlFilename.c_str());
+	}
+
+	void SupraManager::writeInputDevicesToXml(tinyxml2::XMLNode* devicesElement)
+	{
+		auto doc = devicesElement->GetDocument();
+		auto inputsElement = devicesElement->InsertEndChild(doc->NewElement("inputs"));
+
+		for (auto inputDevicePair : m_inputDevices)
+		{
+			string nodeID = inputDevicePair.first;
+			auto inputDevice = inputDevicePair.second;
+
+			auto inputElement = doc->NewElement("input");
+			inputsElement->InsertEndChild(inputElement);
+			inputElement->SetAttribute("type", m_nodeTypes[nodeID].c_str());
+			inputElement->SetAttribute("id", nodeID.c_str());
+			if (inputDevice->getNumOutputs() > 1)
+			{
+				inputElement->SetAttribute("ports", static_cast<unsigned int>(inputDevice->getNumOutputs()));
+			}
+			inputDevice->getConfigurationDictionary()->toXml(inputElement);
+		}
+	}
+
+	void SupraManager::writeOutputDevicesToXml(tinyxml2::XMLNode* devicesElement)
+	{		
+		auto doc = devicesElement->GetDocument();
+		auto outputsElement = devicesElement->InsertEndChild(doc->NewElement("outputs"));
+
+		for (auto outputDevicePair : m_outputDevices)
+		{
+			string nodeID = outputDevicePair.first;
+			auto outputDevice = outputDevicePair.second;
+
+			auto outputElement = doc->NewElement("output");
+			outputsElement->InsertEndChild(outputElement);
+			outputElement->SetAttribute("type", m_nodeTypes[nodeID].c_str());
+			outputElement->SetAttribute("id", nodeID.c_str());
+			outputDevice->getConfigurationDictionary()->toXml(outputElement);
+		}
+	}
+
+	void SupraManager::writeNodesToXml(tinyxml2::XMLNode* devicesElement)
+	{
+		auto doc = devicesElement->GetDocument();
+		auto nodesElement = devicesElement->InsertEndChild(doc->NewElement("nodes"));
+
+		for (auto nodePair : m_nodes)
+		{
+			string nodeID = nodePair.first;
+			auto node = nodePair.second;
+
+			if (m_inputDevices.find(nodeID) == m_inputDevices.end() && m_outputDevices.find(nodeID) == m_outputDevices.end())
+			{
+				auto nodeElement = doc->NewElement("node");
+				nodesElement->InsertEndChild(nodeElement);
+				nodeElement->SetAttribute("type", m_nodeTypes[nodeID].c_str());
+				nodeElement->SetAttribute("id", nodeID.c_str());
+				node->getConfigurationDictionary()->toXml(nodeElement);
+			}
+		}
+	}
+
+	void SupraManager::writeConnectionsToXml(tinyxml2::XMLNode* rootElement)
+	{
+		auto doc = rootElement->GetDocument();
+		auto connectionsElement = rootElement->InsertEndChild(doc->NewElement("connections"));
+
+		auto connections = SupraManager::getNodeConnections();
+		for (auto connection : connections)
+		{
+			auto connectionElement = connectionsElement->InsertEndChild(doc->NewElement("connection"));
+			auto fromElement = doc->NewElement("from");
+			auto toElement = doc->NewElement("to");
+			connectionElement->InsertEndChild(fromElement);
+			connectionElement->InsertEndChild(toElement);
+
+			fromElement->SetAttribute("id", get<0>(connection).c_str());
+			fromElement->SetAttribute("port", static_cast<unsigned int>(get<1>(connection)));
+			toElement->SetAttribute("id", get<2>(connection).c_str());
+			toElement->SetAttribute("port", static_cast<unsigned int>(get<3>(connection)));
+		}
+	}
+
 	std::vector<std::string> SupraManager::getInputDeviceIDs()
 	{
 		std::vector<std::string> nodeIDs(m_inputDevices.size());

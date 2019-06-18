@@ -94,6 +94,9 @@ namespace supra
 		/// Slot that asks the user for the path to a configuration file
 		/// and subsequently loads it, i.e. creates the graph as specified in the config
 		void loadConfigFileAction();
+		/// Slot that asks the user for the path to a target configuration file
+		/// and subsequently stores the current graph and configuration
+		void writeConfigFileAction();
 		/// Selects the log-level to be shown in the console
 		void setLogLevel();
 		/// Sets the size of the preview image widget

@@ -279,6 +279,7 @@
      <string>File</string>
     </property>
     <addaction name="actionLoadConfig"/>
+    <addaction name="actionWriteConfig"/>
    </widget>
    <widget class="QMenu" name="menuLogLevel">
     <property name="title">
@@ -317,7 +318,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionLoadConfig">
    <property name="text">
-    <string>loadConfig</string>
+    <string>load config</string>
    </property>
   </action>
   <action name="actionLoglevelLog">
@@ -415,6 +416,11 @@
    </property>
    <property name="text">
     <string>Parameter</string>
+   </property>
+  </action>
+  <action name="actionWriteConfig">
+   <property name="text">
+    <string>write config</string>
    </property>
   </action>
  </widget>

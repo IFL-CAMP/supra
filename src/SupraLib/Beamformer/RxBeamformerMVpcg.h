@@ -46,7 +46,7 @@ namespace supra
 			uint32_t maxIterationsOverride,
 			double convergenceThreshold,
 			double subArrayScalingPower,
-			double outputClamp);
+			bool computeMeans);
 	}
 }
 

@@ -40,7 +40,8 @@ namespace supra
 		enum FilterType {
 			FilterTypeLowPass,
 			FilterTypeHighPass,
-			FilterTypeBandPass
+			FilterTypeBandPass,
+			FilterTypeHilbertTransformer
 		};
 
 		/// Enum for the different window types used in creating filters
@@ -54,7 +55,7 @@ namespace supra
 		/// Returns a FIR filter constructed with the window-method
 		template <typename ElementType>
 		static std::shared_ptr<Container<ElementType> >
-			createFilter(const size_t &length, const FilterType &type, const FilterWindow &window, const double &samplingFrequency, const double &frequency, const double &bandwidth = 0.0)
+			createFilter(const size_t &length, const FilterType &type, const FilterWindow &window, const double &samplingFrequency = 2.0, const double &frequency = 0.0, const double &bandwidth = 0.0)
 		{
 			std::shared_ptr<Container<ElementType> > filter = createFilterNoWindow<ElementType>(length, type, samplingFrequency, frequency, bandwidth);
 			applyWindowToFilter<ElementType>(filter, window);
@@ -67,15 +68,22 @@ namespace supra
 		}
 
 	private:
-
 		template <typename ElementType>
 		static std::shared_ptr<Container<ElementType> >
 			createFilterNoWindow(const size_t &length, const FilterType &type, const double &samplingFrequency, const double &frequency, const double &bandwidth)
 		{
+			if (type == FilterTypeHighPass || type == FilterTypeBandPass || type == FilterTypeLowPass)
+			{
+				assert(samplingFrequency != 0.0);
+				assert(frequency != 0.0);
+			}
+			if (type == FilterTypeBandPass)
+			{
+				assert(bandwidth != 0.0);
+			}
+
 			ElementType omega = static_cast<ElementType>(2 * M_PI* frequency / samplingFrequency);
 			ElementType omegaBandwidth = static_cast<ElementType>(2 * M_PI* bandwidth / samplingFrequency);
-			ElementType omegaByMPI = static_cast<ElementType>(omega / M_PI);
-			ElementType omegaBandByMPI = static_cast<ElementType>(omegaBandwidth / M_PI);
 			int halfWidth = ((int)length - 1) / 2;
 
 			auto filter = std::make_shared<Container<ElementType> >(LocationHost, cudaStreamPerThread, length);
@@ -92,42 +100,57 @@ namespace supra
 			};
 			switch (type)
 			{
-				case FilterTypeHighPass:
-					filterFunction = [&omega, &halfWidth, &omegaByMPI](int n) -> ElementType {
-						if (n == halfWidth)
-						{
-							return static_cast<ElementType>(1 - omegaByMPI);
-						}
-						else {
-							return static_cast<ElementType>(-omegaByMPI * sin(omega * (n - halfWidth)) / (omega * (n - halfWidth)));
-						}
-					};
-					break;
-				case FilterTypeBandPass:
-					filterFunction = [&omega, &omegaBandwidth, &halfWidth, &omegaBandByMPI](int n) -> ElementType {
-						if (n == halfWidth)
-						{
-							return static_cast<ElementType>(2.0 * omegaBandByMPI);
-						}
-						else {
-							return static_cast<ElementType>(
-								2.0 * cos(omega * n - halfWidth) *
-								omegaBandByMPI * sin(omegaBandwidth * (n - halfWidth)) / (omegaBandwidth * (n - halfWidth)));
-						}
-					};
-					break;
-				case FilterTypeLowPass:
-				default:
-					filterFunction = [&omega, &halfWidth, &omegaByMPI](int n) -> ElementType {
-						if (n == halfWidth)
-						{
-							return static_cast<ElementType>(omegaByMPI);
-						}
-						else {
-							return static_cast<ElementType>(omegaByMPI * sin(omega * (n - halfWidth)) / (omega * (n - halfWidth)));
-						}
-					};
-					break;
+			case FilterTypeHilbertTransformer:
+				// Following formula 2 in
+				// "Carrick, Matt, and Doug Jaeger. "Design and Application of a Hilbert Transformer in a Digital Receiver." (2011)."
+				filterFunction = [halfWidth](int n) -> ElementType {
+					auto k = (n - halfWidth);
+					if (k % 2 == 0)
+					{
+						return static_cast<ElementType>(0);
+					}
+					else
+					{
+						return static_cast<ElementType>(2.0 / (M_PI * k));
+					}
+				};
+				break;
+			case FilterTypeHighPass:
+				filterFunction = [omega, halfWidth](int n) -> ElementType {
+					if (n == halfWidth)
+					{
+						return static_cast<ElementType>(1 - omega / M_PI);
+					}
+					else {
+						return static_cast<ElementType>(-omega / M_PI * sin(omega * (n - halfWidth)) / (omega * (n - halfWidth)));
+					}
+				};
+				break;
+			case FilterTypeBandPass:
+				filterFunction = [omega, omegaBandwidth, halfWidth](int n) -> ElementType {
+					if (n == halfWidth)
+					{
+						return static_cast<ElementType>(2.0 * omegaBandwidth / M_PI);
+					}
+					else {
+						return static_cast<ElementType>(
+							2.0 * cos(omega * n - halfWidth) *
+							omegaBandwidth / M_PI * sin(omegaBandwidth * (n - halfWidth)) / (omegaBandwidth * (n - halfWidth)));
+					}
+				};
+				break;
+			case FilterTypeLowPass:
+			default:
+				filterFunction = [omega, halfWidth](int n) -> ElementType {
+					if (n == halfWidth)
+					{
+						return static_cast<ElementType>(omega / M_PI);
+					}
+					else {
+						return static_cast<ElementType>(omega / M_PI * sin(omega * (n - halfWidth)) / (omega * (n - halfWidth)));
+					}
+				};
+				break;
 			}
 
 			//create the filter
@@ -144,23 +167,21 @@ namespace supra
 		{
 			size_t filterLength = filter->size();
 			size_t maxN = filterLength - 1;
-			size_t maxNby2 = maxN / 2;
 			ElementType beta = (ElementType)4.0;
-			ElementType mpi2bymaxN = (ElementType)(2.0 * M_PI / maxN);
 			std::function<ElementType(int)> windowFunction = [filterLength](int n) -> ElementType { return static_cast<ElementType>(1); };
 			switch (window)
 			{
 			case FilterWindowHann:
-				windowFunction = [&mpi2bymaxN](int n) -> ElementType { return static_cast<ElementType>(
-					0.50 - 0.50*cos(mpi2bymaxN * n)); };
+				windowFunction = [maxN](int n) -> ElementType { return static_cast<ElementType>(
+					0.50 - 0.50*cos(2 * M_PI * n / maxN)); };
 				break;
 			case FilterWindowHamming:
-				windowFunction = [&mpi2bymaxN](int n) -> ElementType { return static_cast<ElementType>(
-					0.54 - 0.46*cos(mpi2bymaxN * n)); };
+				windowFunction = [maxN](int n) -> ElementType { return static_cast<ElementType>(
+					0.54 - 0.46*cos(2 * M_PI * n / maxN)); };
 				break;
 			case FilterWindowKaiser:
-				windowFunction = [&maxNby2, &beta](int n) -> ElementType {
-					double argument = beta * sqrt(1.0 - pow(((ElementType)n - maxNby2) / maxNby2, 2.0));
+				windowFunction = [maxN, beta](int n) -> ElementType {
+					double argument = beta * sqrt(1.0 - pow(2 * ((ElementType)n - maxN / 2) / maxN, 2.0));
 					return static_cast<ElementType>(bessel0_1stKind(argument) / bessel0_1stKind(beta)); };
 				break;
 			case FilterWindowRectangular:
@@ -200,7 +221,6 @@ namespace supra
 			T sum = 0.0;
 			//implemented look up factorial. 
 			static const int factorial[9] = { 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
-			//int factorial = 1;
 			for (int k = 1; k < 10; k++)
 			{
 				T xPower = pow(x / (T)2.0, (T)k);

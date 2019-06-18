@@ -91,6 +91,7 @@ namespace supra
 		DataType m_outputType;
 		uint32_t m_maxIterationsOverride;
 		double m_subArrayScalingPower;
+		bool m_computeMeans;
 	};
 }
 
