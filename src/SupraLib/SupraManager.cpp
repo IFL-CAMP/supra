@@ -26,7 +26,7 @@ namespace supra
 	SupraManager::SupraManager()
 	{
 		m_graph = InterfaceFactory::createGraph();
-		m_freezeTimeoutInit = 5 * 60;
+		m_freezeTimeoutInit = 5 * 60; // seconds
 		m_inputsFrozen = false;
 		resetFreezeTimeout();
 	}
@@ -652,7 +652,7 @@ namespace supra
 				if (inputDevicePair.second->getRunning())
 				{
 					string nodeID = inputDevicePair.first;
-					logging::log_log("SupraManager: Freezing input '", nodeID, "'");
+					logging::log_log("SupraManager: Unfreezing input '", nodeID, "'");
 					inputDevicePair.second->unfreeze();
 				}
 			}

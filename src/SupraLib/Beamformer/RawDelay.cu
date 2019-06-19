@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 #include "RawDelay.h"
 #include "USImage.h"
@@ -148,7 +163,11 @@ namespace supra
 				}
 			}
 		}
-		float weightingScale = 1 / weightAcum * numAdds;
+		float weightingScale = 1.0f;
+		if (numAdds > 0)
+		{
+			weightingScale = 1.0f / weightAcum * numAdds;
+		}
 
 		for (uint32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
 		{
@@ -240,8 +259,12 @@ namespace supra
 				numAdds++;
 			}
 		}
-		float weightingScale = 1 / weightAcum * numAdds;
-
+		float weightingScale = 1.0f;
+		if (numAdds > 0)
+		{
+			weightingScale = 1.0f / weightAcum * numAdds;
+		}
+		
 		int32_t localElemIdxX = 0;
 		for (int32_t elemIdxX = txParams.firstActiveElementIndex.x;
 			 elemIdxX < txParams.lastActiveElementIndex.x;

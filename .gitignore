@@ -6,3 +6,5 @@ build*/
 doc/doxy/
 tools/.idea/
 doc/supraParameters/
+*.orig
+data*/

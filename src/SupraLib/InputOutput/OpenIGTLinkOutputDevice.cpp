@@ -1,14 +1,30 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2011-2016, all rights reserved,
-//      Christoph Hennersperger 
-//		EmaiL christoph.hennersperger@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
-//	and
-//		Rüdiger Göbl
-//		Email r.goebl@tum.de
+// Copyright (C) 2011-2016, Christoph Hennersperger - all rights reserved
+// Copyright (C) 2011-2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Christoph Hennersperger 
+//          EmaiL christoph.hennersperger@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
+//    and
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
 //
 // ================================================================================================
 
@@ -37,6 +53,7 @@ namespace supra
 		m_callFrequency.setName("IGTL");
 
 		m_valueRangeDictionary.set<uint32_t>("port", 1, 65535, 18944, "Port");
+		m_valueRangeDictionary.set<std::string>("streamName", "IGTL", "Stream name");
 		m_isReady = false;
 		m_isConnected = false;
 	}
@@ -86,6 +103,7 @@ namespace supra
 	void OpenIGTLinkOutputDevice::configurationDone()
 	{
 		m_port = m_configurationDictionary.get<uint32_t>("port");
+		m_streamName = m_configurationDictionary.get<std::string>("streamName");
 	}
 
 	void OpenIGTLinkOutputDevice::writeData(std::shared_ptr<RecordObject> data)
@@ -163,8 +181,15 @@ namespace supra
 				pImageMsg->SetScalarType(igtl::ImageMessage::TYPE_FLOAT32);
 			}
 
+			pImageMsg->SetEndian(igtl::ImageMessage::ENDIAN_LITTLE);
+			igtl::Matrix4x4 m;
+			igtl::IdentityMatrix(m);
+			m[0][0] = -1;
+			m[1][1] = -1;
+			
+			pImageMsg->SetMatrix(m);
 			pImageMsg->SetNumComponents(1);
-			pImageMsg->SetDeviceName("SUPRA");
+			pImageMsg->SetDeviceName(m_streamName.c_str());
 			pImageMsg->AllocateScalars();
 			igtl::TimeStamp::Pointer pTimestamp = igtl::TimeStamp::New();
 			double timestampSeconds;
@@ -224,7 +249,7 @@ namespace supra
 
 			for (size_t i = 0; i < trackData->getSensorData().size(); ++i)
 				addTrackingData(msg, trackData->getSensorData()[i], static_cast<int>(i));
-			msg->SetDeviceName("SUPRA");
+			msg->SetDeviceName(m_streamName.c_str());
 			igtl::TimeStamp::Pointer pTimestamp = igtl::TimeStamp::New();
 			double timestampSeconds;
 			double timestampFrac = modf(trackData->getSyncTimestamp(), &timestampSeconds);

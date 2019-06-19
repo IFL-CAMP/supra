@@ -54,12 +54,12 @@ namespace supra
 		void configurationChanged();
 
 	private:
-		std::shared_ptr<RecordObject> checkTypeAndDemodulate(std::shared_ptr<RecordObject> mainObj);
+		std::shared_ptr<RecordObject> checkTypeAndDemodulate(const std::shared_ptr<RecordObject> mainObj);
 		template <typename InputType>
-		std::shared_ptr<ContainerBase> demodulateTemplated(std::shared_ptr<USImage> inImage);
+		std::shared_ptr<ContainerBase> demodulateTemplated(const std::shared_ptr<USImage> inImage);
 		void readFrequencyCompoundingSettings();
 
-		void updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties);
+		void updateImageProperties(const std::shared_ptr<const USImageProperties> imageProperties);
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
 		std::mutex m_mutex;
