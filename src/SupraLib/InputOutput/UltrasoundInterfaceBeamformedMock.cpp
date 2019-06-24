@@ -38,6 +38,7 @@ namespace supra
 		, m_numel(0)
 		, m_frozen(false)
 		, m_lastFrame(false)
+		, m_ready(false)
 	{
 		m_callFrequency.setName("BeamformedMock");
 		//Setup allowed values for parameters
@@ -57,37 +58,51 @@ namespace supra
 			setUpTimer(m_frequency);
 		}
 
-		auto imageProps = make_shared<USImageProperties>(m_mockMetadataFilename);
-
-		m_protoUSImage = make_shared<USImage>(
-			vec2s{ imageProps->getNumScanlines(), imageProps->getNumSamples()},
-			nullptr,
-			imageProps,
-			0, 0);
-
-		auto size = m_protoUSImage->getSize();
-
-		m_numel = size.x * size.y * size.z;
-
-		// initialize m_mockDataStreams and m_sequenceLengths by getting the file sizes of all datafiles
-		m_mockDataStramReadBuffers.resize(m_mockDataFilenames.size());
-		m_mockDataStreams.resize(m_mockDataFilenames.size());
-		m_sequenceLengths.resize(m_mockDataFilenames.size());
-		for (size_t k = 0; k < m_mockDataFilenames.size(); k++)
+		try
 		{
-			// In order to maximize reading performance, the ifstream needs a large read buffer
-			//m_mockDataStramReadBuffers[k].resize(128 * 1024 * 1024, '\0');
-			m_mockDataStramReadBuffers[k].resize(128 * 1024, '\0');
-			m_mockDataStreams[k] = std::shared_ptr<std::ifstream>(new std::ifstream);
-			m_mockDataStreams[k]->open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
-			m_mockDataStreams[k]->rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());	
-			size_t filesizeBytes = m_mockDataStreams[k]->tellg();
-			m_mockDataStreams[k]->seekg(0);
+			auto imageProps = make_shared<USImageProperties>(m_mockMetadataFilename);
 
-			m_sequenceLengths[k] = filesizeBytes / (m_numel * sizeof(int16_t));
+			m_protoUSImage = make_shared<USImage>(
+				vec2s{ imageProps->getNumScanlines(), imageProps->getNumSamples() },
+				nullptr,
+				imageProps,
+				0, 0);
+
+			auto size = m_protoUSImage->getSize();
+
+			m_numel = size.x * size.y * size.z;
+
+			// initialize m_mockDataStreams and m_sequenceLengths by getting the file sizes of all datafiles
+			m_mockDataStramReadBuffers.resize(m_mockDataFilenames.size());
+			m_mockDataStreams.resize(m_mockDataFilenames.size());
+			m_sequenceLengths.resize(m_mockDataFilenames.size());
+			for (size_t k = 0; k < m_mockDataFilenames.size(); k++)
+			{
+				// In order to maximize reading performance, the ifstream needs a large read buffer
+				//m_mockDataStramReadBuffers[k].resize(128 * 1024 * 1024, '\0');
+				m_mockDataStramReadBuffers[k].resize(128 * 1024, '\0');
+				m_mockDataStreams[k] = std::shared_ptr<std::ifstream>(new std::ifstream);
+				m_mockDataStreams[k]->open(m_mockDataFilenames[k], std::ifstream::ate | std::ifstream::binary);
+				if (!m_mockDataStreams[k]->good())
+				{
+					logging::log_error("UltrasoundInterfaceBeamformedMock: Error opening mock file ", m_mockDataFilenames[k]);
+					throw std::runtime_error("UltrasoundInterfaceBeamformedMock: Error opening mock file ");
+				}
+				m_mockDataStreams[k]->rdbuf()->pubsetbuf(m_mockDataStramReadBuffers[k].data(), m_mockDataStramReadBuffers[k].size());
+				size_t filesizeBytes = m_mockDataStreams[k]->tellg();
+				m_mockDataStreams[k]->seekg(0);
+
+				m_sequenceLengths[k] = filesizeBytes / (m_numel * sizeof(int16_t));
+			}
+
+			readNextFrame();
+			m_ready = true;
 		}
-
-		readNextFrame();
+		catch (std::exception e)
+		{
+			logging::log_error("UltrasoundInterfaceBeamformedMock: Caught exception preparing mock meta or mock file");
+			m_ready = false;
+		}
 	}
 
 	void UltrasoundInterfaceBeamformedMock::freeze()
@@ -193,6 +208,6 @@ namespace supra
 
 	bool UltrasoundInterfaceBeamformedMock::ready()
 	{
-		return true;
+		return m_ready;
 	}
 }
