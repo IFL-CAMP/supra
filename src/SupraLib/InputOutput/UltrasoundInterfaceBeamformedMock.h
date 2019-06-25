@@ -82,6 +82,7 @@ namespace supra
 		size_t m_numel;
 		std::atomic_bool m_frozen;
 		bool m_lastFrame;
+		bool m_ready;
 
 		std::mutex m_objectMutex;
 	};

@@ -171,8 +171,8 @@ namespace supra
 		}
 		else
 		{
-			logging::log_error("RxBeamformerParameters: Error opening mock file ", mockMetadataFilename);
-			return nullptr;
+			logging::log_error("RxBeamformerParameters: Error opening mock file, unknown sufix ", mockMetadataFilename);
+			throw std::runtime_error("RxBeamformerParameters: Error opening mock file, unknown sufix.");
 		}
 
 		return protoRawData;
@@ -185,7 +185,7 @@ namespace supra
 		if (!f.good())
 		{
 			logging::log_error("RxBeamformerParameters: Error opening ascii mock file ", mockAsciiMetadataFilename);
-			return nullptr;
+			throw std::runtime_error("RxBeamformerParameters: Error opening ascii mock file.");
 		}
 
 		std::shared_ptr<USRawData> rawData;
@@ -308,7 +308,7 @@ namespace supra
 		if (!f.good())
 		{
 			logging::log_error("RxBeamformerParameters: Error opening json mock file ", mockJsonMetadataFilename);
-			return nullptr;
+			throw std::runtime_error("RxBeamformerParameters: Error opening json mock file.");
 		}
 				
 		// read and parse the json file
@@ -323,7 +323,7 @@ namespace supra
 		{
 			logging::log_error("RxBeamformerParameters: Error parsing json mock file ", mockJsonMetadataFilename);
 			logging::log_error("RxBeamformerParameters: Reason: ", jsonErrs);
-			return nullptr;
+			throw std::runtime_error("RxBeamformerParameters: Error parsing json mock file.");
 		}
 
 
