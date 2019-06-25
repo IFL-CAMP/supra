@@ -110,7 +110,7 @@ namespace supra
 
 	void MetaImageOutputDevice::startSequence()
 	{
-		if (m_createSequences)
+		if (m_createSequences && m_active)
 		{
 			lock_guard<mutex> l(m_writerMutex);
 			initializeSequence();
@@ -120,7 +120,7 @@ namespace supra
 
 	void MetaImageOutputDevice::stopSequence()
 	{
-		if (m_createSequences)
+		if (m_createSequences && m_isRecording)
 		{
 			lock_guard<mutex> l(m_writerMutex);
 			m_isRecording = false;
@@ -144,7 +144,7 @@ namespace supra
 	void MetaImageOutputDevice::writeData(std::shared_ptr<RecordObject> data)
 	{
 		lock_guard<mutex> l(m_writerMutex);
-		if (m_isReady && m_isRecording && getRunning())
+		if (m_isReady && m_isRecording && getRunning() && m_active)
 		{
 			m_callFrequency.measure();
 			addData(data);
