@@ -64,7 +64,7 @@ IF(SUPRA_CUDA)
 	MESSAGE(STATUS "Found Cuda Version " ${CUDA_VERSION_STRING})
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
 	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations;-Xcompiler=-fPIC")
 	ENDIF()
 	IF(SUPRA_CUDA_PORTABLE)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common" )
@@ -480,6 +480,7 @@ TARGET_INCLUDE_DIRECTORIES(SUPRA_Lib
 LINK_DIRECTORIES(SUPRA_Lib
 	${SUPRA_Lib_LIBDIRS}
 )
+target_link_libraries(SUPRA_Lib ${CUDA_curand_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppial_LIBRARY})
 
 TARGET_COMPILE_DEFINITIONS(SUPRA_Lib 
 	PRIVATE ${SUPRA_Lib_DEFINES})
