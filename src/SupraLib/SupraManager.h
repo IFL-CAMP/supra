@@ -72,6 +72,8 @@ namespace supra
 		}
 
 		bool removeNode(std::string nodeID);
+		bool removeNodeConnections(std::string nodeID);
+		bool removeAllNodes();
 
 		void connect(std::string fromID, size_t fromPort, std::string toID, size_t toPort);
 		void disconnect(std::string fromID, size_t fromPort, std::string toID, size_t toPort);
@@ -89,7 +91,7 @@ namespace supra
 		int32_t getFreezeTimeout();
 		void setFreezeTimeout(int32_t timeout);
 		int32_t resetFreezeTimeout();
-		
+
 		//wait for complete graph to be finished
 		void waitForGraph();
 
