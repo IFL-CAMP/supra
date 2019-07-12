@@ -66,25 +66,59 @@ namespace supra
 			if (path[0] == "nodes") 
 			{
 				auto nodeType = path[1];
-				auto nodeIDs = get_nodes(nodeType);
-				json::value responseIDs = json::value::array();
-				
-				for (size_t k = 0; k < nodeIDs.size(); k++)
-				{
-					responseIDs[k] = json::value::string(nodeIDs[k]);
-				}
+				if (path.size() == 1)
+                {
+                    // MARK: Get request to /nodes is enough to get all the nodes
+                    auto nodeType = "all";
+                    auto nodeIDs = get_nodes(nodeType);
+                    json::value responseIDs = json::value::array();
+
+                    for (size_t k = 0; k < nodeIDs.size(); k++)
+                    {
+                        responseIDs[k] = json::value::string(nodeIDs[k]);
+                    }
+                    auto response = json::value::object();
+                    response["nodeIDs"] = responseIDs;
+                    message.reply(status_codes::OK, response);
+                }
+				else if (path.size()>1)
+                {
+                    auto nodeType = path[1];
+                    auto nodeIDs = get_nodes(nodeType);
+                    json::value responseIDs = json::value::array();
+
+                    for (size_t k = 0; k < nodeIDs.size(); k++) {
+                        responseIDs[k] = json::value::string(nodeIDs[k]);
+                    }
+
+                    auto response = json::value::object();
+                    response["nodeIDs"] = responseIDs;
+                    message.reply(status_codes::OK, response);
+                }
 								
-				auto response = json::value::object();
-				response["nodeIDs"] = responseIDs;
-				message.reply(status_codes::OK, response);
+
 			}
+			// MARK: Brought the get Parameters under the get requests.
 			else if (path[0] == "parameters")
 			{
 				auto reqJsonTask = message.extract_json();
 				reqJsonTask.wait();
 				auto reqJson = reqJsonTask.get();
 				std::cout << "got request for params: " << reqJson.serialize() << std::endl;
-			}
+                if (reqJson.is_object())
+                {
+                    auto reqObj = reqJson.as_object();
+                    if (reqObj.find("nodeID") != reqObj.end()) {
+                        std::string nodeID = reqObj["nodeID"].as_string();
+                        auto response = get_node_parameters(nodeID);
+                        message.reply(status_codes::OK, response);
+                    }
+                }
+                else {
+                    message.reply(status_codes::NotFound);
+                }
+
+            }
 		}
 		else {
 			message.reply(status_codes::NotFound);
@@ -109,45 +143,8 @@ namespace supra
 				response["status"] = json::value::string("ready!");
 				message.reply(status_codes::OK, response);
 			}*/
-			
-			if (path[0] == "nodes") 
-			{
-				auto nodeType = path[1];
-				auto nodeIDs = get_nodes(nodeType);
-				json::value responseIDs = json::value::array();
-				
-				for (size_t k = 0; k < nodeIDs.size(); k++)
-				{
-					responseIDs[k] = json::value::string(nodeIDs[k]);
-				}
-								
-				auto response = json::value::object();
-				response["nodeIDs"] = responseIDs;
-				message.reply(status_codes::OK, response);
-			}
-			else if (path[0] == "get_parameters")
-			{
-				auto reqJsonTask = message.extract_json();
-				reqJsonTask.wait();
-				auto reqJson = reqJsonTask.get();
-				std::cout << "got request for params: " << reqJson.serialize() << std::endl;
-				
-				if (reqJson.is_object())
-				{
-					auto reqObj = reqJson.as_object();
-					if (reqObj.find("nodeID") != reqObj.end())
-					{
-						std::string nodeID = reqObj["nodeID"].as_string();
-						auto response = get_node_parameters(nodeID);
-						message.reply(status_codes::OK, response);
-					}
-				}
-				else
-				{
-					message.reply(status_codes::NotFound);
-				}
-			}
-			else if (path[0] == "set_parameter")
+
+			if (path[0] == "parameters")
 			{
 				auto reqJsonTask = message.extract_json();
 				reqJsonTask.wait();
