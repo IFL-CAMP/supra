@@ -157,50 +157,31 @@ SUPRA
 	
 6. Start SUPRA: See below
 
-Quick Guide to Rest Interface Queries
-	----------------
-	The SUPRA Accepts two of the standard HTTP request Types namely: GET and POST.
-	
-	The ip address that SUPRA is running at is referred as the SUPRA_URL below.
-	
-	#### GET REQUESTs
-	
-	URL Shape:
-	
-	**"SUPRA_URL/":** The root path for this url.
-	
-	**"SUPRA_URL/nodes/var"** where var can be:
-	- input:    **"SUPRA_URL/nodes/input"**
-	This will return all the input nodes.
-	- output:   **"SUPRA_URL/nodes/output"** 
-	This will return all the output nodes.
-	- null or all:  **"SUPRA_URL/nodes/"** or **"SUPRA_URL/nodes/all"**
-	This will return all the nodes regardless of their types.
-	
-	The shape of the object in response's body will be as:
-	`{"nodeIDs":[String]}`
-	
-	**"SUPRA_URL/parameters":**
-	Sending a GET request with a node id in its body to this url will return all the parameters for that node.
-	shape of the object sent with the body should be similar to: `{"nodeID":"ID"}`
-	
-	
-	#### POST REQUESTs
-	
-	URL Shape:
-	
-	**"SUPRA_URL/"** The root path for this url.
-	
-	**"SUPRA_URL/parameters"**
-	A post request with an object in its body shaped as the example below would set a parameter in a specific node.
-	
-	`{
-	    "nodeID":"id",
-	    "parameterID":"id",
-	    "value":"value"
-	}`
-	
-	This is the classic `POST` request one would expect.
+#### Rest Interface Queries
+
+SUPRA accepts GET and POST requests.
+
+The IP address / hostname SUPRA can be reached with is referred as `SUPRA_URL` below.
+
+##### GET REQUESTs
+
+`SUPRA_URL/nodes/[var]` where var can be `input` to return all input nodes, `output` to get only the output nodes and empty or `all` to return all nodes regardless of their types.
+The shape of the object in response's body will be 
+`{"nodeIDs":[String]}`.
+
+`SUPRA_URL/parameters` returns all parameters for one node.
+The shape of the object to send with the body is `{"nodeID":"ID"}`.
+
+
+##### POST REQUESTs
+
+`SUPRA_URL/parameters` sets the value of a parameter of a node. The request has to be shaped like below.
+
+	{
+		"nodeID":"id",
+		"parameterID":"id",
+		"value":"value"
+	}
 
 
 Demo (No US-system required!)
