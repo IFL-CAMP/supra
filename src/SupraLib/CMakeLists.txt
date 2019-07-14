@@ -65,7 +65,7 @@ IF(SUPRA_CUDA)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Wno-deprecated-gpu-targets;--use_fast_math;--default-stream=per-thread;-lineinfo")
 	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
 		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
-		IF(BUILD_SHARED_LIBS)
+		IF(BUILD_SHARED_LIBS AND NOT WIN32)
 			set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler=-fPIC")
 		ENDIF()
 	ENDIF()
@@ -483,7 +483,9 @@ TARGET_INCLUDE_DIRECTORIES(SUPRA_Lib
 LINK_DIRECTORIES(SUPRA_Lib
 	${SUPRA_Lib_LIBDIRS}
 )
-target_link_libraries(SUPRA_Lib ${CUDA_curand_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppial_LIBRARY})
+IF(BUILD_SHARED_LIBS)
+    target_link_libraries(SUPRA_Lib ${SUPRA_Lib_LIBRARIES})
+ENDIF()
 
 TARGET_COMPILE_DEFINITIONS(SUPRA_Lib 
 	PRIVATE ${SUPRA_Lib_DEFINES})
