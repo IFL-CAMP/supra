@@ -72,8 +72,8 @@ namespace supra
 		}
 
 		bool removeNode(std::string nodeID);
-		bool removeNodeConnections(std::string nodeID);
-		bool removeAllNodes();
+		void removeNodeConnections(std::string nodeID);
+		void removeAllNodes();
 
 		void connect(std::string fromID, size_t fromPort, std::string toID, size_t toPort);
 		void disconnect(std::string fromID, size_t fromPort, std::string toID, size_t toPort);

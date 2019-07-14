@@ -449,20 +449,23 @@ namespace supra
 		return map;
 	}
 
-	bool SupraManager::removeNodeConnections(string nodeID)
-        {
-	        using connID = std::tuple<std::string, size_t, std::string, size_t>;
-	        std::vector<connID> connsToRemove;
-	        for (const auto& p: m_nodeConnections)
-	          if (std::get<0>(p.first) == nodeID || std::get<2>(p.first) == nodeID)
-	            connsToRemove.push_back(p.first);
+	void SupraManager::removeNodeConnections(string nodeID)
+	{
+		using connID = std::tuple<std::string, size_t, std::string, size_t>;
+		std::vector<connID> connsToRemove;
+		for (const auto& p : m_nodeConnections)
+		{
+			if (std::get<0>(p.first) == nodeID || std::get<2>(p.first) == nodeID)
+			{
+				connsToRemove.push_back(p.first);
+			}
+		}
 
-	        for (const auto& connToRemove: connsToRemove)
-                {
-	                  disconnect(std::get<0>(connToRemove),std::get<1>(connToRemove),std::get<2>(connToRemove),std::get<3>(connToRemove));
-                }
-
-        }
+		for (const auto& connToRemove: connsToRemove)
+		{
+			disconnect(std::get<0>(connToRemove), std::get<1>(connToRemove), std::get<2>(connToRemove), std::get<3>(connToRemove));
+		}
+	}
 
 	bool SupraManager::removeNode(string nodeID)
 	{
@@ -472,18 +475,19 @@ namespace supra
 		}
 		else
 		{
-		        removeNodeConnections(nodeID);
+			removeNodeConnections(nodeID);
 			m_removedNodes.push_back(m_nodes[nodeID]);
 			m_nodes.erase(nodeID);
 			return true;
 		}
 	}
 
-	bool SupraManager::removeAllNodes()
+	void SupraManager::removeAllNodes()
 	{
-	    for (const auto& node: getNodeIDs())
-	        removeNode(node);
-	    return true;
+		for (const auto& node : getNodeIDs())
+		{
+			removeNode(node);
+		}
 	}
 
 	void SupraManager::connect(string fromID, size_t fromPort, string toID, size_t toPort)
