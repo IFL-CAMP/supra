@@ -44,7 +44,8 @@ namespace supra
 	using namespace std;
 	using namespace logging;
 	
-	void RestInterface::initRestOpHandlers() {
+	void RestInterface::initRestOpHandlers()
+	{
 		_listener.support(methods::GET, std::bind(&RestInterface::handleGet, this, std::placeholders::_1));
 		_listener.support(methods::PUT, std::bind(&RestInterface::handlePut, this, std::placeholders::_1));
 		_listener.support(methods::POST, std::bind(&RestInterface::handlePost, this, std::placeholders::_1));
@@ -52,51 +53,34 @@ namespace supra
 		_listener.support(methods::PATCH, std::bind(&RestInterface::handlePatch, this, std::placeholders::_1));
 	}
 
-	void RestInterface::handleGet(http_request message) {
+	void RestInterface::handleGet(http_request message)
+	{
 		auto path = requestPath(message);
 		if (!path.empty()) 
-		{
-			/*if (path[0] == "service" && path[1] == "test") {
-				auto response = json::value::object();
-				response["version"] = json::value::string("0.1.1");
-				response["status"] = json::value::string("ready!");
-				message.reply(status_codes::OK, response);
-			}*/
-			
+		{			
 			if (path[0] == "nodes") 
 			{
-				auto nodeType = path[1];
+				std::string nodeType; 
 				if (path.size() == 1)
-                {
-                    // MARK: Get request to /nodes is enough to get all the nodes
-                    auto nodeType = "all";
-                    auto nodeIDs = get_nodes(nodeType);
-                    json::value responseIDs = json::value::array();
+				{
+					// MARK: Get request to /nodes is enough to get all the nodes
+					nodeType = "all";
+				}
+				else if (path.size() > 1)
+				{
+					nodeType = path[1];
+				}
+				auto nodeIDs = get_nodes(nodeType);
+				json::value responseIDs = json::value::array();
 
-                    for (size_t k = 0; k < nodeIDs.size(); k++)
-                    {
-                        responseIDs[k] = json::value::string(nodeIDs[k]);
-                    }
-                    auto response = json::value::object();
-                    response["nodeIDs"] = responseIDs;
-                    message.reply(status_codes::OK, response);
-                }
-				else if (path.size()>1)
-                {
-                    auto nodeType = path[1];
-                    auto nodeIDs = get_nodes(nodeType);
-                    json::value responseIDs = json::value::array();
+				for (size_t k = 0; k < nodeIDs.size(); k++)
+				{
+					responseIDs[k] = json::value::string(nodeIDs[k]);
+				}
 
-                    for (size_t k = 0; k < nodeIDs.size(); k++) {
-                        responseIDs[k] = json::value::string(nodeIDs[k]);
-                    }
-
-                    auto response = json::value::object();
-                    response["nodeIDs"] = responseIDs;
-                    message.reply(status_codes::OK, response);
-                }
-								
-
+				auto response = json::value::object();
+				response["nodeIDs"] = responseIDs;
+				message.reply(status_codes::OK, response);
 			}
 			// MARK: Brought the get Parameters under the get requests.
 			else if (path[0] == "parameters")
@@ -104,52 +88,46 @@ namespace supra
 				auto reqJsonTask = message.extract_json();
 				reqJsonTask.wait();
 				auto reqJson = reqJsonTask.get();
-				std::cout << "got request for params: " << reqJson.serialize() << std::endl;
-                if (reqJson.is_object())
-                {
-                    auto reqObj = reqJson.as_object();
-                    if (reqObj.find("nodeID") != reqObj.end()) {
-                        std::string nodeID = reqObj["nodeID"].as_string();
-                        auto response = get_node_parameters(nodeID);
-                        message.reply(status_codes::OK, response);
-                    }
-                }
-                else {
-                    message.reply(status_codes::NotFound);
-                }
-
-            }
+				if (reqJson.is_object())
+				{
+					auto reqObj = reqJson.as_object();
+					if (reqObj.find("nodeID") != reqObj.end())
+					{
+						std::string nodeID = reqObj["nodeID"].as_string();
+						auto response = get_node_parameters(nodeID);
+						message.reply(status_codes::OK, response);
+					}
+				}
+				else {
+					message.reply(status_codes::NotFound);
+				}
+			}
 		}
 		else {
 			message.reply(status_codes::NotFound);
 		}
 	}
 
-	void RestInterface::handlePatch(http_request message) {
+	void RestInterface::handlePatch(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::PATCH));
 	}
 
-	void RestInterface::handlePut(http_request message) {
+	void RestInterface::handlePut(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::PUT));
 	}
 
-	void RestInterface::handlePost(http_request message) {
+	void RestInterface::handlePost(http_request message)
+	{
 		auto path = requestPath(message);
 		if (!path.empty()) 
 		{
-			/*if (path[0] == "service" && path[1] == "test") {
-				auto response = json::value::object();
-				response["version"] = json::value::string("0.1.1");
-				response["status"] = json::value::string("ready!");
-				message.reply(status_codes::OK, response);
-			}*/
-
 			if (path[0] == "parameters")
 			{
 				auto reqJsonTask = message.extract_json();
 				reqJsonTask.wait();
 				auto reqJson = reqJsonTask.get();
-				std::cout << "got request to set param: " << reqJson.serialize() << std::endl;
 				
 				if (reqJson.is_object())
 				{
@@ -161,9 +139,7 @@ namespace supra
 						std::string nodeID = reqObj["nodeID"].as_string();
 						std::string parameterID = reqObj["parameterID"].as_string();
 						std::string parameterValue = reqObj["value"].as_string();
-						
-						std::cout << "got request to set parameter for '" << nodeID << "': '" << parameterID << "' = '" << parameterValue << "'" << std::endl;
-						
+												
 						auto response = set_node_parameter(nodeID, parameterID, parameterValue);
 						message.reply(status_codes::OK, response);
 					}
@@ -180,42 +156,45 @@ namespace supra
 		else {
 			message.reply(status_codes::NotFound);
 		}
-		//message.reply(status_codes::NotImplemented, responseNotImpl(methods::POST));
 	}
 
-	void RestInterface::handleDelete(http_request message) {    
+	void RestInterface::handleDelete(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::DEL));
 	}
 
-	void RestInterface::handleHead(http_request message) {
+	void RestInterface::handleHead(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::HEAD));
 	}
 
-	void RestInterface::handleOptions(http_request message) {
+	void RestInterface::handleOptions(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::OPTIONS));
 	}
 
-	void RestInterface::handleTrace(http_request message) {
+	void RestInterface::handleTrace(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::TRCE));
 	}
 
-	void RestInterface::handleConnect(http_request message) {
+	void RestInterface::handleConnect(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::CONNECT));
 	}
 
-	void RestInterface::handleMerge(http_request message) {
+	void RestInterface::handleMerge(http_request message)
+	{
 		message.reply(status_codes::NotImplemented, responseNotImpl(methods::MERGE));
 	}
 
-	json::value RestInterface::responseNotImpl(const http::method & method) {
+	json::value RestInterface::responseNotImpl(const http::method & method)
+	{
 		auto response = json::value::object();
-		response["serviceName"] = json::value::string("C++ Mircroservice Sample");
+		response["serviceName"] = json::value::string("SUPRA REST");
 		response["http_method"] = json::value::string(method);
 		return response ;
 	}
-
-	
-	
 	
 	std::vector<std::string> RestInterface::get_nodes(const std::string& nodeType)
 	{
@@ -238,7 +217,7 @@ namespace supra
 		}
 
 		return nodeIDs;
-	};
+	}
 	
 	json::value RestInterface::get_node_parameters(const std::string& nodeID)
 	{
