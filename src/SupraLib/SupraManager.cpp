@@ -1,12 +1,12 @@
 // ================================================================================================
-// 
+//
 // If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
+//      Rüdiger Göbl
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
 //      Technische Universität München
 //      Boltzmannstr. 3, 85748 Garching b. München, Germany
-// 
+//
 // ================================================================================================
 
 #include "SupraManager.h"
@@ -212,10 +212,10 @@ namespace supra
 		}
 	}
 
-	void SupraManager::writeToXml(std::string configXmlFilename) 
+	void SupraManager::writeToXml(std::string configXmlFilename)
 	{
 		tinyxml2::XMLDocument doc;
-		
+
 		doc.InsertFirstChild(doc.NewDeclaration());
 		auto rootElement = doc.InsertEndChild(doc.NewElement("supra_config"));
 		auto devicesElement = rootElement->InsertEndChild(doc.NewElement("devices"));
@@ -251,7 +251,7 @@ namespace supra
 	}
 
 	void SupraManager::writeOutputDevicesToXml(tinyxml2::XMLNode* devicesElement)
-	{		
+	{
 		auto doc = devicesElement->GetDocument();
 		auto outputsElement = devicesElement->InsertEndChild(doc->NewElement("outputs"));
 
@@ -414,7 +414,7 @@ namespace supra
 	{
 		std::vector<std::tuple<std::string, size_t, std::string, size_t> > nodeConnections(m_nodeConnections.size());
 		std::transform(m_nodeConnections.begin(), m_nodeConnections.end(), nodeConnections.begin(),
-			[](const std::pair<std::tuple<std::string, size_t, std::string, size_t>, bool>& mapPair) -> 
+			[](const std::pair<std::tuple<std::string, size_t, std::string, size_t>, bool>& mapPair) ->
 				std::tuple<std::string, size_t, std::string, size_t> {return mapPair.first; });
 		return nodeConnections;
 	}
@@ -449,6 +449,24 @@ namespace supra
 		return map;
 	}
 
+	void SupraManager::removeNodeConnections(string nodeID)
+	{
+		using connID = std::tuple<std::string, size_t, std::string, size_t>;
+		std::vector<connID> connsToRemove;
+		for (const auto& p : m_nodeConnections)
+		{
+			if (std::get<0>(p.first) == nodeID || std::get<2>(p.first) == nodeID)
+			{
+				connsToRemove.push_back(p.first);
+			}
+		}
+
+		for (const auto& connToRemove: connsToRemove)
+		{
+			disconnect(std::get<0>(connToRemove), std::get<1>(connToRemove), std::get<2>(connToRemove), std::get<3>(connToRemove));
+		}
+	}
+
 	bool SupraManager::removeNode(string nodeID)
 	{
 		if (!nodeExists(nodeID))
@@ -457,9 +475,18 @@ namespace supra
 		}
 		else
 		{
+			removeNodeConnections(nodeID);
 			m_removedNodes.push_back(m_nodes[nodeID]);
 			m_nodes.erase(nodeID);
 			return true;
+		}
+	}
+
+	void SupraManager::removeAllNodes()
+	{
+		for (const auto& node : getNodeIDs())
+		{
+			removeNode(node);
 		}
 	}
 
