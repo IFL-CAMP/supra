@@ -8,3 +8,4 @@ tools/.idea/
 doc/supraParameters/
 *.orig
 data*/
+cmake-build-*
