@@ -157,6 +157,33 @@ SUPRA
 	
 6. Start SUPRA: See below
 
+#### Rest Interface Queries
+
+SUPRA accepts GET and POST requests.
+
+The IP address / hostname SUPRA can be reached with is referred as `SUPRA_URL` below.
+
+##### GET REQUESTs
+
+`SUPRA_URL/nodes/[var]` where var can be `input` to return all input nodes, `output` to get only the output nodes and empty or `all` to return all nodes regardless of their types.
+The shape of the object in response's body will be 
+`{"nodeIDs":[String]}`.
+
+`SUPRA_URL/parameters` returns all parameters for one node.
+The shape of the object to send with the body is `{"nodeID":"ID"}`.
+
+
+##### POST REQUESTs
+
+`SUPRA_URL/parameters` sets the value of a parameter of a node. The request has to be shaped like below.
+
+	{
+		"nodeID":"id",
+		"parameterID":"id",
+		"value":"value"
+	}
+
+
 Demo (No US-system required!)
 ----------------
 
