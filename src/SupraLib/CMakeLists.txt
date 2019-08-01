@@ -74,7 +74,7 @@ IF(SUPRA_CUDA)
 	MESSAGE(STATUS "Using nvcc arch flags: ${ARCH_FLAGS}")
     LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 	IF(NOT WIN32)
-		#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
 	ENDIF()
 	
 	# on win32 cufft is not supported
