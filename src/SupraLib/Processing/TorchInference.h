@@ -283,8 +283,8 @@ namespace supra
 		std::vector<int64_t> layoutPermutation(const std::string& currentLayout, const std::string& outLayout);
 
 		std::shared_ptr<torch::jit::script::Module> m_torchModule;
-		std::shared_ptr<torch::jit::script::Module> m_inputNormalizationModule;
-		std::shared_ptr<torch::jit::script::Module> m_outputDenormalizationModule;
+		std::shared_ptr<torch::jit::script::CompilationUnit> m_inputNormalizationModule;
+		std::shared_ptr<torch::jit::script::CompilationUnit> m_outputDenormalizationModule;
 
 		std::string m_modelFilename;
 		std::string m_inputNormalization;

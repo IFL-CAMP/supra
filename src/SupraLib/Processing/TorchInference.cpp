@@ -83,7 +83,6 @@ namespace supra
 			try {
 				m_inputNormalizationModule = torch::jit::compile(
 						"  def normalize(a):\n    return " + m_inputNormalization + "\n");
-				m_inputNormalizationModule->to(torch::kCUDA);
 			}
 			catch (c10::Error e)
 			{
@@ -104,7 +103,6 @@ namespace supra
 			try {
 				m_outputDenormalizationModule = torch::jit::compile(
 						"  def denormalize(a):\n    return " + m_outputDenormalization + "\n");
-				m_outputDenormalizationModule->to(torch::kCUDA);
 			}
 			catch (c10::Error e)
 			{
