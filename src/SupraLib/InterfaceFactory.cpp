@@ -36,6 +36,10 @@
 #include "Beamformer/RawDelayNode.h"
 #include "Beamformer/RxEventLimiterNode.h"
 #include "Processing/TimeGainCompensationNode.h"
+#include "Processing/FilterSradCudaNode.h"
+#include "Processing/DarkFilterThresholdingCudaNode.h"
+#include "Processing/BilateralFilterCudaNode.h"
+#include "Processing/MedianFilterCudaNode.h"
 #include "Processing/TorchNode.h"
 #include "StreamSyncNode.h"
 #include "TemporalOffsetNode.h"
@@ -44,6 +48,7 @@
 #include "AutoQuitNode.h"
 #include "ExampleNodes/ImageProcessingCpuNode.h"
 #include "ExampleNodes/ImageProcessingCudaNode.h"
+#include "ExampleNodes/ImageProcessingBufferCudaNode.h"
 
 using namespace std;
 
@@ -186,8 +191,13 @@ namespace supra
 		{ "StreamSyncNode",           [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<StreamSyncNode>(g, nodeID, queueing); } },
 		{ "ImageProcessingCpuNode",   [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCpuNode>(g, nodeID, queueing); } },
 #ifdef HAVE_CUDA
-		{ "ImageProcessingCudaNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCudaNode>(g, nodeID, queueing); } },
-		{ "TimeGainCompensationNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TimeGainCompensationNode>(g, nodeID, queueing); } },
+		{ "ImageProcessingCudaNode",        [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingCudaNode>(g, nodeID, queueing); } },
+		{ "ImageProcessingBufferCudaNode",  [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<ImageProcessingBufferCudaNode>(g, nodeID, queueing); } },
+		{ "FilterSradCudaNode",             [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<FilterSradCudaNode>(g, nodeID, queueing); } },
+		{ "TimeGainCompensationNode",       [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TimeGainCompensationNode>(g, nodeID, queueing); } },
+		{ "DarkFilterThresholdingCudaNode", [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<DarkFilterThresholdingCudaNode>(g, nodeID, queueing); } },
+		{ "BilateralFilterCudaNode",        [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<BilateralFilterCudaNode>(g, nodeID, queueing); } },
+		{ "MedianFilterCudaNode",           [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<MedianFilterCudaNode>(g, nodeID, queueing); } },
 #endif
 #ifdef HAVE_TORCH
 		{ "TorchNode",                [](tbb::flow::graph& g, std::string nodeID, bool queueing) { return make_shared<TorchNode>(g, nodeID, queueing); } },

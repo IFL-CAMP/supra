@@ -66,11 +66,12 @@ IF(SUPRA_CUDA)
 	IF(CUDA_VERSION_STRING VERSION_GREATER "8.0")
 		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--Wno-deprecated-declarations")
 	ENDIF()
-	IF(WIN32)
-		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 5.0)
+	IF(SUPRA_CUDA_PORTABLE)
+		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common" )
 	ELSE()
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
+	MESSAGE(STATUS "Using nvcc arch flags: ${ARCH_FLAGS}")
     LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 	IF(NOT WIN32)
 		#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
@@ -162,6 +163,7 @@ SET(SUPRA_Lib_HEADERS
 	InterfaceFactory.h
 	utilities/utility.h
 	utilities/cudaUtility.h
+	utilities/Buffer.h
 	utilities/Logging.h
 	utilities/CallFrequency.h
 	utilities/TemplateTypeDefault.h
@@ -179,14 +181,34 @@ IF(SUPRA_CUDA)
 		${SUPRA_Lib_SOURCE}
 		ExampleNodes/ImageProcessingCudaNode.cpp
 		ExampleNodes/ImageProcessingCuda.cu
+		ExampleNodes/ImageProcessingBufferCudaNode.cpp
+		ExampleNodes/ImageProcessingBufferCuda.cu
 		Processing/TimeGainCompensationNode.cpp
-		Processing/TimeGainCompensation.cu)
+		Processing/TimeGainCompensation.cu
+		Processing/FilterSradCuda.cu
+		Processing/FilterSradCudaNode.cpp
+		Processing/DarkFilterThresholdingCudaNode.cpp
+		Processing/DarkFilterThresholdingCuda.cu
+		Processing/BilateralFilterCudaNode.cpp
+		Processing/BilateralFilterCuda.cu
+		Processing/MedianFilterCudaNode.cpp
+		Processing/MedianFilterCuda.cu)
 	SET(SUPRA_Lib_HEADERS
 		${SUPRA_Lib_HEADERS}
 		ExampleNodes/ImageProcessingCudaNode.h
 		ExampleNodes/ImageProcessingCuda.h
+		ExampleNodes/ImageProcessingBufferCudaNode.h
+		ExampleNodes/ImageProcessingBufferCuda.h
 		Processing/TimeGainCompensationNode.h
-		Processing/TimeGainCompensation.h)
+		Processing/TimeGainCompensation.h
+		Processing/FilterSradCudaNode.h
+		Processing/FilterSradCuda.h
+		Processing/DarkFilterThresholdingCudaNode.h
+		Processing/DarkFilterThresholdingCuda.h
+		Processing/BilateralFilterCudaNode.h
+		Processing/BilateralFilterCuda.h
+		Processing/MedianFilterCudaNode.h
+		Processing/MedianFilterCuda.h)
 ENDIF(SUPRA_CUDA)
 	
 SET(SUPRA_Lib_INCLUDEDIRS

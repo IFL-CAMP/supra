@@ -74,6 +74,7 @@ namespace supra
 		uint32_t m_maxIterationsOverride;
 		double m_convergenceThreshold;
 		double m_subArrayScalingPower;
+		bool m_computeMeans;
 	};
 }
 

@@ -79,9 +79,11 @@ namespace supra
 		double m_fNumber;
 		WindowType m_windowType;
 		double m_windowParameter;
+		double m_speedOfSoundMMperS;
 		DataType m_outputType;
 		RxBeamformerCuda::RxSampleBeamformer m_beamformerType;
 		bool m_interpolateTransmits;
+		int32_t m_additionalOffset;
 	};
 }
 

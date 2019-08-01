@@ -23,12 +23,17 @@ namespace supra
 	class USRawData;
 	class USImage;
 
-	template <typename ChannelDataType, typename ImageDataType>
-	std::shared_ptr<USImage> performRxBeamforming(
-		std::shared_ptr<const USRawData> rawData,
-		uint32_t subArraySize,
-		uint32_t temporalSmoothing,
-		cublasHandle_t cublasH);
+	namespace RxBeamformerMV
+	{
+		template <typename ChannelDataType, typename ImageDataType>
+		std::shared_ptr<USImage> performRxBeamforming(
+			std::shared_ptr<const USRawData> rawData,
+			uint32_t subArraySize,
+			uint32_t temporalSmoothing,
+			cublasHandle_t cublasH,
+			double subArrayScalingPower,
+			bool computeMeans);
+	}
 }
 
 #endif //HAVE_BEAMFORMER_MINIMUM_VARIANCE
