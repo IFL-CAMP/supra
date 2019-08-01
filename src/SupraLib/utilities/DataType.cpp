@@ -49,10 +49,12 @@ namespace supra
 	DataType DataTypeGet<uint64_t>() {
 		return TypeUint64;
 	}
+#ifdef HAVE_CUDA
 	template <>
 	DataType DataTypeGet<__half>() {
 		return TypeHalf;
 	}
+#endif
 	template <>
 	DataType DataTypeGet<float>() {
 		return TypeFloat;
@@ -111,10 +113,12 @@ namespace supra
 		{
 			dataType = supra::TypeUint64;
 		}
+#ifdef HAVE_CUDA
 		else if (s == "half")
 		{
 			dataType = supra::TypeHalf;
 		}
+#endif
 		else if (s == "float")
 		{
 			dataType = supra::TypeFloat;
@@ -179,9 +183,11 @@ namespace supra
 		case supra::TypeUint64:
 			s = "uint64_t";
 			break;
+#ifdef HAVE_CUDA
 		case supra::TypeHalf:
 			s = "half";
 			break;
+#endif
 		case supra::TypeFloat:
 			s = "float";
 			break;

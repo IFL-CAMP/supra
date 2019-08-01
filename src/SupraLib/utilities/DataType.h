@@ -16,7 +16,9 @@
 #include <string>
 #include "utilities/utility.h"
 
+#ifdef HAVE_CUDA
 #include <cuda_fp16.h>
+#endif
 
 namespace supra
 {
@@ -32,7 +34,9 @@ namespace supra
 		TypeUint32,
 		TypeInt64,
 		TypeUint64,
+#ifdef HAVE_CUDA
 		TypeHalf,
+#endif
 		TypeFloat,
 		TypeDouble,
 		TypeString,
@@ -64,8 +68,10 @@ namespace supra
 	DataType DataTypeGet<int64_t>();
 	template <>
 	DataType DataTypeGet<uint64_t>();
+#ifdef HAVE_CUDA
 	template<>
 	DataType DataTypeGet<__half>();
+#endif
 	template <>
 	DataType DataTypeGet<float>();
 	template <>
