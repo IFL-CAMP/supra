@@ -72,9 +72,14 @@ IF(SUPRA_CUDA)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
 	MESSAGE(STATUS "Using nvcc arch flags: ${ARCH_FLAGS}")
-    LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+	LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 	IF(NOT WIN32)
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
+		# nvcc cannot handle the flag beeing set twice, so only set it if not present
+		list(FIND CUDA_NVCC_FLAGS "-std=c++11" CUDA_NVCC_STD_FLAGa)
+		list(FIND CUDA_NVCC_FLAGS "--std=c++11" CUDA_NVCC_STD_FLAGb)
+		IF(CUDA_NVCC_STD_FLAGa EQUAL -1 AND CUDA_NVCC_STD_FLAGb EQUAL -1)
+			set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
+		ENDIF()
 	ENDIF()
 	
 	# on win32 cufft is not supported
