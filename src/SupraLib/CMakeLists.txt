@@ -75,9 +75,14 @@ IF(SUPRA_CUDA)
 		CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	ENDIF()
 	MESSAGE(STATUS "Using nvcc arch flags: ${ARCH_FLAGS}")
-    LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+	LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 	IF(NOT WIN32)
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
+		# nvcc cannot handle the flag beeing set twice, so only set it if not present
+		list(FIND CUDA_NVCC_FLAGS "-std=c++11" CUDA_NVCC_STD_FLAGa)
+		list(FIND CUDA_NVCC_FLAGS "--std=c++11" CUDA_NVCC_STD_FLAGb)
+		IF(CUDA_NVCC_STD_FLAGa EQUAL -1 AND CUDA_NVCC_STD_FLAGb EQUAL -1)
+			set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--std=c++11")
+		ENDIF()
 	ENDIF()
 	
 	# on win32 cufft is not supported
@@ -333,6 +338,23 @@ IF(SUPRA_BEAMFORMER)
 		MESSAGE(STATUS "CUBLAS not found, NOT adding minimum variance beamformer")
 	ENDIF()
 ENDIF(SUPRA_BEAMFORMER)
+
+IF(SUPRA_TORCH)
+	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
+		Processing/TorchInference.cpp
+		Processing/TorchNode.cpp)
+	SET(SUPRA_Lib_HEADERS ${SUPRA_Lib_HEADERS}
+		Processing/TorchInference.h
+		Processing/TorchNode.h)
+
+	SET(SUPRA_Lib_DEFINES ${SUPRA_Lib_DEFINES}
+		HAVE_TORCH)
+	SET(SUPRA_Lib_INCLUDEDIRS ${SUPRA_Lib_INCLUDEDIRS}
+		${TORCH_INCLUDE_DIRS})
+	SET(SUPRA_Lib_LIBRARIES ${SUPRA_Lib_LIBRARIES}
+		${TORCH_LIBRARIES})
+ENDIF(SUPRA_TORCH)
+
 IF(SUPRA_DEVICE_ULTRASOUND_SIM)
 	SET(SUPRA_Lib_SOURCE ${SUPRA_Lib_SOURCE}
 		InputOutput/UltrasoundInterfaceSimulated.cpp)

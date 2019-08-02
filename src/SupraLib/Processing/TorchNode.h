@@ -9,10 +9,10 @@
 // 
 // ================================================================================================
 
-#ifndef __TIMEGAINCOMPENSATIONNODE_H__
-#define __TIMEGAINCOMPENSATIONNODE_H__
+#ifndef __TORCHNODE_H__
+#define __TORCHNODE_H__
 
-#ifdef HAVE_CUDA
+#ifdef HAVE_TORCH
 
 #include <memory>
 #include <mutex>
@@ -25,15 +25,17 @@
 
 namespace supra
 {
-    class TimeGainCompensation;
+	class USImageProperties;
+	class TorchInference;
 }
+
 // To include the node fully, add it in src/SupraLib/CMakeLists.txt and "InterfaceFactory::createNode"!
 
 namespace supra
 {
-	class TimeGainCompensationNode : public AbstractNode {
+	class TorchNode : public AbstractNode {
 	public:
-		TimeGainCompensationNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
+		TorchNode(tbb::flow::graph& graph, const std::string & nodeID, bool queueing);
 
 		virtual size_t getNumInputs() { return 1; }
 		virtual size_t getNumOutputs() { return 1; }
@@ -61,18 +63,32 @@ namespace supra
 		std::shared_ptr<RecordObject> checkTypeAndProcess(std::shared_ptr<RecordObject> mainObj);
 		template <typename InputType>
 		std::shared_ptr<ContainerBase> processTemplateSelection(
-		        std::shared_ptr<const Container<InputType> > imageData, vec3s size, size_t workDimension);
-		void readAndSetCurvePoints();
+			std::shared_ptr<const Container<InputType> > imageData,
+			vec3s inputSize,
+			vec3s outputSize,
+			const std::string& currentLayout,
+			const std::string& finalLayout);
+		void loadModule();
 
 		std::unique_ptr<tbb::flow::graph_node> m_node;
-        std::shared_ptr<TimeGainCompensation> m_compensator;
 		std::mutex m_mutex;
+		std::shared_ptr<TorchInference> m_torchModule;
 
-		double m_factor;
-		DataType m_outputType;
+		std::string m_modelFilename;
+		DataType m_modelInputDataType;
+		DataType m_modelOutputDataType;
+		std::string m_modelInputClass;
+		std::string m_modelOutputClass;
+		std::string m_modelInputLayout;
+		std::string m_modelOutputLayout;
+		std::string m_inputNormalization;
+		std::string m_outputDenormalization;
+		DataType m_nodeOutputDataType;
+		uint32_t m_inferencePatchSize;
+		uint32_t m_inferencePatchOverlap;
 	};
 }
 
-#endif //HAVE_CUDA
+#endif //HAVE_TORCH
 
-#endif //!__TIMEGAINCOMPENSATIONNODE_H__
+#endif //!__TORCHNODE_H__

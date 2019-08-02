@@ -93,6 +93,24 @@ SUPRA
 	
 6. Start SUPRA: See below
 
+### Building with PyTorch inference (via libtorch)
+
+1. Download the stable libtorch for CUDA 10.0 from pytorch.org
+   
+        https://download.pytorch.org/libtorch/cu100/libtorch-win-shared-with-deps-latest.zip
+        https://download.pytorch.org/libtorch/cu100/libtorch-shared-with-deps-latest.zip 
+   
+   Tested version: 1.1.0:
+   
+        https://download.pytorch.org/libtorch/cu100/libtorch-win-shared-with-deps-1.1.0.zip
+        https://download.pytorch.org/libtorch/cu100/libtorch-shared-with-deps-1.1.0.zip
+
+2. Install cuDNN
+3. Unpack libtorch (e.g. to `supra/external` on windows or `/opt/` on linux)
+4. Activate `SUPRA_TORCH` in cmake (e.g. in the GUI, or via `-DSUPRA_TORCH=ON`)
+5. Point cmake to the libtorch you just extracted (e.g. `supra/external/libtorch/share/cmake/Torch` or `/opt/libtorch/share/cmake/Torch`)
+6. Configure and build
+=======
 	
 Demo (No US-system required!)
 ----------------

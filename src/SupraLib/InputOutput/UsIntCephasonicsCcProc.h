@@ -13,6 +13,7 @@
 #ifndef __USINTCEPHASONICSCCPROC_H__
 #define __USINTCEPHASONICSCCPROC_H__
 
+#include "../utilities/DataType.h"
 #include <DataProcessor.h>
 
 namespace supra
