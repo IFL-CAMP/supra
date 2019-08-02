@@ -41,14 +41,10 @@ namespace supra
 			uint32_t inferencePatchSize, uint32_t inferencePatchOverlap)
 		{
 			assert(m_torchModule != nullptr);
-			assert(m_inputNormalizationModule != nullptr);
-			assert(m_outputDenormalizationModule != nullptr);
 
 			std::shared_ptr <Container<OutputType> > pDataOut = nullptr;
 
-			if (m_torchModule != nullptr &&
-			    m_inputNormalizationModule != nullptr &&
-			    m_outputDenormalizationModule != nullptr)
+			if (m_torchModule != nullptr)
             {
                 try {
                     // Synchronize to the stream the input data is produced on, to make sure the data is ready
@@ -121,8 +117,16 @@ namespace supra
 
                         // Run model
                         // Normalize the input
-                        auto inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
-                        cudaSafeCall(cudaPeekAtLastError());
+						caffe2::IValue inputDataPatchIvalue;
+						if (m_inputNormalizationModule)
+						{
+							inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
+							cudaSafeCall(cudaPeekAtLastError());
+						}
+						else
+						{
+							inputDataPatchIvalue = inputDataPatch;
+						}
 
                         // build module input data structure
                         std::vector<torch::jit::IValue> inputs;
@@ -133,8 +137,11 @@ namespace supra
                         cudaSafeCall(cudaPeekAtLastError());
 
                         // Denormalize the output
-                        result = m_outputDenormalizationModule->run_method("denormalize", result);
-                        cudaSafeCall(cudaPeekAtLastError());
+						if (m_outputDenormalizationModule)
+						{
+							result = m_outputDenormalizationModule->run_method("denormalize", result);
+							cudaSafeCall(cudaPeekAtLastError());
+						}
                         at::Tensor output = result.toTensor();
                         // This should never happen right now.
                         assert(!output.is_hip());
