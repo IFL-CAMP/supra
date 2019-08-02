@@ -40,11 +40,11 @@ namespace supra
 			const std::string& modelInputLayout, const std::string& modelOutputLayout,
 			uint32_t inferencePatchSize, uint32_t inferencePatchOverlap)
 		{
-			assert(m_torchModule != nullptr);
+            assert(m_torchModule != nullptr);
 
-			std::shared_ptr <Container<OutputType> > pDataOut = nullptr;
+            std::shared_ptr <Container<OutputType> > pDataOut = nullptr;
 
-			if (m_torchModule != nullptr)
+            if (m_torchModule != nullptr)
             {
                 try {
                     // Synchronize to the stream the input data is produced on, to make sure the data is ready
@@ -117,16 +117,16 @@ namespace supra
 
                         // Run model
                         // Normalize the input
-						caffe2::IValue inputDataPatchIvalue;
-						if (m_inputNormalizationModule)
-						{
-							inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
-							cudaSafeCall(cudaPeekAtLastError());
-						}
-						else
-						{
-							inputDataPatchIvalue = inputDataPatch;
-						}
+                        caffe2::IValue inputDataPatchIvalue;
+                        if (m_inputNormalizationModule)
+                        {
+                            inputDataPatchIvalue = m_inputNormalizationModule->run_method("normalize", inputDataPatch);
+                            cudaSafeCall(cudaPeekAtLastError());
+                        }
+                        else
+                        {
+                            inputDataPatchIvalue = inputDataPatch;
+                        }
 
                         // build module input data structure
                         std::vector<torch::jit::IValue> inputs;
@@ -137,11 +137,11 @@ namespace supra
                         cudaSafeCall(cudaPeekAtLastError());
 
                         // Denormalize the output
-						if (m_outputDenormalizationModule)
-						{
-							result = m_outputDenormalizationModule->run_method("denormalize", result);
-							cudaSafeCall(cudaPeekAtLastError());
-						}
+                        if (m_outputDenormalizationModule)
+                        {
+                            result = m_outputDenormalizationModule->run_method("denormalize", result);
+                            cudaSafeCall(cudaPeekAtLastError());
+                        }
                         at::Tensor output = result.toTensor();
                         // This should never happen right now.
                         assert(!output.is_hip());
@@ -205,8 +205,8 @@ namespace supra
                     logging::log_error("TorchInference: Error (std::runtime_error) while running model '", m_modelFilename, "'");
                     logging::log_error("TorchInference: ", e.what());
                 }
-			}
-			else
+            }
+            else
             {
                 logging::log_error_if(m_torchModule == nullptr,
                         "TorchInference: Error no model loaded.");
@@ -214,10 +214,10 @@ namespace supra
                         "TorchInference: Error no normalization module present.");
                 logging::log_error_if(m_outputDenormalizationModule == nullptr,
                         "TorchInference: Error no denormalization module present.");
-			}
+            }
 
-			return pDataOut;
-		}
+            return pDataOut;
+        }
 
 		template <typename ModelOutputType, typename OutputType>
 		void copyPatchToOutput(
