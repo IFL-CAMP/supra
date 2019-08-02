@@ -196,7 +196,7 @@ namespace supra
 		if (numRxScanlines == 0)
 		{
 			logging::log_error("RxEventLimiterNode: Selected rx events require removal of all rxScanlines.");
-			m_lastEventIdxToKeep = scanlineLayout.x - 1;
+			m_lastEventIdxToKeep = static_cast<uint32_t>(scanlineLayout.x - 1);
 			m_firstEventIdxToKeep = 0;
 			updateImagePropertiesAndRxBeamformerParameters(newImageProperties, newRxBeamformerParameters);
 		}

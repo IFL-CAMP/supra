@@ -63,7 +63,7 @@ Building
 * QT &ge; 5.5
 * TBB
 * CUDA &ge; 10.0
-	
+
 	
 ### Build instructions (Ubuntu 16.04 / 18.04)
 
@@ -77,7 +77,6 @@ Build requirements
 	
 SUPRA
 
-	sudo apt-get install git
 	mkdir -p $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
 	git clone https://github.com/IFL-CAMP/supra.git
 	cd supra
@@ -111,6 +110,7 @@ SUPRA
 4. Activate `SUPRA_TORCH` in cmake (e.g. in the GUI, or via `-DSUPRA_TORCH=ON`)
 5. Point cmake to the libtorch you just extracted (e.g. `supra/external/libtorch/share/cmake/Torch` or `/opt/libtorch/share/cmake/Torch`)
 6. Configure and build
+=======
 	
 Demo (No US-system required!)
 ----------------
@@ -135,6 +135,8 @@ Used libraries
 
 **SUPRA** uses tinyxml2 which is awesome and distributed under the zlib-license. For more details see the [tinyxml2 README](src/SupraLib/utilities/tinyxml2/readme.md) and (http://grinninglizard.com/tinyxml2/index.html and https://github.com/leethomason/tinyxml2)
 
+**SUPRA** also uses jsoncpp for more structured data handling which is distributed under the MIT license. For more details see the [jsoncpp README](src/SupraLib/utilities/jsoncpp/README.md)
+
 On windows, ROS-message headers generated with [rosserial](http://wiki.ros.org/rosserial) are used and are included in the source.
 On Linux, the usual ROS-libraries are used during build. (roscpp, geometry_msgs)
 
@@ -145,6 +147,94 @@ Finally, it can be built against
 * QT (LGPLv3)
 * IGTL (BSD 3clause)
 * CAMPVis (Apache 2.0) (unfortunately, the respective QT5 version is not yet public)
+
+### Alternate Builds
+
+REST interface instead of graphical interface
+----------------
+
+Build requirements
+
+	apt-get install cmake cmake-gui libtbb-dev libopenigtlink-dev libcpprest-dev libboost-all-dev git
+	
+SUPRA
+
+	mkdir -p $HOME/git && cd $HOME/git #(or your favorite directory for repositories)
+	git clone https://github.com/IFL-CAMP/supra.git
+	cd supra
+	mkdir -p build && cd build
+	cmake-gui .. -DSUPRA_INTERFACE_REST=ON -DSUPRA_INTERFACE_GRAPHIC=OFF
+
+1. Configure
+2. For systems with multiple gcc versions, make sure to select one supported by the installed CUDA version
+3. You might need to specify the CUDA toolkit directory (usually "`/usr/local/cuda`")
+4. Configure & Generate, then close cmake and build
+5. Build SUPRA
+	
+	make -j5
+	
+6. Start SUPRA: See below
+
+#### Rest Interface Queries
+
+SUPRA accepts GET and POST requests.
+
+The IP address / hostname SUPRA can be reached with is referred as `SUPRA_URL` below.
+
+##### GET REQUESTs
+
+`SUPRA_URL/nodes/[var]` where var can be `input` to return all input nodes, `output` to get only the output nodes and empty or `all` to return all nodes regardless of their types.
+The shape of the object in response's body will be 
+`{"nodeIDs":[String]}`.
+
+`SUPRA_URL/parameters` returns all parameters for one node.
+The shape of the object to send with the body is `{"nodeID":"ID"}`.
+
+
+##### POST REQUESTs
+
+`SUPRA_URL/parameters` sets the value of a parameter of a node. The request has to be shaped like below.
+
+	{
+		"nodeID":"id",
+		"parameterID":"id",
+		"value":"value"
+	}
+
+
+Demo (No US-system required!)
+----------------
+
+Change to your build directory. If you used the commands above, you can execute
+
+	cd $HOME/git/supra/build
+
+Start the SUPRA GUI with a demo config file
+
+	src/RestInterface/SUPRA_REST data/configDemo.xml
+	
+Additionaly used libraries
+----------------
+See above for most used libraries. This build uses additionally:
+* Microsoft C++ Rest SDK >=2.8 - (BSD 3clause)
+* Boost (MIT)
+
+Generate a self-building deb source file
+----------------
+
+Build Requirements:
+
+	apt-get install debmake
+
+	cd supra
+	debmake -cc >> copyright
+	mkdir -p build && cd build
+	cmake ..
+	make package_source
+
+The deb file can be found in the 'binpackages' folder.
+
+When installing the deb file in a system the package will try to build with the standard cmake configuration on that system.
 
 Acknowledgement
 ----------------

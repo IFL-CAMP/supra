@@ -35,7 +35,7 @@ namespace supra
 		std::shared_ptr<Container<OutputType> >
 			demodulateMagnitudeFrequencyCompounding(
 				const std::shared_ptr<const Container<InputType> >& inImageData,
-				int numScanlines, int numSamples, uint32_t decimation,
+				const int &numScanlines, const int &numSamples, const uint32_t &decimation,
 				const std::vector<double>& referenceFrequencies,
 				const std::vector<double>& bandwidths,
 				const std::vector<double>& weights);

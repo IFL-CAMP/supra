@@ -1,14 +1,30 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2011-2016, all rights reserved,
-//      Christoph Hennersperger 
-//		EmaiL christoph.hennersperger@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
-//	and
-//		Rüdiger Göbl
-//		Email r.goebl@tum.de
+// Copyright (C) 2011-2016, Christoph Hennersperger - all rights reserved
+// Copyright (C) 2011-2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Christoph Hennersperger 
+//          EmaiL christoph.hennersperger@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
+//    and
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
 //
 // ================================================================================================
 
@@ -40,6 +56,9 @@ namespace supra
 		, m_active(true)
 		, m_pWriter(nullptr)
 		, m_lastElementNumber(0)
+		, m_mockDataWritten(false)
+		, m_writeMockData(false)
+		, m_mockDataFilename("")
 	{
 		m_callFrequency.setName("MHD");
 
@@ -47,6 +66,8 @@ namespace supra
 		m_valueRangeDictionary.set<bool>("createSequences", { false, true }, true, "Sequences");
 		m_valueRangeDictionary.set<bool>("active", { false, true }, true, "Active");
 		m_valueRangeDictionary.set<uint32_t>("maxElements", 1, std::numeric_limits<uint32_t>::max(), 10000, "Maximum elements");
+		m_valueRangeDictionary.set<bool>("writeMockData", { false, true }, false, "(Write mock)");
+		m_valueRangeDictionary.set<string>("mockDataFilename", "", "(Mock meta filename)");
 
 		m_isReady = false;
 	}
@@ -89,7 +110,7 @@ namespace supra
 
 	void MetaImageOutputDevice::startSequence()
 	{
-		if (m_createSequences)
+		if (m_createSequences && m_active)
 		{
 			lock_guard<mutex> l(m_writerMutex);
 			initializeSequence();
@@ -99,7 +120,7 @@ namespace supra
 
 	void MetaImageOutputDevice::stopSequence()
 	{
-		if (m_createSequences)
+		if (m_createSequences && m_isRecording)
 		{
 			lock_guard<mutex> l(m_writerMutex);
 			m_isRecording = false;
@@ -116,12 +137,14 @@ namespace supra
 		m_createSequences = m_configurationDictionary.get<bool>("createSequences");
 		m_active = m_configurationDictionary.get<bool>("active");
 		m_maxElementNumber = m_configurationDictionary.get<uint32_t>("maxElements")-1;
+		m_writeMockData = m_configurationDictionary.get<bool>("writeMockData");
+		m_mockDataFilename = m_configurationDictionary.get<string>("mockDataFilename");
 	}
 
 	void MetaImageOutputDevice::writeData(std::shared_ptr<RecordObject> data)
 	{
 		lock_guard<mutex> l(m_writerMutex);
-		if (m_isReady && m_isRecording && getRunning())
+		if (m_isReady && m_isRecording && getRunning() && m_active)
 		{
 			m_callFrequency.measure();
 			addData(data);
@@ -293,6 +316,12 @@ namespace supra
 		auto imageData = dynamic_pointer_cast<const USImage>(_imageData);
 		if (imageData)
 		{
+			if (m_writeMockData && !m_mockDataWritten)
+			{
+				imageData->getImageProperties()->writeMetaDataForMock(m_mockDataFilename);
+				m_mockDataWritten = true;
+			}
+
 			switch (imageData->getDataType())
 			{
 			case TypeUint8:

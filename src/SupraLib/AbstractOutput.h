@@ -96,6 +96,11 @@ namespace supra
 		}
 
 	protected:
+		virtual void configurationEntryChanged(const std::string& configKey) 
+		{
+			configurationDone();
+		};
+		
 		virtual void configurationChanged()
 		{
 			configurationDone();
