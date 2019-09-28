@@ -26,14 +26,25 @@ namespace supra
 		USTransducer::Type type,
 		const vector<double>& pitchX,
 		const vector<double>& pitchY,
-		const vector<std::pair<double, double> >& matchingLayers)
+		const vector<std::pair<double, double> >& matchingLayers,
+		const vector<bool>& elementMap,
+		const vector<int32_t>& elementToChannelMap)
 		: m_numElements(numElements)
 		, m_elementLayout(elementLayout)
 		, m_type(type)
 		, m_pitchX(pitchX)
 		, m_pitchY(pitchY)
 		, m_matchingLayers(matchingLayers)
+		, m_elementMap(elementMap)
+		, m_elementToChannelMap(elementToChannelMap)
 	{
+		assert(m_elementMap.size() == 0 || m_elementMap.size() == m_numElements);
+		assert(m_elementToChannelMap.size() == 0 || m_elementToChannelMap.size() == m_numElements);
+
+		if (m_elementMap.size() == 0)
+		{
+			m_elementMap = vector<bool>(m_numElements, true);
+		}
 		computeInternals();
 	}
 
@@ -81,6 +92,11 @@ namespace supra
 		return static_cast<shared_ptr<const vector<vec> >>(m_elementNormals);
 	}
 
+	const std::vector<bool>& USTransducer::getElementMap() const
+	{
+		return m_elementMap;
+	}
+
 	bool USTransducer::hasSpecificParameter(std::string parameterName) const
 	{
 		return m_specificParameters.find(parameterName) == m_specificParameters.end();
@@ -100,6 +116,20 @@ namespace supra
 	bool USTransducer::is2D() const
 	{
 		return true;
+	}
+
+	bool USTransducer::isSparse() const
+	{
+		// an array is considered sparse, if not all elements in the layout are present.
+		return std::any_of(m_elementMap.begin(), m_elementMap.end(), [](bool map) -> bool {return !map; });
+	}
+
+	std::vector<int32_t> USTransducer::getMarkedElementToChannelMap() const
+	{
+		std::vector<int32_t> markedMap(m_elementMap.size());
+		std::transform(m_elementMap.begin(), m_elementMap.end(), m_elementToChannelMap.begin(), markedMap.begin(),
+			[](const bool& map, const int32_t& index) -> int32_t { return map ? index : ElementChannelMapNotConnected; });
+		return markedMap;
 	}
 
 	double USTransducer::computeTransitTime(vec2s elementIndex, vec elementToTarget, double speedOfSoundMMperS, bool correctForMatchingLayer) const

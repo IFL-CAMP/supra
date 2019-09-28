@@ -58,6 +58,7 @@ namespace supra
 		// Imaging parameters
 		size_t m_numRxScanlines;
 		vec2s m_rxScanlineLayout;
+		std::unique_ptr<Container<int32_t> > m_elementToChannelMap;
 
 		// prepared Rx parameters
 		mutable std::unique_ptr<Container<LocationType> > m_pRxDepths;

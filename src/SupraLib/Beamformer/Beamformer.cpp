@@ -888,7 +888,8 @@ namespace supra
 		{
 			for (size_t activeElementIdxY = activeAperture.begin.y; activeElementIdxY <= activeAperture.end.y; activeElementIdxY++)
 			{
-				params.elementMap[activeElementIdxX][activeElementIdxY] = true;
+				params.elementMap[activeElementIdxX][activeElementIdxY] = 
+					m_pTransducer->getElementMap()[activeElementIdxX + activeElementIdxY * elementLayout.x];
 			}
 		}
 		// fill the transmit elementMap ScanlineTxParameters
@@ -897,7 +898,8 @@ namespace supra
 		{
 			for (size_t activeElementIdxY = txAperture.begin.y; activeElementIdxY <= txAperture.end.y; activeElementIdxY++)
 			{
-				params.txElementMap[activeElementIdxX][activeElementIdxY] = true;
+				params.txElementMap[activeElementIdxX][activeElementIdxY] = 
+					m_pTransducer->getElementMap()[activeElementIdxX + activeElementIdxY * elementLayout.x];
 			}
 		}
 

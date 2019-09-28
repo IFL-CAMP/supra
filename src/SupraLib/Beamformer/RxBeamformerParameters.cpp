@@ -43,6 +43,7 @@ namespace supra
 		const USTransducer* pTransducer)
 		: m_speedOfSoundMMperS(speedOfSoundMMperS)
 		, m_rxNumDepths(numDepths)
+		, m_nonlinearElementToChannelMapping(false)
 	{
 		vec2s numRxScanlines = { rxParameters->size(), (*rxParameters)[0].size() };
 		m_numRxScanlines = numRxScanlines.x*numRxScanlines.y;
@@ -77,6 +78,12 @@ namespace supra
 		{
 			m_rxElementXs[x_elemIdx] = static_cast<LocationType>(centers->at(x_elemIdx).x);
 			m_rxElementYs[x_elemIdx] = static_cast<LocationType>(centers->at(x_elemIdx).y);
+		}
+
+		if (pTransducer->isSparse())
+		{
+			m_nonlinearElementToChannelMapping = true;
+			m_elementToChannelMap = pTransducer->getMarkedElementToChannelMap();
 		}
 	}
 

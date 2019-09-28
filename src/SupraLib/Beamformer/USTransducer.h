@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <stdint.h>
 #include "vec.h"
 
 #include <utilities/utility.h>
@@ -31,13 +32,17 @@ namespace supra
 			Bicurved
 		};
 
+		constexpr static int32_t ElementChannelMapNotConnected = -1;
+
 		USTransducer(
 			size_t numElements,
 			vec2s elementLayout,
 			USTransducer::Type type,
 			const std::vector<double>& pitchX,
 			const std::vector<double>& pitchY,
-			const std::vector<std::pair<double, double> >& matchingLayers = {});
+			const std::vector<std::pair<double, double> >& matchingLayers = {},
+			const std::vector<bool>& elementMap = {},
+			const std::vector<int32_t>& elementToChannelMap = {});
 
 		/// create the transducer object from an xml description
 		//USTransducer(std::string xmlFilename);
@@ -63,6 +68,7 @@ namespace supra
 		vec2s getElementLayout() const;			// the logical arrangement of the elements. E.g. for 2D: 32x32
 		std::shared_ptr < const std::vector<vec> > getElementCenterPoints() const; // vector of points that mark the center of each transducer element
 		std::shared_ptr < const std::vector<vec> > getElementNormals() const;      // vector of unit-vectors that describe the element normals
+		const std::vector<bool>& getElementMap() const; // returns a vector of present elements (in case of a sparse array)
 
 		bool  hasSpecificParameter(std::string parameterName) const;					// whether one interface-specific parameter exists
 		const std::string&  getSpecificParameter(std::string parameterName) const;	// get one interface-specific parameter
@@ -72,6 +78,8 @@ namespace supra
 		// Dependent properties, i.e. they only have a getter that computes the return value
 		/////////////////////////////////////////////////////////////////////
 		bool is2D() const;
+		bool isSparse() const;
+		std::vector<int32_t> getMarkedElementToChannelMap() const; // Returns a element channel map, where elements that are not present are marked with ElementChannelMapNotConnected
 
 		double computeTransitTime(vec2s elementIndex, vec elementToTarget, double speedOfSoundMMperS, bool correctForMatchingLayer = true) const;
 
@@ -88,6 +96,8 @@ namespace supra
 		std::vector<double> m_pitchX; // pitch of the transducer elemens. Distance of the transducer element centers for linear and curved arrays
 		std::vector<double> m_pitchY; // pitch of the transducer elemens. Distance of the transducer element centers for linear and curved arrays
 		std::vector<std::pair<double, double> > m_matchingLayers; // List of the matching layers, as pairs of thickness [mm] and speed of sound [m/s]
+		std::vector<bool> m_elementMap; // Boolean map of present elements in case of a sparse array. If this and m_elementToChannelMap are not empty, the transducer is considered sparse.
+		std::vector<int32_t> m_elementToChannelMap; // Map of channel index of each transducer element. Only values where m_elementMap is true are considered, the value of the others does not matter. If this and m_elementMap are not empty, the transducer is considered sparse.
 
 		/////////////////////////////////////////////////////////////////////
 		// Properties for efficient ray-Based operations

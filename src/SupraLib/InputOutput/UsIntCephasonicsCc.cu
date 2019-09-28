@@ -180,7 +180,7 @@ namespace supra
 
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<uint32_t>("systemTxClock", {40, 20}, 40, "TX system clock (MHz)");
-		m_valueRangeDictionary.set<string>("probeName", {"Linear", "2D", "CPLA12875", "CPLA06475"}, "Linear", "Probe");
+		m_valueRangeDictionary.set<string>("probeName", {"Linear", "2D", "2D_sparse", "CPLA12875", "CPLA06475"}, "Linear", "Probe");
 		
 		m_valueRangeDictionary.set<double>("startDepth", 0.0, 300.0, 0.0, "Start depth [mm]");
 		m_valueRangeDictionary.set<double>("endDepth", 0.0, 300.0, 70.0, "End depth [mm]");
@@ -527,6 +527,50 @@ namespace supra
 				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 			}
 		}
+		else if (m_probeName == "2D_sparse") {
+			// Fixed element selection for now:
+			//TODO test map for now :)
+			// TODO read the real map from where? Hard-coded would be cumbersome...
+			vector<bool> elementMap(1024, false);
+			vector<int32_t> elementToChannelMap(1024, 0);
+			elementMap[0] = true;
+			elementToChannelMap[0] = 0;
+			elementMap[1] = true;
+			elementToChannelMap[1] = 1;
+
+			double probePitch = 0.3; // From Vermon specification
+			m_pTransducer = unique_ptr<USTransducer>(
+					new USTransducer(
+							1024,
+							vec2s{32,32},
+							USTransducer::Planar,
+							vector<double>(32 - 1, probePitch),
+							{
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch
+							},
+							{}, // We don't know about the matching layers
+							elementMap,
+							elementToChannelMap
+						));
+
+			maxAperture = {32,32};
+
+			// TODO not sure how I need to change this
+			m_probeElementsToMuxedChannelIndices.resize(384);
+
+			// The 2D array uses the element in contiguous order. Nothing to see here.
+			for(size_t probeElem = 0; probeElem < 1024; probeElem++)
+			{
+				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
+			}
+		}
+
 
 		m_pSequencer->setTransducer(m_pTransducer.get());
 
@@ -610,7 +654,7 @@ namespace supra
 			// Defines the type of transducer
 			if (m_probeName == "Linear" || m_probeName == "CPLA12875" || m_probeName == "CPLA06475") {
 				newProps->setTransducerType(USImageProperties::TransducerType::Linear);	
-			} else if (m_probeName == "2D") {
+			} else if (m_probeName == "2D" || m_probeName == "2D_sparse") {
 				newProps->setTransducerType(USImageProperties::TransducerType::Bicurved);
 			}
 

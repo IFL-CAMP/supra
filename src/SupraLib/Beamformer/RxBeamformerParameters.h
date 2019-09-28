@@ -72,6 +72,8 @@ namespace supra
 		const std::vector<ScanlineRxParameters3D> & getRxScanlines() const { return m_rxScanlines; }
 		const std::vector<LocationType> & getRxElementXs() const { return m_rxElementXs; }
 		const std::vector<LocationType> & getRxElementYs() const { return m_rxElementYs; }
+		bool getNonlinearElementToChannelMapping() const { return m_nonlinearElementToChannelMapping; }
+		const std::vector<int32_t> & getElementToChannelMap() const { return m_elementToChannelMap; }
 		size_t getRxNumDepths() const { return m_rxNumDepths; }
 
 
@@ -102,6 +104,8 @@ namespace supra
 		std::vector<ScanlineRxParameters3D> m_rxScanlines;
 		std::vector<LocationType> m_rxElementXs;
 		std::vector<LocationType> m_rxElementYs;
+		bool m_nonlinearElementToChannelMapping;
+		std::vector<int32_t> m_elementToChannelMap;
 		size_t m_rxNumDepths;
 	};
 }
