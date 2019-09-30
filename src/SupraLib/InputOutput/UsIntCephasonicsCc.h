@@ -175,6 +175,7 @@ namespace supra
 
 		// system-wide imaging settings (i.e. identical for all individual firings or images in a sequence)
 		std::string m_probeName;
+		std::string m_sparseMatrixJsonFilename;
 		std::vector<size_t> m_probeElementsToMuxedChannelIndices;
 		double m_startDepth;
 		double m_endDepth;
