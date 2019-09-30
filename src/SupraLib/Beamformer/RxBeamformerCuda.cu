@@ -13,6 +13,7 @@
 #include "USRawData.h"
 #include "RxSampleBeamformerDelayAndSum.h"
 #include "RxSampleBeamformerDelayAndStdDev.h"
+#include "RxSampleBeamformerCoherenceFactorDelayAndSum.h"
 #include "RxSampleBeamformerTestSignal.h"
 #include "RxBeamformerCommon.h"
 #include "utilities/cudaUtility.h"
@@ -574,6 +575,10 @@ namespace supra
 		case DelayAndStdDev:
 			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerDelayAndStdDev, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
 			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerDelayAndStdDev, ChannelDataType, ImageDataType, LocationType>;
+			break;
+		case CoherenceFactorDelayAndSum:
+			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerCoherenceFactorDelayAndSum, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;
+			beamformingFunction2D = &rxBeamformingDTspaceCuda<RxSampleBeamformerCoherenceFactorDelayAndSum, ChannelDataType, ImageDataType, LocationType>;
 			break;
 		case TestSignal:
 			beamformingFunction3D = &rxBeamformingDTspaceCuda3D<RxSampleBeamformerTestSignal, m_windowFunctionNumEntries, ChannelDataType, ImageDataType, LocationType>;

@@ -31,6 +31,7 @@ namespace supra
 		enum RxSampleBeamformer {
 			DelayAndSum,
 			DelayAndStdDev,
+			CoherenceFactorDelayAndSum,
 			TestSignal,
 			INVALID
 		};
