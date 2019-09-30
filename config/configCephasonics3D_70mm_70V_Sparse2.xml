@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<supra_config>
+    <devices>
+        <inputs>
+            <input type="UltrasoundInterfaceCephasonicsCC" id="US-Cep">
+                <param name="endDepth" type="double">70</param>
+                <param name="highPassFilterBypass" type="bool">0</param>
+                <param name="mockDataFilename" type="string">mockData.mock</param>
+                <param name="numSamplesRecon" type="uint32_t">2000</param>
+                <param name="numScanlinesX" type="uint32_t">32</param>
+                <param name="numScanlinesY" type="uint32_t">16</param>
+                <param name="probeName" type="string">2D_sparse</param>
+                <param name="rxScanlineSubdivisionX" type="uint32_t">1</param>
+                <param name="rxScanlineSubdivisionY" type="uint32_t">1</param>
+                <param name="scanType" type="string">biphased</param>
+                <param name="sparseMatrixJsonFilename" type="string">../config/MatrixProbe_sparsityMap.json</param>
+                <param name="tgc0" type="double">15</param>
+                <param name="tgc1" type="double">17</param>
+                <param name="tgc2" type="double">19</param>
+                <param name="tgc3" type="double">21</param>
+                <param name="tgc4" type="double">23</param>
+                <param name="tgc5" type="double">30</param>
+                <param name="tgc6" type="double">31</param>
+                <param name="tgc7" type="double">38</param>
+                <param name="tgc8" type="double">42</param>
+                <param name="tgc9" type="double">44</param>
+                <param name="txApertureSizeX" type="uint32_t">0</param>
+                <param name="txApertureSizeY" type="uint32_t">0</param>
+                <param name="txCorrectMatchingLayers" type="bool">0</param>
+                <param name="txFocusActive" type="bool">1</param>
+                <param name="txFocusDepth" type="double">40</param>
+                <param name="txNumCyclesCephasonics" type="uint32_t">2</param>
+                <param name="txPulseInversion" type="bool">1</param>
+                <param name="txPulseType" type="string">unipolar</param>
+                <param name="txSectorAngleX" type="double">40</param>
+                <param name="txSectorAngleY" type="double">40</param>
+                <param name="txVoltage" type="double">70</param>
+                <param name="txWindowParameter" type="double">1</param>
+                <param name="txWindowType" type="string">Hamming</param>
+                <param name="writeMockData" type="bool">1</param>
+            </input>
+        </inputs>
+        <outputs>
+            <output type="OpenIGTLinkOutputDevice" id="IGTL"/>
+            <output type="OpenIGTLinkOutputDevice" id="IGTL_2"/>
+            <output type="MetaImageOutputDevice" id="MHD_Raw">
+                <param name="createSequences" type="bool">1</param>
+                <param name="filename" type="string">rawData</param>
+            </output>
+            <output type="MetaImageOutputDevice" id="MHD_Scan">
+                <param name="createSequences" type="bool">1</param>
+                <param name="filename" type="string">images</param>
+            </output>
+            <output type="MetaImageOutputDevice" id="MHD_ScanMask">
+                <param name="createSequences" type="bool">0</param>
+                <param name="filename" type="string">imageMask</param>
+            </output>
+        </outputs>
+        <nodes>
+            <node type="BeamformingNode" id="BEAM">
+                <param name="windowParameter" type="double">0.5</param>
+                <param name="windowType" type="string">Hamming</param>
+            </node>
+            <node type="BeamformingNode" id="BeamformingNode_1">
+                <param name="beamformerType" type="string">CoherenceFactorDelayAndSum</param>
+                <param name="windowParameter" type="double">0.5</param>
+                <param name="windowType" type="string">Hamming</param>
+            </node>
+            <node type="HilbertFirEnvelopeNode" id="DEMO"/>
+            <node type="HilbertFirEnvelopeNode" id="HilbertFirEnvelopeNode_1"/>
+            <node type="LogCompressorNode" id="LOGC">
+                <param name="inMax" type="double">2424</param>
+            </node>
+            <node type="LogCompressorNode" id="LogCompressorNode_1">
+                <param name="inMax" type="double">424</param>
+            </node>
+            <node type="ScanConverterNode" id="SCAN">
+                <param name="imageResolution" type="double">0.18</param>
+                <param name="imageResolutionForced" type="bool">1</param>
+                <param name="outputType" type="DataType">uint8_t</param>
+            </node>
+            <node type="ScanConverterNode" id="ScanConverterNode_1">
+                <param name="imageResolution" type="double">0.18</param>
+                <param name="imageResolutionForced" type="bool">1</param>
+                <param name="outputType" type="DataType">uint8_t</param>
+            </node>
+            <node type="TemporalFilterNode" id="TemporalFilterNode_1">
+                <param name="numImages" type="uint32_t">10</param>
+            </node>
+            <node type="TemporalFilterNode" id="TemporalFilterNode_2">
+                <param name="numImages" type="uint32_t">10</param>
+            </node>
+        </nodes>
+    </devices>
+    <connections>
+        <connection>
+            <from id="BEAM" port="0"/>
+            <to id="TemporalFilterNode_1" port="0"/>
+        </connection>
+        <connection>
+            <from id="BeamformingNode_1" port="0"/>
+            <to id="TemporalFilterNode_2" port="0"/>
+        </connection>
+        <connection>
+            <from id="DEMO" port="0"/>
+            <to id="LOGC" port="0"/>
+        </connection>
+        <connection>
+            <from id="HilbertFirEnvelopeNode_1" port="0"/>
+            <to id="LogCompressorNode_1" port="0"/>
+        </connection>
+        <connection>
+            <from id="LOGC" port="0"/>
+            <to id="SCAN" port="0"/>
+        </connection>
+        <connection>
+            <from id="LogCompressorNode_1" port="0"/>
+            <to id="ScanConverterNode_1" port="0"/>
+        </connection>
+        <connection>
+            <from id="SCAN" port="0"/>
+            <to id="IGTL" port="0"/>
+        </connection>
+        <connection>
+            <from id="ScanConverterNode_1" port="0"/>
+            <to id="IGTL2" port="0"/>
+        </connection>
+        <connection>
+            <from id="SCAN" port="0"/>
+            <to id="MHD_Scan" port="0"/>
+        </connection>
+        <connection>
+            <from id="SCAN" port="1"/>
+            <to id="MHD_ScanMask" port="0"/>
+        </connection>
+        <connection>
+            <from id="TemporalFilterNode_1" port="0"/>
+            <to id="DEMO" port="0"/>
+        </connection>
+        <connection>
+            <from id="TemporalFilterNode_2" port="0"/>
+            <to id="HilbertFirEnvelopeNode_1" port="0"/>
+        </connection>
+        <connection>
+            <from id="US-Cep" port="0"/>
+            <to id="BEAM" port="0"/>
+        </connection>
+        <connection>
+            <from id="US-Cep" port="0"/>
+            <to id="BeamformingNode_1" port="0"/>
+        </connection>
+        <connection>
+            <from id="US-Cep" port="0"/>
+            <to id="MHD_Raw" port="0"/>
+        </connection>
+    </connections>
+</supra_config>

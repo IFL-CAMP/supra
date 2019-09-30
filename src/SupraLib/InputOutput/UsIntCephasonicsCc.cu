@@ -540,7 +540,7 @@ namespace supra
 			std::ifstream f(m_sparseMatrixJsonFilename);
 			if (!f.good())
 			{
-				logging::log_error("UsIntCephasonicsCc: Error opening matrix json file ", m_sparseMatrixJsonFilename);
+				logging::log_error("UsIntCephasonicsCc: Error opening matrix json file '", m_sparseMatrixJsonFilename, "'");
 				throw std::runtime_error("UsIntCephasonicsCc: Error opening matrix json file.");
 			}
 
@@ -554,7 +554,7 @@ namespace supra
 
 			if (!jsonOk)
 			{
-				logging::log_error("UsIntCephasonicsCc: Error parsing matrix json file ", m_sparseMatrixJsonFilename);
+				logging::log_error("UsIntCephasonicsCc: Error parsing matrix json file '", m_sparseMatrixJsonFilename, "'");
 				logging::log_error("UsIntCephasonicsCc: Reason: ", jsonErrs);
 				throw std::runtime_error("UsIntCephasonicsCc: Error parsing matrix json file.");
 			}
