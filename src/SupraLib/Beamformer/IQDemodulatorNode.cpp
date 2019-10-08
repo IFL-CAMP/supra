@@ -160,7 +160,7 @@ namespace supra
 		m_frequencyCompoundingBandwidths.resize(listLength, 1e6);
 	}
 
-	void IQDemodulatorNode::updateImageProperties(std::shared_ptr<const USImageProperties> imageProperties)
+	void IQDemodulatorNode::updateImageProperties(const std::shared_ptr<const USImageProperties> imageProperties)
 	{
 		m_lastSeenImageProperties = imageProperties;
 		shared_ptr<USImageProperties> newProps = make_shared<USImageProperties>(*imageProperties);
@@ -181,7 +181,7 @@ namespace supra
 	}
 
 	template <typename InputType>
-	std::shared_ptr<ContainerBase> IQDemodulatorNode::demodulateTemplated(std::shared_ptr<USImage> inImage)
+	std::shared_ptr<ContainerBase> IQDemodulatorNode::demodulateTemplated(const std::shared_ptr<USImage> inImage)
 	{
 		switch (m_outputType)
 		{
@@ -209,7 +209,7 @@ namespace supra
 		return nullptr;
 	}
 
-	shared_ptr<RecordObject> IQDemodulatorNode::checkTypeAndDemodulate(shared_ptr<RecordObject> inObj)
+	shared_ptr<RecordObject> IQDemodulatorNode::checkTypeAndDemodulate(const shared_ptr<RecordObject> inObj)
 	{
 		shared_ptr<USImage> pImageDemod = nullptr;
 		if (inObj && inObj->getType() == TypeUSImage)

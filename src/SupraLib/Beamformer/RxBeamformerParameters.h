@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2017, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2017, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #ifndef __RXBEAMFORMERPARAMETERS_H__
@@ -57,6 +72,8 @@ namespace supra
 		const std::vector<ScanlineRxParameters3D> & getRxScanlines() const { return m_rxScanlines; }
 		const std::vector<LocationType> & getRxElementXs() const { return m_rxElementXs; }
 		const std::vector<LocationType> & getRxElementYs() const { return m_rxElementYs; }
+		bool getNonlinearElementToChannelMapping() const { return m_nonlinearElementToChannelMapping; }
+		const std::vector<int32_t> & getElementToChannelMap() const { return m_elementToChannelMap; }
 		size_t getRxNumDepths() const { return m_rxNumDepths; }
 
 
@@ -75,6 +92,8 @@ namespace supra
 
 		void writeMetaDataForMock(std::string filename, std::shared_ptr<const USRawData> rawData) const;
 		static std::shared_ptr<USRawData> readMetaDataForMock(const std::string & mockMetadataFilename);
+		static std::shared_ptr<USRawData> readMetaDataForMockAscii(const std::string & mockAsciiMetadataFilename);
+		static std::shared_ptr<USRawData> readMetaDataForMockJson(const std::string & mockJsonMetadataFilename);
 		
 	private:
 
@@ -85,6 +104,8 @@ namespace supra
 		std::vector<ScanlineRxParameters3D> m_rxScanlines;
 		std::vector<LocationType> m_rxElementXs;
 		std::vector<LocationType> m_rxElementYs;
+		bool m_nonlinearElementToChannelMapping;
+		std::vector<int32_t> m_elementToChannelMap;
 		size_t m_rxNumDepths;
 	};
 }

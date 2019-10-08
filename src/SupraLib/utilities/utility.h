@@ -206,6 +206,9 @@ namespace supra
 
 	/// Performs a busy wait for the given number of microseconds. This is just a debug-tool
 	void busyWait(size_t microseconds);
+
+	/// Returns whether the given file exists
+	bool fileExists(const std::string& path);
 }
 
 #endif // !__UTILITY_H__

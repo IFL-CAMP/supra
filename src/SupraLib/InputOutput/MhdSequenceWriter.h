@@ -51,7 +51,11 @@ namespace supra
 		void writerThread();
 		void addImageInternal(const uint8_t* imageData, size_t numel, std::function<void(const uint8_t*, size_t)> deleteCallback);
 
+#if defined(_WIN32) && defined(_M_IX86)
+		static constexpr size_t sm_memoryBufferDefaultSize = 512 * 1024 * (size_t)1024; // [Bytes]
+#else
 		static constexpr size_t sm_memoryBufferDefaultSize = 4 * 1024 * 1024 * (size_t)1024; // [Bytes]
+#endif
 
 		bool m_wroteHeaders;
 		size_t m_nextFrameNumber;

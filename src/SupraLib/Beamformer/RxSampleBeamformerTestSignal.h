@@ -22,7 +22,7 @@ namespace supra
 	class RxSampleBeamformerTestSignal
 	{
 	public:
-		template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
+		template <bool interpolateRFlines, bool nonlinearElementToChannelMapping, typename RFType, typename ResultType, typename LocationType>
 		static __device__ ResultType sampleBeamform3D(
 			ScanlineRxParameters3D::TransmitParameters txParams,
 			const RFType* RF,
@@ -43,7 +43,8 @@ namespace supra
 			LocationType dt,
 			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction,
-			const WindowFunction::ElementType* functionShared
+			const WindowFunction::ElementType* functionShared,
+			const int32_t* elementToChannelMap
 		)
 		{
 			constexpr float cylinderSpacing = 6; //[mm]
@@ -84,7 +85,7 @@ namespace supra
 			return sample;
 		}
 
-		template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
+		template <bool interpolateRFlines, bool nonlinearElementToChannelMapping, typename RFType, typename ResultType, typename LocationType>
 		static __device__ ResultType sampleBeamform2D(
 			ScanlineRxParameters3D::TransmitParameters txParams,
 			const RFType* RF,
@@ -102,7 +103,8 @@ namespace supra
 			LocationType speedOfSound,
 			LocationType dt,
 			int32_t additionalOffset,
-			const WindowFunctionGpu* windowFunction
+			const WindowFunctionGpu* windowFunction,
+			const int32_t* elementToChannelMap
 		)
 		{
 			constexpr float cylinderSpacing = 6; //[mm]

@@ -6,3 +6,7 @@ build*/
 doc/doxy/
 tools/.idea/
 doc/supraParameters/
+\.idea
+*.orig
+data*/
+cmake-build-*

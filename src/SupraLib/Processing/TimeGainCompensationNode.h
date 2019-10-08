@@ -10,7 +10,7 @@
 // ================================================================================================
 
 #ifndef __TIMEGAINCOMPENSATIONNODE_H__
-#define __TIMEGAINCOMPENSATIONNODE_H__7
+#define __TIMEGAINCOMPENSATIONNODE_H__
 
 #ifdef HAVE_CUDA
 

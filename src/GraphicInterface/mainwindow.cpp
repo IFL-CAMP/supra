@@ -391,7 +391,7 @@ namespace supra
 			{
 				if (nodePredecessor.second.size() != 0)
 				{
-					for (int pred = 0; pred < nodePredecessor.second.size(); pred++)
+					for (int pred = 0; pred < static_cast<int>(nodePredecessor.second.size()); pred++)
 					{
 						if (nodePredecessors[nodePredecessor.second[pred]].size() == 0)
 						{

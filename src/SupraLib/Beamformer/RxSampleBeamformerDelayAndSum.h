@@ -22,7 +22,7 @@ namespace supra
 	class RxSampleBeamformerDelayAndSum
 	{
 	public:
-		template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
+		template <bool interpolateRFlines, bool nonlinearElementToChannelMapping, typename RFType, typename ResultType, typename LocationType>
 		static __device__ ResultType sampleBeamform3D(
 			ScanlineRxParameters3D::TransmitParameters txParams,
 			const RFType* RF,
@@ -43,7 +43,8 @@ namespace supra
 			LocationType dt,
 			int32_t additionalOffset,
 			const WindowFunctionGpu* windowFunction,
-			const WindowFunction::ElementType* functionShared
+			const WindowFunction::ElementType* functionShared,
+			const int32_t* elementToChannelMap
 		)
 		{
 			float sample = 0.0f;
@@ -56,7 +57,20 @@ namespace supra
 				for (uint32_t elemIdxY = txParams.firstActiveElementIndex.y; elemIdxY < txParams.lastActiveElementIndex.y; elemIdxY++)
 				{
 					uint32_t elemIdx = elemIdxX + elemIdxY*elementLayout.x;
-					uint32_t  channelIdx = elemIdx % numReceivedChannels;
+					uint32_t  channelIdx;
+					if (nonlinearElementToChannelMapping)
+					{
+						if (elementToChannelMap[elemIdx] == USTransducer::ElementChannelMapNotConnected)
+						{
+							// This element was not connected to any of the channels. Nothing to do for it.
+							continue;
+						}
+						channelIdx = elementToChannelMap[elemIdx];
+					}
+					else
+					{
+						channelIdx = elemIdx % numReceivedChannels;
+					}
 					LocationType x_elem = x_elemsDTsh[elemIdx];
 					LocationType z_elem = z_elemsDTsh[elemIdx];
 
@@ -105,7 +119,7 @@ namespace supra
 			}
 		}
 
-		template <bool interpolateRFlines, typename RFType, typename ResultType, typename LocationType>
+		template <bool interpolateRFlines, bool nonlinearElementToChannelMapping, typename RFType, typename ResultType, typename LocationType>
 		static __device__ ResultType sampleBeamform2D(
 			ScanlineRxParameters3D::TransmitParameters txParams,
 			const RFType* RF,
@@ -123,7 +137,8 @@ namespace supra
 			LocationType speedOfSound,
 			LocationType dt,
 			int32_t additionalOffset,
-			const WindowFunctionGpu* windowFunction
+			const WindowFunctionGpu* windowFunction,
+			const int32_t* elementToChannelMap
 		)
 		{
 			float sample = 0.0f;
@@ -134,7 +149,20 @@ namespace supra
 
 			for (int32_t elemIdxX = txParams.firstActiveElementIndex.x; elemIdxX < txParams.lastActiveElementIndex.x; elemIdxX++)
 			{
-				int32_t  channelIdx = elemIdxX % numReceivedChannels;
+				uint32_t channelIdx;
+				if (nonlinearElementToChannelMapping)
+				{
+					if (elementToChannelMap[elemIdxX] == USTransducer::ElementChannelMapNotConnected)
+					{
+						// This element was not connected to any of the channels. Nothing to do for it.
+						continue;
+					}
+					channelIdx = elementToChannelMap[elemIdxX];
+				}
+				else
+				{
+					channelIdx = elemIdxX % numReceivedChannels;
+				}
 				LocationType x_elem = x_elemsDT[elemIdxX];
 				if (abs(x_elem - scanline_x) <= aDT)
 				{

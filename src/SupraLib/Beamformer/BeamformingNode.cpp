@@ -38,11 +38,12 @@ namespace supra
 				new NodeTypeQueueing(graph, 1, [this](shared_ptr<RecordObject> inObj) -> shared_ptr<RecordObject> { return checkTypeAndBeamform(inObj); }));
 		}
 
-		m_callFrequency.setName("Beamforming");
+		m_callFrequency.setName("BeamformingDAS");
 		m_valueRangeDictionary.set<double>("fNumber", 0.1, 4, 1, "F-Number");
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
-		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "TestSignal"}, "DelayAndSum", "RxBeamformer");
+		m_valueRangeDictionary.set<double>("speedOfSound", 1000, 2000, 1540.0, "Speed of sound [m/s]");
+		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "CoherenceFactorDelayAndSum", "TestSignal"}, "DelayAndSum", "RxBeamformer");
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
 		m_valueRangeDictionary.set<int32_t>("additionalOffset", -1000, 1000, 0, "Additional Offset [Samples]");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
@@ -54,6 +55,7 @@ namespace supra
 		m_fNumber = m_configurationDictionary.get<double>("fNumber");
 		readWindowType();
 		m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
+		m_speedOfSoundMMperS = m_configurationDictionary.get<double>("speedOfSound") * 1000.0;
 		readBeamformerType();
 		m_interpolateTransmits = m_configurationDictionary.get<bool>("interpolateTransmits");
 		m_additionalOffset = m_configurationDictionary.get<int32_t>("additionalOffset");
@@ -74,6 +76,10 @@ namespace supra
 		else if (configKey == "windowParameter")
 		{
 			m_windowParameter = m_configurationDictionary.get<double>("windowParameter");
+		}
+		else if (configKey == "speedOfSound")
+		{
+			m_speedOfSoundMMperS = m_configurationDictionary.get<double>("speedOfSound") * 1000.0;
 		}
 		else if (configKey == "beamformerType")
 		{
@@ -104,12 +110,12 @@ namespace supra
 		{
 		case supra::TypeInt16:
 			return m_beamformer->performRxBeamforming<InputType, int16_t>(
-				m_beamformerType, pRawData, m_fNumber,
+				m_beamformerType, pRawData, m_fNumber, m_speedOfSoundMMperS,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_additionalOffset);
 			break;
 		case supra::TypeFloat:
 			return m_beamformer->performRxBeamforming<InputType, float>(
-				m_beamformerType, pRawData, m_fNumber,
+				m_beamformerType, pRawData, m_fNumber, m_speedOfSoundMMperS,
 				m_windowType, static_cast<WindowFunction::ElementType>(m_windowParameter), m_interpolateTransmits, m_additionalOffset);
 			break;
 		default:
@@ -203,6 +209,10 @@ namespace supra
 		{
 			m_beamformerType = RxBeamformerCuda::DelayAndStdDev;
 		}
+		else if (beamformer == "CoherenceFactorDelayAndSum")
+		{
+			m_beamformerType = RxBeamformerCuda::CoherenceFactorDelayAndSum;
+		}
 		else if (beamformer == "TestSignal")
 		{
 			m_beamformerType = RxBeamformerCuda::TestSignal;
@@ -216,6 +226,7 @@ namespace supra
 		m_editedImageProperties->setSpecificParameter("Beamformer.FNumber", m_fNumber);
 		m_editedImageProperties->setSpecificParameter("Beamformer.WindowType", m_windowType);
 		m_editedImageProperties->setSpecificParameter("Beamformer.WindowParameter", m_windowParameter);
+		m_editedImageProperties->setSpecificParameter("Beamformer.RxSpeedOfSound", m_speedOfSoundMMperS);
 		m_editedImageProperties->setSpecificParameter("Beamformer.BeamformerType", m_beamformerType);
 		m_editedImageProperties->setSpecificParameter("Beamformer.InterpolateTransmits", m_interpolateTransmits);
 	}

@@ -1,12 +1,27 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2016, all rights reserved,
-//      Rüdiger Göbl 
-//		Email r.goebl@tum.de
-//      Chair for Computer Aided Medical Procedures
-//      Technische Universität München
-//      Boltzmannstr. 3, 85748 Garching b. München, Germany
+// Copyright (C) 2016, Rüdiger Göbl - all rights reserved
+// Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+//
+//          Rüdiger Göbl
+//          Email r.goebl@tum.de
+//          Chair for Computer Aided Medical Procedures
+//          Technische Universität München
+//          Boltzmannstr. 3, 85748 Garching b. München, Germany
 // 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License, version 2.1, as published by the Free Software Foundation.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
 // ================================================================================================
 
 #ifndef __FIRFILTERFACTORY_H__
@@ -40,7 +55,7 @@ namespace supra
 		/// Returns a FIR filter constructed with the window-method
 		template <typename ElementType>
 		static std::shared_ptr<Container<ElementType> >
-			createFilter(size_t length, FilterType type, FilterWindow window, double samplingFrequency = 2.0, double frequency = 0.0, double bandwidth = 0.0)
+			createFilter(const size_t &length, const FilterType &type, const FilterWindow &window, const double &samplingFrequency = 2.0, const double &frequency = 0.0, const double &bandwidth = 0.0)
 		{
 			std::shared_ptr<Container<ElementType> > filter = createFilterNoWindow<ElementType>(length, type, samplingFrequency, frequency, bandwidth);
 			applyWindowToFilter<ElementType>(filter, window);
@@ -55,7 +70,7 @@ namespace supra
 	private:
 		template <typename ElementType>
 		static std::shared_ptr<Container<ElementType> >
-			createFilterNoWindow(size_t length, FilterType type, double samplingFrequency, double frequency, double bandwidth)
+			createFilterNoWindow(const size_t &length, const FilterType &type, const double &samplingFrequency, const double &frequency, const double &bandwidth)
 		{
 			if (type == FilterTypeHighPass || type == FilterTypeBandPass || type == FilterTypeLowPass)
 			{
@@ -74,7 +89,7 @@ namespace supra
 			auto filter = std::make_shared<Container<ElementType> >(LocationHost, cudaStreamPerThread, length);
 
 			//determine the filter function
-			std::function<ElementType(int)> filterFunction = [halfWidth](int n) -> ElementType {
+			std::function<ElementType(int)> filterFunction = [&halfWidth](int n) -> ElementType {
 				if (n == halfWidth)
 				{
 					return static_cast<ElementType>(1);
@@ -201,16 +216,16 @@ namespace supra
 		}
 
 		template <typename T>
-		static T bessel0_1stKind(T x)
+		static T bessel0_1stKind(const T &x)
 		{
 			T sum = 0.0;
-
-			int factorial = 1;
+			//implemented look up factorial. 
+			static const int factorial[9] = { 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
 			for (int k = 1; k < 10; k++)
 			{
 				T xPower = pow(x / (T)2.0, (T)k);
-				factorial *= k; // like this factorial is indeed equal k!
-				sum += pow(xPower / (T)factorial, (T)2.0);
+				// 1, 2, 6, 24, 120, 720, 5040, 40320, 362880
+				sum += pow(xPower / (T)factorial[k-1], (T)2.0);
 			}
 			return (T)1.0 + sum;
 		}

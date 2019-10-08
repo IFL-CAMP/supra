@@ -18,7 +18,7 @@ include(ExternalProject)
 
 SET(NodeEditor_DIR "${CMAKE_CURRENT_BINARY_DIR}/NodeEditor")
 SET(NodeEditor_GIT_REPOSITORY "https://github.com/goeblr/nodeeditor.git" CACHE STRING "")
-SET(NodeEditor_GIT_TAG "feature_lightweight" CACHE STRING "")
+SET(NodeEditor_GIT_TAG "3bcba3740d68932f3ffaa4b3dc73e624fe51e2db" CACHE STRING "")
 ExternalProject_Add( 
 	NodeEditor
 	PREFIX "${NodeEditor_DIR}"
@@ -162,3 +162,9 @@ set_property(TARGET SUPRA_GUI PROPERTY CXX_STANDARD_REQUIRED ON)
 add_dependencies(SUPRA_GUI SUPRA_Lib NodeEditor)
 
 qt5_use_modules(SUPRA_GUI Widgets)
+
+INSTALL(TARGETS SUPRA_GUI
+  RUNTIME
+  DESTINATION bin
+  COMPONENT applications)
+
