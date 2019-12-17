@@ -85,7 +85,7 @@ namespace supra
 			// MARK: Brought the get Parameters under the get requests.
 			else if (path[0] == "parameters")
 			{
-				std::nodeType;
+				std::string nodeType;
 				// Path example: "GitUrl/parameters/nodeID" nodeID = path[1]
 				if(path.size() > 1)
                 {
