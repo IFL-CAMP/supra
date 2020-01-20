@@ -32,7 +32,7 @@ time. Even on hardware as small as the CUDA enabled Jetson TX2 **SUPRA** can be 
 
 Getting started
 ----------------
-To get an overview of the concepts behind SUPRA and how you can use and modify it, head over to the [wiki](https://github.com/IFL-CAMP/supra/wiki).
+To get an overview of the concepts behind SUPRA and how you can use and modify it, head over to the [wiki](https://github.com/IFL-CAMP/supra/wiki), or have a look at the recording of SUPRA-con at YouTube [SUPRA-con Playlist](https://www.youtube.com/watch?v=dQkUSpV2CtE&list=PLWMNh90FOFSiGOA_VilmuRVqD_5goBrJq).
 
 License
 ----------------
