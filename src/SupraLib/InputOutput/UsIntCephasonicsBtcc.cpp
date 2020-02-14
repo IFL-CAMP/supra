@@ -59,7 +59,6 @@
 
 namespace supra
 {
-	using namespace ::std;
 	using namespace ::cs;
 	using namespace logging;
 
@@ -876,7 +875,7 @@ namespace supra
 							int16_t rawVal = buff[chan + numChans*row + y*numVectors];
 							sum += abs(rawVal);
 						}
-						uint32_t absVal = m_intensityScaling*(double)(abs(sum)) / numSamples;
+						uint32_t absVal = m_intensityScaling*(double)(abs((double)sum)) / numSamples;
 						uint8_t val = static_cast<uint8_t>(min(absVal, (uint32_t)255));
 
 						pData->get()[chan + numChans*row] = val;
