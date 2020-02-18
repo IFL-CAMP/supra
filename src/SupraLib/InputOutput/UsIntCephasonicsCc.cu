@@ -436,9 +436,10 @@ namespace supra
 					m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 				}
 			}
-			else if ((m_numMuxedChannels == 192 || m_numMuxedChannels == 128) && m_numChannelsTotal == 64)
+			else if ((m_numMuxedChannels == 192 || m_numMuxedChannels == 128) && 
+			    (m_numChannelsTotal == 64 || m_numChannelsTotal == 128))
 			{
-				// 64 channel system which allows for full realtime imaging of 128 element probe
+				// 64 or 128 channel system which allows for full realtime imaging of 128 element probe
 				m_probeElementsToMuxedChannelIndices.resize(128);
 
 				// Linear transducer is expected to be at platform 0
@@ -527,6 +528,9 @@ namespace supra
 				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 			}
 		}
+		logging::error_if(m_probeElementsToMuxedChannelIndices.size() == 0,
+		    "UsIntCephasonicsCc: Probe - system combination unknown. (Probe: ", m_probeName, 
+			", numChannelsTotal: ", m_numChannelsTotal, ", numMuxedChannels: ", m_numMuxedChannels);
 
 		m_pSequencer->setTransducer(m_pTransducer.get());
 
