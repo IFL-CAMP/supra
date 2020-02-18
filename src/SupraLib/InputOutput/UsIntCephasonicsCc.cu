@@ -528,7 +528,7 @@ namespace supra
 				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 			}
 		}
-		logging::error_if(m_probeElementsToMuxedChannelIndices.size() == 0,
+		logging::log_error_if(m_probeElementsToMuxedChannelIndices.size() == 0,
 		    "UsIntCephasonicsCc: Probe - system combination unknown. (Probe: ", m_probeName, 
 			", numChannelsTotal: ", m_numChannelsTotal, ", numMuxedChannels: ", m_numMuxedChannels);
 
