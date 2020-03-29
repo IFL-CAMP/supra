@@ -30,6 +30,10 @@ time. Even on hardware as small as the CUDA enabled Jetson TX2 **SUPRA** can be 
 
 ![Standard ultrasound pipeline and where the processing takes place. Transmit beamforming is performed on the CPU, transmit and receive are performed in specialized hardware. All other processing steps (receive beamforming, envelope detection, log-compression, scan-conversion) happen in software and on the GPU](http://campar.in.tum.de/files/goeblr/UsPipeline_small.png "Standard pipeline and where the processing takes place")
 
+Getting started
+----------------
+To get an overview of the concepts behind SUPRA and how you can use and modify it, head over to the [wiki](https://github.com/IFL-CAMP/supra/wiki).
+
 License
 ----------------
 LGPL v2.1
