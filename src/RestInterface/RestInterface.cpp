@@ -88,11 +88,11 @@ namespace supra
 				std::string nodeType;
 				// Path example: "GitUrl/parameters/nodeID" nodeID = path[1]
 				if(path.size() > 1)
-                {
-				    nodeType = path[1];
-				    auto response = get_node_parameters(nodeType);
-				    message.reply(status_codes::OK, response);
-                }
+				{
+					nodeType = path[1];
+					auto response = get_node_parameters(nodeType);
+					message.reply(status_codes::OK, response);
+				}
 				else
 				{
 				    message.reply(status_codes::NotFound);
