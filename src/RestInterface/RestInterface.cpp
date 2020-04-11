@@ -85,21 +85,17 @@ namespace supra
 			// MARK: Brought the get Parameters under the get requests.
 			else if (path[0] == "parameters")
 			{
-				auto reqJsonTask = message.extract_json();
-				reqJsonTask.wait();
-				auto reqJson = reqJsonTask.get();
-				if (reqJson.is_object())
+				std::string nodeType;
+				// Path example: "GitUrl/parameters/nodeID" nodeID = path[1]
+				if(path.size() > 1)
 				{
-					auto reqObj = reqJson.as_object();
-					if (reqObj.find("nodeID") != reqObj.end())
-					{
-						std::string nodeID = reqObj["nodeID"].as_string();
-						auto response = get_node_parameters(nodeID);
-						message.reply(status_codes::OK, response);
-					}
+					nodeType = path[1];
+					auto response = get_node_parameters(nodeType);
+					message.reply(status_codes::OK, response);
 				}
-				else {
-					message.reply(status_codes::NotFound);
+				else
+				{
+				    message.reply(status_codes::NotFound);
 				}
 			}
 		}
