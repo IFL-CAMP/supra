@@ -87,7 +87,23 @@ SET(CEPHASONICS_INCLUDE /usr/include/)
 set(Boost_USE_STATIC_LIBS      OFF)
 set(Boost_USE_MULTITHREADED    ON)
 set(Boost_USE_STATIC_RUNTIME   OFF)
-find_package(Boost 1.54.0 EXACT REQUIRED COMPONENTS system filesystem program_options thread)
+
+# determine whether we are building on ubuntu and which version
+find_program(LSB_RELEASE_EXEC lsb_release)
+execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
+    OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+find_program(LSB_RELEASE_EXEC lsb_release)
+execute_process(COMMAND ${LSB_RELEASE_EXEC} -rs
+    OUTPUT_VARIABLE LSB_RELEASE_SHORT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(LSB_RELEASE_ID_SHORT EQUAL "Ubuntu" AND LSB_RELEASE_SHORT EQUAL "16.04")
+  find_package(Boost 1.54.0 EXACT REQUIRED COMPONENTS system filesystem program_options thread)
+ELSE()
+  find_package(Boost REQUIRED COMPONENTS system filesystem program_options thread)
+ENDIF()
 if(Boost_FOUND)
   SET(CEPHASONICS_INCLUDE ${CEPHASONICS_INCLUDE} ${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIR}/boost ${Boost_INCLUDE_DIR}/boost/thread)
   SET(CEPHASONICS_LIBRARIES ${CEPHASONICS_LIBRARIES} ${Boost_LIBRARIES})
