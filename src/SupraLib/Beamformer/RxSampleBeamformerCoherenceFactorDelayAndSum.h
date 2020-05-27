@@ -1,6 +1,6 @@
 // ================================================================================================
 // 
-// If not explicitly stated: Copyright (C) 2017, all rights reserved,
+// If not explicitly stated: Copyright (C) 2019, all rights reserved,
 //      Rüdiger Göbl 
 //		Email r.goebl@tum.de
 //      Chair for Computer Aided Medical Procedures
@@ -9,8 +9,8 @@
 // 
 // ================================================================================================
 
-#ifndef __RXSAMPLEBEAMFORMERDELAYANDSTDDEV_H__
-#define __RXSAMPLEBEAMFORMERDELAYANDSTDDEV_H__
+#ifndef __RXSAMPLEBEAMFORMERCOHERENCEFACTORDELAYANDSUM_H__
+#define __RXSAMPLEBEAMFORMERCOHERENCEFACTORDELAYANDSUM_H__
 
 #include "USImageProperties.h"
 #include "WindowFunction.h"
@@ -20,17 +20,11 @@
 
 // Beamformer accoring to
 //
-// R.S.Bandaru, A.R.Sornes, J.Hermans, E.Samset, and J.D’Hooge, 
-// “Delay and Standard Deviation Beamforming to Enhance Specular Reflections in Ultrasound Imaging,”
-// IEEE Trans.Ultrason.Ferroelectr.Freq.Control, vol. 63, no. 12, 2016.
-//
-// with the modification of calculating the std dev for the real channel data, 
-// instead of IQ as proposed in the article.
 
 //TODO ALL ELEMENT/SCANLINE Y positons are actually Z! Change all variable names accordingly
 namespace supra
 {
-	class RxSampleBeamformerDelayAndStdDev
+	class RxSampleBeamformerCoherenceFactorDelayAndSum
 	{
 	public:
 		template <bool interpolateRFlines, bool nonlinearElementToChannelMapping, typename RFType, typename ResultType, typename LocationType>
@@ -59,13 +53,13 @@ namespace supra
 		)
 		{
 			float value = 0.0f;
-			float sd = 0.0f;
-			float weightAcum = 0.0f;
+			float coherentSum = 0.0f;
+			float totalEnergy = 0.0f;
 			int numAdds = 0;
 			LocationType initialDelay = txParams.initialDelay;
 			uint32_t txScanlineIdx = txParams.txScanlineIdx;
 
-			ResultType mean = RxSampleBeamformerDelayAndSum::sampleBeamform3D<interpolateRFlines, nonlinearElementToChannelMapping, RFType, ResultType, LocationType>(
+			ResultType resultDas = RxSampleBeamformerDelayAndSum::sampleBeamform3D<interpolateRFlines, nonlinearElementToChannelMapping, RFType, ResultType, LocationType>(
 				txParams,
 				RF,
 				elementLayout,
@@ -112,9 +106,6 @@ namespace supra
 
 					if ((squ(x_elem - scanline_x) + squ(z_elem - scanline_z)) <= aDT)
 					{
-						vec2f elementScanlineDistance = { x_elem - scanline_x, z_elem - scanline_z };
-						float weight = computeWindow3DShared(*windowFunction, functionShared, elementScanlineDistance * invMaxElementDistance);
-						weightAcum += weight;
 						numAdds++;
 						if (interpolateRFlines)
 						{
@@ -125,12 +116,12 @@ namespace supra
 							if (delay < (numTimesteps - 1))
 							{
 								value = 
-									weight * ((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
+									((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
 										delayf  * RF[(delay + 1) + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps]);
 							}
 							else if (delay < numTimesteps && delayf == 0.0)
 							{
-								value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
+								value = RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
 							}
 						}
 						else
@@ -139,17 +130,17 @@ namespace supra
 								initialDelay + computeDelayDTSPACE3D_D(dirX, dirY, dirZ, x_elem, z_elem, scanline_x, scanline_z, depth)) + additionalOffset);
 							if (delay < numTimesteps)
 							{
-								value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
+								value = RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
 							}
 						}
-
-						sd += squ(value - mean);
+						coherentSum += value;
+						totalEnergy += squ(value);
 					}
 				}
 			}
 			if (numAdds > 0)
 			{
-				return sqrt(sd) / weightAcum * numAdds;
+				return squ(coherentSum) / totalEnergy / numAdds * resultDas;
 			}
 			else
 			{
@@ -180,13 +171,13 @@ namespace supra
 		)
 		{
 			float value = 0.0f;
-			float sd = 0.0f;
-			float weightAcum = 0.0f;
+			float coherentSum = 0.0f;
+			float totalEnergy = 0.0f;
 			int numAdds = 0;
 			LocationType initialDelay = txParams.initialDelay;
 			uint32_t txScanlineIdx = txParams.txScanlineIdx;
 
-			ResultType mean = RxSampleBeamformerDelayAndSum::sampleBeamform2D<interpolateRFlines, nonlinearElementToChannelMapping, RFType, ResultType, LocationType>(
+			ResultType resultDas = RxSampleBeamformerDelayAndSum::sampleBeamform2D<interpolateRFlines, nonlinearElementToChannelMapping, RFType, ResultType, LocationType>(
 				txParams,
 				RF,
 				numTransducerElements,
@@ -225,8 +216,6 @@ namespace supra
 				LocationType x_elem = x_elemsDT[elemIdxX];
 				if (abs(x_elem - scanline_x) <= aDT)
 				{
-					float weight = windowFunction->get((x_elem - scanline_x) * invMaxElementDistance);
-					weightAcum += weight;
 					numAdds++;
 					if (interpolateRFlines)
 					{
@@ -237,12 +226,12 @@ namespace supra
 						if (delay < (numTimesteps - 1))
 						{
 							value =
-								weight * ((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
+								((1.0f - delayf) * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps] +
 									delayf  * RF[(delay + 1) + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps]);
 						}
 						else if (delay < numTimesteps && delayf == 0.0)
 						{
-							value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
+							value = RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
 						}
 					}
 					else
@@ -251,16 +240,16 @@ namespace supra
 							initialDelay + computeDelayDTSPACE_D(dirX, dirY, dirZ, x_elem, scanline_x, depth)) + additionalOffset);
 						if (delay < numTimesteps)
 						{
-							value = weight * RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
+							value = RF[delay + channelIdx*numTimesteps + txScanlineIdx*numReceivedChannels*numTimesteps];
 						}
 					}
-
-					sd += squ(value - mean);
+					coherentSum += value;
+					totalEnergy += squ(value);
 				}
 			}
 			if (numAdds > 0)
 			{
-				return sqrt(sd) / weightAcum * numAdds;
+				return squ(coherentSum) / totalEnergy / numAdds * resultDas;
 			}
 			else
 			{
@@ -270,4 +259,4 @@ namespace supra
 	};
 }
 
-#endif //!__RXSAMPLEBEAMFORMERDELAYANDSTDDEV_H__
+#endif //!__RXSAMPLEBEAMFORMERCOHERENCEFACTORDELAYANDSUM_H__

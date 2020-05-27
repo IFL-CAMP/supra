@@ -43,7 +43,7 @@ namespace supra
 		m_valueRangeDictionary.set<string>("windowType", { "Rectangular", "Hann", "Hamming", "Gauss" }, "Rectangular", "RxWindow");
 		m_valueRangeDictionary.set<double>("windowParameter", 0.0, 10.0, 0.0, "RxWindow parameter");
 		m_valueRangeDictionary.set<double>("speedOfSound", 1000, 2000, 1540.0, "Speed of sound [m/s]");
-		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "TestSignal"}, "DelayAndSum", "RxBeamformer");
+		m_valueRangeDictionary.set<string>("beamformerType", { "DelayAndSum", "DelayAndStdDev", "CoherenceFactorDelayAndSum", "TestSignal"}, "DelayAndSum", "RxBeamformer");
 		m_valueRangeDictionary.set<bool>("interpolateTransmits", { false, true }, false, "Interpolate Transmits");
 		m_valueRangeDictionary.set<int32_t>("additionalOffset", -1000, 1000, 0, "Additional Offset [Samples]");
 		m_valueRangeDictionary.set<DataType>("outputType", { TypeFloat, TypeInt16 }, TypeFloat, "Output type");
@@ -208,6 +208,10 @@ namespace supra
 		else if (beamformer == "DelayAndStdDev")
 		{
 			m_beamformerType = RxBeamformerCuda::DelayAndStdDev;
+		}
+		else if (beamformer == "CoherenceFactorDelayAndSum")
+		{
+			m_beamformerType = RxBeamformerCuda::CoherenceFactorDelayAndSum;
 		}
 		else if (beamformer == "TestSignal")
 		{

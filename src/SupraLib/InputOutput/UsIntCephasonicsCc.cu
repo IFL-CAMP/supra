@@ -63,6 +63,8 @@
 #include "utilities/Logging.h"
 #include "ContainerFactory.h"
 
+#include <json/json.h>
+
 namespace supra
 {
 	using namespace ::cs;
@@ -180,7 +182,8 @@ namespace supra
 
 		//Setup allowed values for parameters
 		m_valueRangeDictionary.set<uint32_t>("systemTxClock", {40, 20}, 40, "TX system clock (MHz)");
-		m_valueRangeDictionary.set<string>("probeName", {"Linear", "2D", "CPLA12875", "CPLA06475"}, "Linear", "Probe");
+		m_valueRangeDictionary.set<string>("probeName", {"Linear", "2D", "2D_sparse", "CPLA12875", "CPLA06475"}, "Linear", "Probe");
+		m_valueRangeDictionary.set<string>("sparseMatrixJsonFilename", "", "SparsityMap (2D)");
 		
 		m_valueRangeDictionary.set<double>("startDepth", 0.0, 300.0, 0.0, "Start depth [mm]");
 		m_valueRangeDictionary.set<double>("endDepth", 0.0, 300.0, 70.0, "End depth [mm]");
@@ -528,7 +531,96 @@ namespace supra
 				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
 			}
 		}
-		logging::log_error_if(m_probeElementsToMuxedChannelIndices.size() == 0,
+		else if (m_probeName == "2D_sparse") {
+			// Fixed element selection for now:
+			auto matrixSize = vec2s{32,32};
+
+			PlatformCapabilities pC = USPlatformMgr::getPlatformCapabilities(*m_cPlatformHandle);
+
+			// open the matrix json file
+			std::ifstream f(m_sparseMatrixJsonFilename);
+			if (!f.good())
+			{
+				logging::log_error("UsIntCephasonicsCc: Error opening matrix json file '", m_sparseMatrixJsonFilename, "'");
+				throw std::runtime_error("UsIntCephasonicsCc: Error opening matrix json file.");
+			}
+
+			// read and parse the json file
+			Json::CharReaderBuilder builder;
+			builder["collectComments"] = false;
+			Json::Value jsonDoc;
+			JSONCPP_STRING jsonErrs;
+			bool jsonOk = parseFromStream(builder, f, &jsonDoc, &jsonErrs);
+			f.close();
+
+			if (!jsonOk)
+			{
+				logging::log_error("UsIntCephasonicsCc: Error parsing matrix json file '", m_sparseMatrixJsonFilename, "'");
+				logging::log_error("UsIntCephasonicsCc: Reason: ", jsonErrs);
+				throw std::runtime_error("UsIntCephasonicsCc: Error parsing matrix json file.");
+			}
+
+			vector<bool> elementMap(matrixSize.x * matrixSize.y, false);
+			vector<int32_t> elementToChannelMap(elementMap.size(), 0);
+
+			for (int elementIndexY = 0; elementIndexY < matrixSize.y; elementIndexY++)
+			{
+				for (int elementIndexX = 0; elementIndexX < matrixSize.x; elementIndexX++)
+				{
+					size_t elementIndexLinear = elementIndexY*matrixSize.x + elementIndexX;
+					if (jsonDoc["matrix"][elementIndexX][elementIndexY].asInt())
+					{
+						elementMap[elementIndexLinear] = true;
+						elementToChannelMap[elementIndexLinear] = (int32_t)elementIndexLinear % pC.SYS_LICENSED_CHANNELS;
+					}
+				}
+			}
+
+			// count how many elements are selected. As of 2019-09-30, this needs to be exactly pC.SYS_LICENSED_CHANNELS
+			size_t numberElementsOn = 0;
+			for (size_t k = 0; k < elementMap.size(); k++)
+			{
+				if(elementMap[k])
+				{
+					numberElementsOn++;
+				}
+			}
+			logging::log_error_if(numberElementsOn != pC.SYS_LICENSED_CHANNELS,
+					"UsIntCephasonicsCc: The given element selection matrix for 2D_sparse is not suited. It needs to have exactly ",
+					pC.SYS_LICENSED_CHANNELS, " actived elementsnumOn, currently ", numberElementsOn, " are active.");
+
+			double probePitch = 0.3; // From Vermon specification
+			m_pTransducer = unique_ptr<USTransducer>(
+					new USTransducer(
+							1024,
+							matrixSize,
+							USTransducer::Planar,
+							vector<double>(32 - 1, probePitch),
+							{
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch,
+									2*probePitch,
+									probePitch, probePitch, probePitch, probePitch, probePitch, probePitch, probePitch
+							},
+							{}, // We don't know about the matching layers
+							elementMap,
+							elementToChannelMap
+						));
+
+			maxAperture = {32,32};
+
+			m_probeElementsToMuxedChannelIndices.resize(1024);
+
+			// The 2D array uses the element in contiguous order. Nothing to see here.
+			for(size_t probeElem = 0; probeElem < 1024; probeElem++)
+			{
+				m_probeElementsToMuxedChannelIndices[probeElem] = probeElem;
+			}
+		}
+        logging::log_error_if(m_probeElementsToMuxedChannelIndices.size() == 0,
 		    "UsIntCephasonicsCc: Probe - system combination unknown. (Probe: ", m_probeName, 
 			", numChannelsTotal: ", m_numChannelsTotal, ", numMuxedChannels: ", m_numMuxedChannels);
 
@@ -614,7 +706,7 @@ namespace supra
 			// Defines the type of transducer
 			if (m_probeName == "Linear" || m_probeName == "CPLA12875" || m_probeName == "CPLA06475") {
 				newProps->setTransducerType(USImageProperties::TransducerType::Linear);	
-			} else if (m_probeName == "2D") {
+			} else if (m_probeName == "2D" || m_probeName == "2D_sparse") {
 				newProps->setTransducerType(USImageProperties::TransducerType::Bicurved);
 			}
 
@@ -830,6 +922,7 @@ namespace supra
 		// update systemwide configuration values
 		m_systemTxClock = m_configurationDictionary.get<uint32_t>("systemTxClock");
 		m_probeName = m_configurationDictionary.get<string>("probeName");
+		m_sparseMatrixJsonFilename = m_configurationDictionary.get<string>("sparseMatrixJsonFilename");
 		m_startDepth = m_configurationDictionary.get<double>("startDepth");
 		m_endDepth = m_configurationDictionary.get<double>("endDepth");
 		m_processorMeasureThroughput= m_configurationDictionary.get<bool>("measureThroughput");
