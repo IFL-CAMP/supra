@@ -38,6 +38,7 @@
 #include "InputOutput/UsIntCephasonicsCc.h"
 #include "InputOutput/MetaImageOutputDevice.h"
 #include "InputOutput/RosImageOutputDevice.h"
+#include "InputOutput/EdenImageOutputDevice.h"
 #include "InputOutput/UltrasoundInterfaceRawDataMock.h"
 #include "InputOutput/UltrasoundInterfaceBeamformedMock.h"
 #include "Beamformer/BeamformingNode.h"
@@ -171,6 +172,12 @@ namespace supra
 			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID, queueing);
 		}
 #endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
+#ifdef HAVE_DEVICE_ROS_EDEN_OUTPUT
+		if (deviceType == "EdenImageOutputDevice")
+		{
+			retVal = make_shared<EdenImageOutputDevice>(*pG, nodeID, queueing);
+		}
+#endif //HAVE_DEVICE_ROS_EDEN_OUTPUT
 		logging::log_error_if(!((bool)retVal),
 			"Error creating output device. Requested type '", deviceType, "' is unknown. Did you activate the corresponding module in the build of the library?");
 		logging::log_info_if((bool)retVal,
