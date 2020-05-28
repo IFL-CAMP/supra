@@ -46,6 +46,7 @@ OPTION(SUPRA_DEVICE_IGTL_OUTPUT    "Build OpenIGTLink Output"          ON)
 OPTION(SUPRA_DEVICE_CEPHASONICS    "Build Cephasonics Ultrasound"      OFF)
 OPTION(SUPRA_DEVICE_ITK_FILE_OUT   "Build ITK file output Interface"   ON)
 OPTION(SUPRA_DEVICE_ROS_IMAGE_OUT  "Build ROS image output Interface"  OFF)
+OPTION(SUPRA_DEVICE_ROS_EDEN2020   "Build EDEN2020 ROS image output Interface"  OFF)
 SET( SUPRA_DEVICE_ULTRASONIX_V     "5.7"  CACHE STRING "Ultrasonix Version (5.7|6.07)")
 IF(WIN32)
 	# Ros tracking output is by default activated on windows as it does not add dependencies

@@ -12,7 +12,7 @@
 #ifndef __EDENIMAGEGEOUTPUTDEVICE_H__
 #define __EDENIMAGEGEOUTPUTDEVICE_H__
 
-#ifdef HAVE_DEVICE_ROSIMAGE_OUTPUT
+#ifdef HAVE_DEVICE_ROS_EDEN_OUTPUT
 
 #include "AbstractOutput.h"
 
@@ -61,6 +61,6 @@ namespace supra
 	};
 }
 
-#endif //!HAVE_DEVICE_ROSIMAGE_OUTPUT
+#endif //!HAVE_DEVICE_ROS_EDEN_OUTPUT
 
 #endif //!__EDENIMAGEGEOUTPUTDEVICE_H__

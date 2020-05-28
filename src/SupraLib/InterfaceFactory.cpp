@@ -171,11 +171,13 @@ namespace supra
 		{
 			retVal = make_shared<RosImageOutputDevice>(*pG, nodeID, queueing);
 		}
+#endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
+#ifdef HAVE_DEVICE_ROS_EDEN_OUTPUT
 		if (deviceType == "EdenImageOutputDevice")
 		{
 			retVal = make_shared<EdenImageOutputDevice>(*pG, nodeID, queueing);
 		}
-#endif //HAVE_DEVICE_ROSIMAGE_OUTPUT
+#endif //HAVE_DEVICE_ROS_EDEN_OUTPUT
 		logging::log_error_if(!((bool)retVal),
 			"Error creating output device. Requested type '", deviceType, "' is unknown. Did you activate the corresponding module in the build of the library?");
 		logging::log_info_if((bool)retVal,
