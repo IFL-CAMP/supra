@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<supra_config>
+    <devices>
+        <inputs>
+            <input type="UltrasoundInterfaceRawDataMock" id="US-Mock">
+                <param name="mockDataFilename" type="string">data/3DProbe_1.raw</param>
+                <param name="mockMetaDataFilename" type="string">data/3DProbe.mock</param>
+            </input>
+        </inputs>
+        <outputs>
+            <output type="MetaImageOutputDevice" id="MHD">
+                <param name="createSequences" type="bool">1</param>
+                <param name="filename" type="string">mhd_output</param>
+            </output>
+			<output type="OpenIGTLinkOutputDevice" id="IGTL">
+            </output>
+        </outputs>
+        <nodes>
+            <node type="BeamformingNode" id="BEAM">
+                <param name="windowParameter" type="double">0.5</param>
+                <param name="windowType" type="string">Hamming</param>
+            </node>
+            <node type="HilbertFirEnvelopeNode" id="DEMO"/>
+            <node type="LogCompressorNode" id="LOGC">
+                <param name="dynamicRange" type="double">60</param>
+                <param name="inMax" type="double">32600</param>
+            </node>
+            <node type="ScanConverterNode" id="SCAN">
+				<param name="imageResolution" type="double">0.5</param>
+				<param name="imageResolutionForced" type="bool">1</param>
+				<param name="outputType" type="DataType">uint8_t</param>
+			</node>
+        </nodes>
+    </devices>
+    <connections>
+        <connection>
+            <from id="BEAM" port="0"/>
+            <to id="DEMO" port="0"/>
+        </connection>
+        <connection>
+            <from id="DEMO" port="0"/>
+            <to id="LOGC" port="0"/>
+        </connection>
+        <connection>
+            <from id="US-Mock" port="0"/>
+            <to id="BEAM" port="0"/>
+        </connection>
+        <connection>
+            <from id="LOGC" port="0"/>
+            <to id="SCAN" port="0"/>
+        </connection>
+		<connection>
+            <from id="SCAN" port="0"/>
+            <to id="MHD" port="0"/>
+        </connection>
+        <connection>
+            <from id="SCAN" port="0"/>
+            <to id="IGTL" port="0"/>
+        </connection>
+    </connections>
+</supra_config>

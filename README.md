@@ -133,6 +133,10 @@ This shows a complete ultrasound pipeline running on your computer from raw chan
 a Cephasonics system and a 7MHz linear probe.
 With the dropdown menu "Preview Node", you can select which stage of the pipeline to inspect.
 For the final state of the image, select "SCAN", which shows the output of the scan-converter - the B-mode.
+
+Start the SUPRA GUI with a demo 3D config file
+
+	src/GraphicInterface/SUPRA_GUI -c data/configDemo3D.xml -a
 	
 Used libraries
 ----------------
