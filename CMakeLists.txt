@@ -103,10 +103,18 @@ ADD_SUBDIRECTORY(doc)
 
 IF(SUPRA_DOWNLOAD_SAMPLEDATA)
 	if(NOT EXISTS ${PROJECT_BINARY_DIR}/data/mockData_linearProbe.zip)
-		message(STATUS "Downloading sample data. This may take a while.")
+		message(STATUS "Downloading sample data (2D). This may take a while.")
 		file(DOWNLOAD
-			"http://campar.in.tum.de/files/goeblr/mockData_linearProbe.zip"
+			"https://f000.backblazeb2.com/file/supra-sample-data/mockData_linearProbe.zip"
 			"${PROJECT_BINARY_DIR}/data/mockData_linearProbe.zip"
+			SHOW_PROGRESS
+		)
+	endif()
+	if(NOT EXISTS ${PROJECT_BINARY_DIR}/data/SUPRA_3D_sampleData.zip)
+		message(STATUS "Downloading sample data (3D). This may take a while.")
+		file(DOWNLOAD
+			"https://f000.backblazeb2.com/file/supra-sample-data/SUPRA_3D_sampleData.zip"
+			"${PROJECT_BINARY_DIR}/data/SUPRA_3D_sampleData.zip"
 			SHOW_PROGRESS
 		)
 	endif()
@@ -115,12 +123,18 @@ IF(SUPRA_DOWNLOAD_SAMPLEDATA)
 		message(STATUS "Extracting sample data")
 		execute_process(COMMAND cmake -E tar xf mockData_linearProbe.zip 
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/data/" )
+		execute_process(COMMAND cmake -E tar xf SUPRA_3D_sampleData.zip 
+			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/data/" )
 		execute_process(COMMAND cmake -E touch mockData_extracted
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/data/" )
 	ENDIF()
 	file(COPY config/configDemo.xml DESTINATION "${PROJECT_BINARY_DIR}/data/")
+	file(COPY config/configDemo3D.xml DESTINATION "${PROJECT_BINARY_DIR}/data/")
 
 	INSTALL(FILES ${PROJECT_BINARY_DIR}/data/mockData_linearProbe.zip
+      DESTINATION data
+      COMPONENT applicationData)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/data/SUPRA_3D_sampleData.zip
       DESTINATION data
       COMPONENT applicationData)
 
