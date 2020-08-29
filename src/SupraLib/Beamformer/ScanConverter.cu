@@ -398,7 +398,7 @@ namespace supra
 	{
 		vec3T<uint32_t> pixelPos{ blockDim.x * blockIdx.x + threadIdx.x, blockDim.y * blockIdx.y + threadIdx.y, blockDim.z * blockIdx.z + threadIdx.z }; //@suppress("Symbol is not resolved") @suppress("Field cannot be resolved")
 
-		if (pixelPos.x < width && pixelPos.y < height)
+		if (pixelPos.x < width && pixelPos.y < height && pixelPos.z < depth)
 		{
 			IndexType pixelIdx = pixelPos.x + pixelPos.y*width + pixelPos.z*width*height;
 			float val = 0;
@@ -409,17 +409,19 @@ namespace supra
 				WeightType wX = weightX[pixelIdx];
 				WeightType wY = weightY[pixelIdx];
 				WeightType wZ = weightZ[pixelIdx];
-
-
-				val =
-					(1 - wY)*((1 - wZ)*((1 - wX)*scanlines[sIdx] +
-						wX *scanlines[sIdx + 1]) +
-						wZ *((1 - wX)*scanlines[sIdx + numScanlinesX] +
-							wX *scanlines[sIdx + 1 + numScanlinesX])) +
-					wY* ((1 - wZ)*((1 - wX)*scanlines[sIdx + numScanlines] +
-						wX *scanlines[sIdx + 1 + numScanlines]) +
-						wZ *((1 - wX)*scanlines[sIdx + numScanlinesX + numScanlines] +
-							wX *scanlines[sIdx + 1 + numScanlinesX + numScanlines]));
+				
+				if (sIdx + 1 + numScanlinesX + numScanlines < numSamples * numScanlines)
+				{
+					val =
+						(1 - wY)*((1 - wZ)*((1 - wX)*scanlines[sIdx] +
+												 wX *scanlines[sIdx + 1]) +
+									   wZ *((1 - wX)*scanlines[sIdx + numScanlinesX] +
+												 wX *scanlines[sIdx + 1 + numScanlinesX])) +
+							 wY* ((1 - wZ)*((1 - wX)*scanlines[sIdx + numScanlines] +
+												 wX *scanlines[sIdx + 1 + numScanlines]) +
+									   wZ *((1 - wX)*scanlines[sIdx + numScanlinesX + numScanlines] +
+												 wX *scanlines[sIdx + 1 + numScanlinesX + numScanlines]));
+				}
 			}
 			image[pixelIdx] = clampCast<OutputType>(val);
 		}
@@ -563,7 +565,7 @@ namespace supra
 						}
 						//scanlines are not skew
 						scanlinesGood = scanlinesGood &&
-							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < m_skewnessTestThreshold;
+							abs(det(normalize(start - endbefore), normalize(startbefore - endbefore), normalize(end - endbefore))) < m_skewnessTestThreshold;
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;
@@ -604,7 +606,7 @@ namespace supra
 						}
 						//scanlines are not skew
 						scanlinesGood = scanlinesGood &&
-							abs(det(start - endbefore, startbefore - endbefore, end - endbefore)) < m_skewnessTestThreshold;
+							abs(det(normalize(start - endbefore), normalize(startbefore - endbefore), normalize(end - endbefore))) < m_skewnessTestThreshold;
 						if (!scanlinesGood)
 						{
 							scanlinesGood = true;

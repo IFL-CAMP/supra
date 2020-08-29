@@ -63,7 +63,9 @@ namespace supra
 			, m_rxDepths(rxDepths)
 			, m_rxScanlines(rxScanlines)
 			, m_rxElementXs(rxElementXs)
-			, m_rxElementYs(rxElementYs) {};
+			, m_rxElementYs(rxElementYs)
+			, m_nonlinearElementToChannelMapping(false)
+		{};
 
 		size_t getNumRxScanlines() const { return m_numRxScanlines; }
 		vec2s getRxScanlineLayout() const { return m_rxScanlineLayout; }
